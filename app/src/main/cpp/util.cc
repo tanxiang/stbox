@@ -15,6 +15,30 @@
 #include "shaderc/shaderc.hpp"
 #include "util.hh"
 #include <map>
+static const char *vertShaderText =
+        "#version 400\n"
+                "#extension GL_ARB_separate_shader_objects : enable\n"
+                "#extension GL_ARB_shading_language_420pack : enable\n"
+                "layout (std140, binding = 0) uniform bufferVals {\n"
+                "    mat4 mvp;\n"
+                "} myBufferVals;\n"
+                "layout (location = 0) in vec4 pos;\n"
+                "layout (location = 1) in vec4 inColor;\n"
+                "layout (location = 0) out vec4 outColor;\n"
+                "void main() {\n"
+                "   outColor = inColor;\n"
+                "   gl_Position = myBufferVals.mvp * pos;\n"
+                "}\n";
+
+static const char *fragShaderText =
+        "#version 400\n"
+                "#extension GL_ARB_separate_shader_objects : enable\n"
+                "#extension GL_ARB_shading_language_420pack : enable\n"
+                "layout (location = 0) in vec4 color;\n"
+                "layout (location = 0) out vec4 outColor;\n"
+                "void main() {\n"
+                "   outColor = color;\n"
+                "}\n";
 
 static const std::map<vk::ShaderStageFlagBits, shaderc_shader_kind> shader_map_table{
         {vk::ShaderStageFlagBits::eVertex,                 shaderc_glsl_vertex_shader},
@@ -130,15 +154,32 @@ namespace tt {
     }
 
     vk::UniqueDeviceMemory
-    Device::AllocBindImageMemory(vk::Image image, vk::MemoryPropertyFlags flags) {
+    Device::allocBindImageMemory(vk::Image image, vk::MemoryPropertyFlags flags) {
         auto imageMemoryRq = getImageMemoryRequirements(image);
-        uint32_t typeIndex = findMemoryTypeIndex(imageMemoryRq.memoryTypeBits, flags);
+        auto typeIndex = findMemoryTypeIndex(imageMemoryRq.memoryTypeBits, flags);
         auto imageMemory = allocateMemoryUnique(vk::MemoryAllocateInfo{
                 imageMemoryRq.size, findMemoryTypeIndex(imageMemoryRq.memoryTypeBits, flags)
         });
         std::cout << "ImageMemory:alloc index:" << typeIndex << std::endl;
         bindImageMemory(image, imageMemory.get(), 0);
         return imageMemory;
+    }
+
+    vk::UniqueDeviceMemory
+    Device::allocMemoryAndWrite(vk::Buffer &buffer, void *pData, size_t dataSize,
+                                vk::MemoryPropertyFlags memoryPropertyFlags) {
+        auto memoryRequirements = getBufferMemoryRequirements(buffer);
+        auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits,memoryPropertyFlags);
+        std::cout << "vertex_memory:alloc index:" << typeIndex << std::endl;
+        auto memoryUnique = allocateMemoryUnique(vk::MemoryAllocateInfo{
+                memoryRequirements.size, typeIndex
+        });
+        auto pMemory = mapMemory(memoryUnique.get(), 0, memoryRequirements.size,
+                                   vk::MemoryMapFlagBits());
+        memcpy(pMemory, pData, dataSize);
+        unmapMemory(memoryUnique.get());
+        bindBufferMemory(buffer, memoryUnique.get(), 0);
+        return memoryUnique;
     }
 
     void Device::buildSwapchainViewBuffers(vk::SurfaceKHR &surfaceKHR) {
@@ -254,7 +295,7 @@ namespace tt {
                                                            0, nullptr,
                                                            vk::ImageLayout::eUndefined});
 
-        depthImageMemory = AllocBindImageMemory(depthImage.get(),
+        depthImageMemory = allocBindImageMemory(depthImage.get(),
                                                 vk::MemoryPropertyFlagBits::eDeviceLocal);
 
         depthImageView = createImageViewUnique(vk::ImageViewCreateInfo{vk::ImageViewCreateFlags(),
@@ -364,6 +405,163 @@ namespace tt {
                     1
             }));
         }
+    }
 
+    void Device::buildPipeline(uint32_t dataStepSize) {
+        auto vertShaderSpirv = GLSLtoSPV(vk::ShaderStageFlagBits::eVertex, vertShaderText);
+        std::cout << "vertShaderSpirv len:" << vertShaderSpirv.size() << 'x'
+                  << sizeof(decltype(vertShaderSpirv)
+        ::value_type)<<std::endl;
+        auto fargShaderSpirv = GLSLtoSPV(vk::ShaderStageFlagBits::eFragment, fragShaderText);
+        std::cout << "farg_shader_spirv len:" << fargShaderSpirv.size() << 'x'
+                  << sizeof(decltype(fargShaderSpirv)
+        ::value_type)<<std::endl;
+        auto vertShaderModule = createShaderModuleUnique(vk::ShaderModuleCreateInfo{
+                vk::ShaderModuleCreateFlags(), vertShaderSpirv.size() *
+                                               sizeof(decltype(vertShaderSpirv)::value_type), vertShaderSpirv.data()
+        });
+        auto fargShaderModule = createShaderModuleUnique(vk::ShaderModuleCreateInfo{
+                vk::ShaderModuleCreateFlags(), fargShaderSpirv.size() *
+                                               sizeof(decltype(fargShaderSpirv)::value_type), fargShaderSpirv.data()
+        });
+        std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStageCreateInfos{
+                vk::PipelineShaderStageCreateInfo{
+                        vk::PipelineShaderStageCreateFlags(),
+                        vk::ShaderStageFlagBits::eVertex,
+                        vertShaderModule.get(), "main"
+                },
+                vk::PipelineShaderStageCreateInfo{
+                        vk::PipelineShaderStageCreateFlags(),
+                        vk::ShaderStageFlagBits::eFragment,
+                        fargShaderModule.get(), "main"
+                }
+        };
+
+        std::array<vk::VertexInputBindingDescription, 1> vertexInputBindingDescriptions{
+                vk::VertexInputBindingDescription{
+                        0,dataStepSize,// sizeof(g_vb_solid_face_colors_Data[0]),
+                        vk::VertexInputRate::eVertex
+                }
+        };
+        std::array<vk::VertexInputAttributeDescription, 2> vertexInputAttributeDescriptions{
+                vk::VertexInputAttributeDescription{
+                        0, 0, vk::Format::eR32G32B32A32Sfloat, 0
+                },
+                vk::VertexInputAttributeDescription{
+                        1, 0, vk::Format::eR32G32B32A32Sfloat, 16
+                }
+        };
+        vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
+                vk::PipelineVertexInputStateCreateFlags(),
+                vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
+                vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
+
+        };
+
+        vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo{
+                vk::PipelineInputAssemblyStateCreateFlags(), vk::PrimitiveTopology::eTriangleList
+        };
+        //vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{};
+        vk::Viewport viewport{
+                0, 0, swapchainExtent.width, swapchainExtent.height, 0.0f, 1.0f
+        };
+        vk::Rect2D scissors{vk::Offset2D{}, swapchainExtent};
+        vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo{
+                vk::PipelineViewportStateCreateFlags(),
+                1, &viewport, 1, &scissors
+        };
+        vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo{
+                vk::PipelineRasterizationStateCreateFlags(),
+                0, 0, vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise, 0,
+                0, 0, 0, 1.0f
+        };
+        vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{};
+        vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{
+                vk::PipelineDepthStencilStateCreateFlags(), true, true, vk::CompareOp::eLessOrEqual,
+                false, false,
+                vk::StencilOpState{vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::StencilOp::eKeep,
+                                   vk::CompareOp::eAlways},
+                vk::StencilOpState{vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::StencilOp::eKeep,
+                                   vk::CompareOp::eAlways},
+                0, 0
+        };
+        vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{};
+        pipelineColorBlendAttachmentState.setColorWriteMask(
+                vk::ColorComponentFlags{} | vk::ColorComponentFlagBits::eR |
+                vk::ColorComponentFlagBits::eG |
+                vk::ColorComponentFlagBits::eB |
+                vk::ColorComponentFlagBits::eA);
+        vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo{
+                vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eNoOp, 1,
+                &pipelineColorBlendAttachmentState, {1.0f, 1.0f, 1.0f, 1.0f}
+        };
+        vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{};
+        vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
+                vk::PipelineCreateFlags(),
+                shaderStageCreateInfos.size(), shaderStageCreateInfos.data(),
+                &pipelineVertexInputStateCreateInfo,
+                &pipelineInputAssemblyStateCreateInfo,
+                nullptr,
+                &pipelineViewportStateCreateInfo,
+                &pipelineRasterizationStateCreateInfo,
+                &pipelineMultisampleStateCreateInfo,
+                &pipelineDepthStencilStateCreateInfo,
+                &pipelineColorBlendStateCreateInfo,
+                &pipelineDynamicStateCreateInfo,
+                pipelineLayout.get(),
+                renderPass.get()
+        };
+        graphicsPipeline = createGraphicsPipelineUnique(vkPipelineCache.get(), pipelineCreateInfo);
+    }
+    void Device::drawCmdBuffer(vk::CommandBuffer& cmdBuffer,vk::Buffer vertexBuffer){
+        auto imageAcquiredSemaphore = createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+        auto currentBufferIndex = acquireNextImageKHR(swapchainKHR.get(), UINT64_MAX,
+                                                               imageAcquiredSemaphore.get(), vk::Fence{});
+        std::cout << "acquireNextImageKHR:" << vk::to_string(currentBufferIndex.result)
+                  << currentBufferIndex.value << std::endl;
+        std::array<vk::ClearValue, 2> clearValues{
+                vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
+                vk::ClearDepthStencilValue{1.0f, 0},
+        };
+        cmdBuffer.begin(vk::CommandBufferBeginInfo{});
+
+        cmdBuffer.beginRenderPass(vk::RenderPassBeginInfo{
+                renderPass.get(),
+                frameBuffers[currentBufferIndex.value].get(),
+                vk::Rect2D{vk::Offset2D{}, swapchainExtent},
+                clearValues.size(), clearValues.data()
+        }, vk::SubpassContents::eInline);
+        cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.get());
+        std::array<vk::DescriptorSet,1> tmpDescriptorSets{this->descriptorSets[0].get()};
+        cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout.get(), 0,
+                                     tmpDescriptorSets, std::vector<uint32_t>{});
+        vk::DeviceSize offsets[1] = {0};
+        cmdBuffer.bindVertexBuffers(0, 1, &vertexBuffer, offsets);
+        cmdBuffer.draw(12 * 3, 1, 0, 0);
+        cmdBuffer.endRenderPass();
+        cmdBuffer.end();
+        auto drawFence = createFence(vk::FenceCreateInfo{});
+        vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+        std::array<vk::SubmitInfo, 1> submitInfos{
+                vk::SubmitInfo{
+                        1, &imageAcquiredSemaphore.get(), &pipelineStageFlags,
+                        1, &cmdBuffer
+                }
+        };
+        auto vk_queue = getQueue(queueFamilyIndex, 0);
+
+        vk_queue.submit(submitInfos, drawFence);
+        vk::Result waitRet;
+        do {
+            waitRet = waitForFences(1, &drawFence, true, 1000000);
+            std::cout << "waitForFences ret:" << vk::to_string(waitRet) << std::endl;
+        } while (waitRet == vk::Result::eTimeout);
+
+        auto presentRet = vk_queue.presentKHR(vk::PresentInfoKHR{
+                0, nullptr, 1, &swapchainKHR.get(), &currentBufferIndex.value
+        });
+        std::cout << "presentKHR:index" << currentBufferIndex.value << "ret:"
+                  << vk::to_string(presentRet) << std::endl;
+        sleep(1);
     }
 }
