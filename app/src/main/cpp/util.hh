@@ -27,15 +27,12 @@ namespace tt {
         vk::UniqueDeviceMemory depthImageMemory;
         vk::UniqueBuffer mvpBuffer;
         vk::UniqueDeviceMemory mvpMemory;
-
-        std::array<vk::DescriptorSetLayoutBinding, 2> descriptSlBs{
-                vk::DescriptorSetLayoutBinding{
+        std::vector<vk::DescriptorSetLayoutBinding> descriptSlBs{{
                         0,
                         vk::DescriptorType::eUniformBuffer,
                         1,
                         vk::ShaderStageFlagBits::eVertex
-                },
-                vk::DescriptorSetLayoutBinding{
+                },{
                         1,
                         vk::DescriptorType::eCombinedImageSampler,
                         1,
@@ -69,7 +66,6 @@ namespace tt {
         vk::UniquePipelineCache vkPipelineCache = createPipelineCacheUnique(
                 vk::PipelineCacheCreateInfo{});
         vk::UniquePipeline graphicsPipeline;
-
         uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
     public:
@@ -92,7 +88,7 @@ namespace tt {
                                    depthImageMemory{std::move(odevice.depthImageMemory)},
                                    mvpBuffer{std::move(odevice.mvpBuffer)},
                                    mvpMemory{std::move(odevice.mvpMemory)},
-                                   descriptSlBs{odevice.descriptSlBs},
+                                   descriptSlBs{std::move(odevice.descriptSlBs)},
                                    descriptorSetLayout{std::move(odevice.descriptorSetLayout)},
                                    pipelineLayout{std::move(odevice.pipelineLayout)},
                                    poolSize{std::move(odevice.poolSize)},
@@ -105,6 +101,7 @@ namespace tt {
 
         }
 
+        Device() = delete;
         ~Device() {
             waitIdle();
             destroy();
