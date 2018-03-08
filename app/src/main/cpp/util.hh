@@ -51,7 +51,7 @@ namespace tt {
                 vk::PipelineLayoutCreateInfo{
                         vk::PipelineLayoutCreateFlags(), 1, &descriptorSetLayout.get(), 0, nullptr
                 });
-        vk::DescriptorPoolSize poolSize[2]{{
+        std::vector<vk::DescriptorPoolSize> poolSize{{
                                                    vk::DescriptorType::eUniformBuffer,        1
                                            },
                                            {
@@ -59,7 +59,7 @@ namespace tt {
                                            }};
         vk::UniqueDescriptorPool descriptorPoll = createDescriptorPoolUnique(
                 vk::DescriptorPoolCreateInfo{
-                        vk::DescriptorPoolCreateFlags(), 1, 2, poolSize});
+                        vk::DescriptorPoolCreateFlags(), 1, poolSize.size(), poolSize.data()});
         std::vector<vk::UniqueDescriptorSet> descriptorSets = allocateDescriptorSetsUnique(
                 vk::DescriptorSetAllocateInfo{
                         descriptorPoll.get(), 1, &descriptorSetLayout.get()
@@ -95,7 +95,7 @@ namespace tt {
                                    descriptSlBs{odevice.descriptSlBs},
                                    descriptorSetLayout{std::move(odevice.descriptorSetLayout)},
                                    pipelineLayout{std::move(odevice.pipelineLayout)},
-                                   //poolSize{std::move(odevice.poolSize)},
+                                   poolSize{std::move(odevice.poolSize)},
                                    descriptorPoll{std::move(odevice.descriptorPoll)},
                                    descriptorSets{std::move(odevice.descriptorSets)},
                                    renderPass{std::move(odevice.renderPass)},
