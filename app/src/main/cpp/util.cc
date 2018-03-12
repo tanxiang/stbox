@@ -347,7 +347,7 @@ namespace tt {
 
     void Device::buildRenderpass(vk::SurfaceKHR &surfaceKHR){
         auto surfaceDefaultFormat = getSurfaceDefaultFormat(surfaceKHR);
-        std::array<vk::AttachmentDescription, 2> attach_descs{
+        std::array<vk::AttachmentDescription, 2> attachDescs{
                 vk::AttachmentDescription{
                         vk::AttachmentDescriptionFlags(),
                         surfaceDefaultFormat.format,
@@ -371,12 +371,12 @@ namespace tt {
                         vk::ImageLayout::eColorAttachmentOptimal
                 }
         };
-        std::array<vk::AttachmentReference, 1> attachment_refs{
+        std::array<vk::AttachmentReference, 1> attachmentRefs{
                 vk::AttachmentReference{
                         0, vk::ImageLayout::eColorAttachmentOptimal
                 }
         };
-        vk::AttachmentReference depth_attache_refs{
+        vk::AttachmentReference depthAttacheRefs{
                 1, vk::ImageLayout::eDepthStencilAttachmentOptimal
         };
         std::array<vk::SubpassDescription, 1> subpassDescs{
@@ -384,14 +384,14 @@ namespace tt {
                         vk::SubpassDescriptionFlags(),
                         vk::PipelineBindPoint::eGraphics,
                         0, nullptr,
-                        attachment_refs.size(), attachment_refs.data(),
+                        attachmentRefs.size(), attachmentRefs.data(),
                         nullptr,
-                        &depth_attache_refs,
+                        &depthAttacheRefs,
                 }
         };
         renderPass = createRenderPassUnique(vk::RenderPassCreateInfo{
                 vk::RenderPassCreateFlags(),
-                attach_descs.size(), attach_descs.data(),
+                attachDescs.size(), attachDescs.data(),
                 subpassDescs.size(), subpassDescs.data()
         });
 
@@ -413,7 +413,7 @@ namespace tt {
                   << sizeof(decltype(vertShaderSpirv)
         ::value_type)<<std::endl;
         auto fargShaderSpirv = GLSLtoSPV(vk::ShaderStageFlagBits::eFragment, fragShaderText);
-        std::cout << "farg_shader_spirv len:" << fargShaderSpirv.size() << 'x'
+        std::cout << "fargShaderSpirv len:" << fargShaderSpirv.size() << 'x'
                   << sizeof(decltype(fargShaderSpirv)
         ::value_type)<<std::endl;
         auto vertShaderModule = createShaderModuleUnique(vk::ShaderModuleCreateInfo{
@@ -513,6 +513,7 @@ namespace tt {
         };
         graphicsPipeline = createGraphicsPipelineUnique(vkPipelineCache.get(), pipelineCreateInfo);
     }
+
     void Device::drawCmdBuffer(vk::CommandBuffer& cmdBuffer,vk::Buffer vertexBuffer){
         auto imageAcquiredSemaphore = createSemaphoreUnique(vk::SemaphoreCreateInfo{});
         auto currentBufferIndex = acquireNextImageKHR(swapchainKHR.get(), UINT64_MAX,
@@ -549,7 +550,7 @@ namespace tt {
                 }
         };
         auto vk_queue = getQueue(queueFamilyIndex, 0);
-
+        //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
         vk_queue.submit(submitInfos, drawFence);
         vk::Result waitRet;
         do {
