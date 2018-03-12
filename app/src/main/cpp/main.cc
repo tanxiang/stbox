@@ -90,7 +90,7 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
     }
 }
 
-bool Android_process_command() {
+int Android_process_command() {
     assert(Android_application != nullptr);
     int events;
     android_poll_source *source;
