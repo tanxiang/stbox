@@ -74,8 +74,9 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
             case APP_CMD_INIT_WINDOW: {
                 // The window is being shown, get it ready.
                 assert(app->window);
-                ttInstace.connectWSI(app->window);
                 ttInstace.connectDevice();
+
+                ttInstace.connectWSI(app->window);
                 //auto ttDev = ttInstace.connectToDevice();
                 draw_run(ttInstace.defaultDevice(), ttInstace.defaultSurface());
                 break;
@@ -83,6 +84,9 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
             case APP_CMD_TERM_WINDOW:
                 // The window is being hidden or closed, clean it up.
                 ttInstace.disconnectWSI();
+                break;
+            case APP_CMD_DESTROY:
+                ttInstace.disconnectDevice();
                 break;
             case APP_CMD_PAUSE:
             case APP_CMD_RESUME:

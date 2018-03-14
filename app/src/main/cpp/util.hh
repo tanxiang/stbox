@@ -103,7 +103,7 @@ namespace tt {
 
         }
 
-        //Device() = delete;
+        Device() = delete;
 
         ~Device() {
             waitIdle();
@@ -174,7 +174,9 @@ namespace tt {
 
         tt::Device connectToDevice();
         void connectDevice();
-
+        void disconnectDevice(){
+            upDevice.reset();
+        }
         ~Instance() {
             destroy();
         }
