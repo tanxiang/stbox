@@ -70,10 +70,8 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
         switch (cmd) {
             case APP_CMD_INIT_WINDOW:
                 // The window is being shown, get it ready.
-                st_main_test(0, nullptr);
-                std::cout<<"================================================="<<std::endl;
-                std::cout<<"          APP_CMD_INIT_WINDOW"<<std::endl;
-                std::cout<<"================================================="<<std::endl;
+                st_main_test(*reinterpret_cast<tt::Instance*>(app->userData));
+
                 break;
             case APP_CMD_TERM_WINDOW:
                 // The window is being hidden or closed, clean it up.
@@ -90,23 +88,65 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
     }
 }
 
-int Android_process_command() {
-    assert(Android_application != nullptr);
+int Android_handle_input(struct android_app* app, AInputEvent* event) {
+    assert(app != nullptr);
+    if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
+        int32_t eventSource = AInputEvent_getSource(event);
+        switch (eventSource) {
+            case AINPUT_SOURCE_JOYSTICK: {
+                // Left thumbstick
+                break;
+            }
+
+            case AINPUT_SOURCE_TOUCHSCREEN: {
+                int32_t action = AMotionEvent_getAction(event);
+
+                switch (action) {
+                    case AMOTION_EVENT_ACTION_UP: {
+
+                        return 1;
+                    }
+                    case AMOTION_EVENT_ACTION_DOWN: {
+                        // Detect double tap
+                        break;
+                    }
+                    case AMOTION_EVENT_ACTION_MOVE: {
+                        bool handled = false;
+
+                        break;
+                    }
+                    default:
+                        return 1;
+                }
+            }
+
+                return 1;
+        }
+    }
+}
+
+int Android_process(struct android_app * app) {
+    assert(app != nullptr);
     int events;
     android_poll_source *source;
     // Poll all pending events.
     if (ALooper_pollAll(0, NULL, &events, (void **)&source) >= 0) {
         // Process each polled events
-        if (source != NULL) source->process(Android_application, source);
+        if (source != NULL) source->process(app, source);
     }
-    return Android_application->destroyRequested;
+    return app->destroyRequested;
 }
+
 
 void android_main(struct android_app *app) {
     // Set static variables.
     Android_application = app;
     // Set the callback to process system events
+    auto ttInstance = tt::createInstance();
+
     app->onAppCmd = Android_handle_cmd;
+    app->onInputEvent = Android_handle_input;
+    app->userData = &ttInstance;
 
     // Forward cout/cerr to logcat.
     std::cout.rdbuf(new AndroidBuffer(ANDROID_LOG_INFO));
@@ -114,7 +154,7 @@ void android_main(struct android_app *app) {
 
     // Main loop
     do {
-        Android_process_command();
+        Android_process(app);
     }  // Check if system requested to quit the application
     while (app->destroyRequested == 0);
 

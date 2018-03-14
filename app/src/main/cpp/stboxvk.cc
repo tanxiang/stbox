@@ -17,16 +17,15 @@
 
 
 
-int st_main_test(int argc, char *argv[]) {
+int st_main_test(tt::Instance& ttInstance) {
     std::cout << "main_test" << std::endl;
 
-    auto ttInstance = tt::createInstance();
 
     auto default_queue_index = ttInstance.queueFamilyPropertiesFindFlags(
             vk::QueueFlagBits::eGraphics);
     std::cout << "ttInstance.defaultPhyDevice().createDevice():" << std::endl;
 
-    tt::Device ttDevice {ttInstance.connectToDevice()};
+    auto ttDevice = ttInstance.connectToDevice();
 
     auto cmdBuf = ttDevice.defaultPoolAllocBuffer(vk::CommandBufferLevel::ePrimary, 1);
 
