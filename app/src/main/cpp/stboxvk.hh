@@ -7,5 +7,5 @@
 
 #include "util.hh"
 
-int st_main_test(tt::Instance& ttInstance);
+int draw_run(tt::Device &ttInstance,vk::SurfaceKHR &surfaceKHR);
 #endif //STBOX_STBOXVK_HH

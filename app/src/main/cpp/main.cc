@@ -15,14 +15,15 @@
 #include "shaderc/shaderc.hpp"
 #include "main.hh"
 #include "stboxvk.hh"
+
 static android_app *Android_application = nullptr;
 //#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "STBOX", __VA_ARGS__))
 
-std::pair<int32_t ,int32_t> AndroidGetWindowSize() {
+std::pair<int32_t, int32_t> AndroidGetWindowSize() {
     // On Android, retrieve the window size from the native window.
     assert(Android_application != nullptr);
-    return std::make_pair( ANativeWindow_getWidth(Android_application->window),
-                           ANativeWindow_getHeight(Android_application->window));
+    return std::make_pair(ANativeWindow_getWidth(Android_application->window),
+                          ANativeWindow_getHeight(Android_application->window));
 }
 
 
@@ -40,6 +41,7 @@ public:
 
 private:
     static const int32_t kBufferSize = 128;
+
     int32_t overflow(int32_t c) {
         if (c == traits_type::eof()) {
             *this->pptr() = traits_type::to_char_type(c);
@@ -66,33 +68,46 @@ private:
 };
 
 void Android_handle_cmd(android_app *app, int32_t cmd) {
-    tt::Instance &ttInstace = *reinterpret_cast<tt::Instance*>(app->userData);
+    tt::Instance &ttInstace = *reinterpret_cast<tt::Instance *>(app->userData);
     try {
         switch (cmd) {
-            case APP_CMD_INIT_WINDOW:
+            case APP_CMD_INIT_WINDOW: {
                 // The window is being shown, get it ready.
-                ttInstace.connectWSI();
-                st_main_test(ttInstace);
-
+                assert(app->window);
+                ttInstace.connectWSI(app->window);
+                ttInstace.connectDevice();
+                //auto ttDev = ttInstace.connectToDevice();
+                draw_run(ttInstace.defaultDevice(), ttInstace.defaultSurface());
                 break;
+            }
             case APP_CMD_TERM_WINDOW:
                 // The window is being hidden or closed, clean it up.
                 ttInstace.disconnectWSI();
                 break;
+            case APP_CMD_PAUSE:
+            case APP_CMD_RESUME:
+            case APP_CMD_SAVE_STATE:
+            case APP_CMD_START:
+            case APP_CMD_STOP:
+            case APP_CMD_GAINED_FOCUS:
+            case APP_CMD_LOST_FOCUS:
             default:
-                std::cout<<"event not handled:"<<cmd<<std::endl;
+                std::cout << "event not handled:" << cmd << std::endl;
         }
     }
-    catch (std::system_error systemError){
-        std::cout<<"got system error:"<<systemError.what()<<"!#"<<systemError.code()<<std::endl;
+    catch (std::system_error systemError) {
+        std::cout << "got system error:" << systemError.what() << "!#" << systemError.code()
+                  << std::endl;
     }
-    catch (std::logic_error logicError){
-        std::cout<<"got logic e:"<<logicError.what()<<std::endl;
+    catch (std::logic_error logicError) {
+        std::cout << "got logic error:" << logicError.what() << std::endl;
     }
 }
 
-int Android_handle_input(struct android_app* app, AInputEvent* event) {
-    assert(app != nullptr);
+int Android_handle_input(struct android_app *app, AInputEvent *event) {
+    tt::Instance &ttInstace = *reinterpret_cast<tt::Instance *>(app->userData);
+
+    //todo check window instance device state
     if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
         int32_t eventSource = AInputEvent_getSource(event);
         switch (eventSource) {
@@ -123,18 +138,18 @@ int Android_handle_input(struct android_app* app, AInputEvent* event) {
                 }
             }
 
-                return 1;
+            default:
+                return false;
         }
     }
     return false;
 }
 
-int Android_process(struct android_app * app) {
-    assert(app != nullptr);
+int Android_process(struct android_app *app) {
     int events;
     android_poll_source *source;
     // Poll all pending events.
-    if (ALooper_pollAll(0, NULL, &events, (void **)&source) >= 0) {
+    if (ALooper_pollAll(0, NULL, &events, (void **) &source) >= 0) {
         // Process each polled events
         if (source != NULL) source->process(app, source);
     }
@@ -143,6 +158,7 @@ int Android_process(struct android_app * app) {
 
 
 void android_main(struct android_app *app) {
+    assert(app != nullptr);
     // Set static variables.
     Android_application = app;
     // Set the callback to process system events

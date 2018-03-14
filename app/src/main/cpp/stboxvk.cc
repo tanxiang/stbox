@@ -17,18 +17,17 @@
 
 
 
-int st_main_test(tt::Instance& ttInstance) {
+int draw_run(tt::Device &ttDevice,vk::SurfaceKHR &surfaceKHR) {
     std::cout << "main_test" << std::endl;
 
 
     std::cout << "ttInstance.defaultPhyDevice().createDevice():" << std::endl;
 
-    auto ttDevice = ttInstance.connectToDevice();
 
     auto cmdBuf = ttDevice.defaultPoolAllocBuffer(vk::CommandBufferLevel::ePrimary, 1);
 
 
-    ttDevice.buildSwapchainViewBuffers(ttInstance.defaultSurface());
+    ttDevice.buildSwapchainViewBuffers(surfaceKHR);
 
     auto swapchainExtent = ttDevice.getSwapchainExtent();
     auto Projection = glm::perspective(glm::radians(45.0f),
@@ -46,7 +45,7 @@ int st_main_test(tt::Instance& ttInstance) {
 
     ttDevice.buildMVPBufferAndWrite(Clip * Projection * View * Model);
 
-    ttDevice.buildRenderpass(ttInstance.defaultSurface());
+    ttDevice.buildRenderpass(surfaceKHR);
 
 
     auto vertexBuffer = ttDevice.createBufferUnique(

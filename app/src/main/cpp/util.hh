@@ -103,7 +103,7 @@ namespace tt {
 
         }
 
-        Device() = delete;
+        //Device() = delete;
 
         ~Device() {
             waitIdle();
@@ -136,19 +136,25 @@ namespace tt {
     };
 
     class Instance : public vk::Instance {
-        vk::UniqueSurfaceKHR surfaceKHR;
         std::vector<vk::PhysicalDevice> vkPhysicalDevices = enumeratePhysicalDevices();
+        std::unique_ptr<tt::Device> upDevice;
+        vk::UniqueSurfaceKHR surfaceKHR;
+
     public:
         Instance(vk::Instance &&ins) : vk::Instance{std::move(ins)} {
 
         }
-        Instance(Instance &&i) : vk::Instance{std::move(i)}, surfaceKHR{std::move(i.surfaceKHR)},
-                                 vkPhysicalDevices{std::move(i.vkPhysicalDevices)} {
+        Instance(Instance &&i) : vk::Instance{std::move(i)}, vkPhysicalDevices{std::move(i.vkPhysicalDevices)},
+                                 surfaceKHR{std::move(i.surfaceKHR)},upDevice{std::move(i.upDevice)} {
 
         }
 
         vk::PhysicalDevice &defaultPhyDevice() {
             return vkPhysicalDevices[0];
+        }
+
+        tt::Device &defaultDevice() {
+            return *upDevice;
         }
 
         vk::SurfaceKHR &defaultSurface() {
@@ -157,16 +163,17 @@ namespace tt {
 
         uint32_t queueFamilyPropertiesFindFlags(vk::QueueFlags);
 
-        void connectWSI() {
+        void connectWSI(ANativeWindow* window) {
             surfaceKHR = createAndroidSurfaceKHRUnique(
                     vk::AndroidSurfaceCreateInfoKHR{vk::AndroidSurfaceCreateFlagsKHR(),
-                                                    AndroidGetApplicationWindow()});
+                                                    window});
         }
         void disconnectWSI() {
             surfaceKHR.reset();
         }
 
         tt::Device connectToDevice();
+        void connectDevice();
 
         ~Instance() {
             destroy();

@@ -15,6 +15,7 @@
 #include "shaderc/shaderc.hpp"
 #include "util.hh"
 #include <map>
+
 static const char *vertShaderText =
         "#version 400\n"
                 "#extension GL_ARB_separate_shader_objects : enable\n"
@@ -122,6 +123,25 @@ namespace tt {
                       graphicsQueueIndex};
     }
 
+    void Instance::connectDevice() {
+        auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(vk::QueueFlagBits::eGraphics);
+        std::array<float, 1> queue_priorities{0.0};
+        std::array<vk::DeviceQueueCreateInfo, 1> device_queue_create_infos{
+                vk::DeviceQueueCreateInfo{vk::DeviceQueueCreateFlags(),
+                                          graphicsQueueIndex,
+                                          queue_priorities.size(), queue_priorities.data()
+                }};
+        std::array<const char *, 1> device_extension_names{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+        upDevice.reset(new Device{defaultPhyDevice().createDevice(
+                vk::DeviceCreateInfo {vk::DeviceCreateFlags(),
+                                      device_queue_create_infos.size(),
+                                      device_queue_create_infos.data(),
+                                      0, nullptr, device_extension_names.size(),
+                                      device_extension_names.data()}),
+                              defaultPhyDevice(),
+                              graphicsQueueIndex});
+    }
+
     vk::SurfaceFormatKHR Device::getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR) {
         auto vkDefaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surfaceKHR);
         std::cout << "vk_default_device_formats.size():" << vkDefaultDeviceFormats.size() << " :"
@@ -169,13 +189,14 @@ namespace tt {
     Device::allocMemoryAndWrite(vk::Buffer &buffer, void *pData, size_t dataSize,
                                 vk::MemoryPropertyFlags memoryPropertyFlags) {
         auto memoryRequirements = getBufferMemoryRequirements(buffer);
-        auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits,memoryPropertyFlags);
+        auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits,
+                                             memoryPropertyFlags);
         std::cout << "vertex_memory:alloc index:" << typeIndex << std::endl;
         auto memoryUnique = allocateMemoryUnique(vk::MemoryAllocateInfo{
                 memoryRequirements.size, typeIndex
         });
         auto pMemory = mapMemory(memoryUnique.get(), 0, memoryRequirements.size,
-                                   vk::MemoryMapFlagBits());
+                                 vk::MemoryMapFlagBits());
         memcpy(pMemory, pData, dataSize);
         unmapMemory(memoryUnique.get());
         bindBufferMemory(buffer, memoryUnique.get(), 0);
@@ -230,22 +251,22 @@ namespace tt {
         }
         auto surfaceDefaultFormat = getSurfaceDefaultFormat(surfaceKHR);
         vk::SwapchainCreateInfoKHR swapChainCreateInfo{vk::SwapchainCreateFlagsKHR(),
-                                                          surfaceKHR,
-                                                          surfaceCapabilitiesKHR.minImageCount,
-                                                          surfaceDefaultFormat.format,
-                                                          vk::ColorSpaceKHR::eSrgbNonlinear,
-                                                          swapchainExtent,
-                                                          1,
-                                                          vk::ImageUsageFlags{} |
-                                                          vk::ImageUsageFlagBits::eColorAttachment |
-                                                          vk::ImageUsageFlagBits::eTransferSrc,
-                                                          vk::SharingMode::eExclusive,
-                                                          0,//TODO to spt graphics and present queues from different queue families
-                                                          nullptr,
-                                                          preTransform,
-                                                          compositeAlpha,
-                                                          vk::PresentModeKHR::eFifo,
-                                                          false};
+                                                       surfaceKHR,
+                                                       surfaceCapabilitiesKHR.minImageCount,
+                                                       surfaceDefaultFormat.format,
+                                                       vk::ColorSpaceKHR::eSrgbNonlinear,
+                                                       swapchainExtent,
+                                                       1,
+                                                       vk::ImageUsageFlags{} |
+                                                       vk::ImageUsageFlagBits::eColorAttachment |
+                                                       vk::ImageUsageFlagBits::eTransferSrc,
+                                                       vk::SharingMode::eExclusive,
+                                                       0,//TODO to spt graphics and present queues from different queue families
+                                                       nullptr,
+                                                       preTransform,
+                                                       compositeAlpha,
+                                                       vk::PresentModeKHR::eFifo,
+                                                       false};
         swapchainKHR = createSwapchainKHRUnique(swapChainCreateInfo);
         auto vkSwapChainImages = getSwapchainImagesKHR(swapchainKHR.get());
         std::cout << "vkSwapChainImages size : " << vkSwapChainImages.size() << std::endl;
@@ -335,17 +356,18 @@ namespace tt {
                          vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
 
         unmapMemory(mvpMemory.get());
-        auto mvpBufferInfo=vk::DescriptorBufferInfo{mvpBuffer.get(), 0, sizeof(MVP)};
+        auto mvpBufferInfo = vk::DescriptorBufferInfo{mvpBuffer.get(), 0, sizeof(MVP)};
         bindBufferMemory(mvpBuffer.get(), mvpMemory.get(), 0);
         updateDescriptorSets(
-                std::vector<vk::WriteDescriptorSet>{vk::WriteDescriptorSet{descriptorSets[0].get(), 0, 0, 1,
-                                                                           vk::DescriptorType::eUniformBuffer,
-                                                                           nullptr, &mvpBufferInfo}},
+                std::vector<vk::WriteDescriptorSet>{
+                        vk::WriteDescriptorSet{descriptorSets[0].get(), 0, 0, 1,
+                                               vk::DescriptorType::eUniformBuffer,
+                                               nullptr, &mvpBufferInfo}},
                 nullptr);    //todo use_texture
 
     }
 
-    void Device::buildRenderpass(vk::SurfaceKHR &surfaceKHR){
+    void Device::buildRenderpass(vk::SurfaceKHR &surfaceKHR) {
         auto surfaceDefaultFormat = getSurfaceDefaultFormat(surfaceKHR);
         std::array<vk::AttachmentDescription, 2> attachDescs{
                 vk::AttachmentDescription{
@@ -439,7 +461,7 @@ namespace tt {
 
         std::array<vk::VertexInputBindingDescription, 1> vertexInputBindingDescriptions{
                 vk::VertexInputBindingDescription{
-                        0,dataStepSize,// sizeof(g_vb_solid_face_colors_Data[0]),
+                        0, dataStepSize,// sizeof(g_vb_solid_face_colors_Data[0]),
                         vk::VertexInputRate::eVertex
                 }
         };
@@ -472,7 +494,8 @@ namespace tt {
         };
         vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo{
                 vk::PipelineRasterizationStateCreateFlags(),
-                0, 0, vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise, 0,
+                0, 0, vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack,
+                vk::FrontFace::eClockwise, 0,
                 0, 0, 0, 1.0f
         };
         vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{};
@@ -514,10 +537,10 @@ namespace tt {
         graphicsPipeline = createGraphicsPipelineUnique(vkPipelineCache.get(), pipelineCreateInfo);
     }
 
-    void Device::drawCmdBuffer(vk::CommandBuffer& cmdBuffer,vk::Buffer vertexBuffer){
+    void Device::drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer) {
         auto imageAcquiredSemaphore = createSemaphoreUnique(vk::SemaphoreCreateInfo{});
         auto currentBufferIndex = acquireNextImageKHR(swapchainKHR.get(), UINT64_MAX,
-                                                               imageAcquiredSemaphore.get(), vk::Fence{});
+                                                      imageAcquiredSemaphore.get(), vk::Fence{});
         std::cout << "acquireNextImageKHR:" << vk::to_string(currentBufferIndex.result)
                   << currentBufferIndex.value << std::endl;
         std::array<vk::ClearValue, 2> clearValues{
@@ -533,7 +556,7 @@ namespace tt {
                 clearValues.size(), clearValues.data()
         }, vk::SubpassContents::eInline);
         cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.get());
-        std::array<vk::DescriptorSet,1> tmpDescriptorSets{this->descriptorSets[0].get()};
+        std::array<vk::DescriptorSet, 1> tmpDescriptorSets{this->descriptorSets[0].get()};
         cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout.get(), 0,
                                      tmpDescriptorSets, std::vector<uint32_t>{});
         vk::DeviceSize offsets[1] = {0};
