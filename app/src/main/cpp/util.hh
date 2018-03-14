@@ -173,6 +173,9 @@ namespace tt {
         }
 
         tt::Device connectToDevice();
+        bool connectedDevice(){
+            return upDevice.operator bool();
+        }
         void connectDevice();
         void disconnectDevice(){
             upDevice.reset();

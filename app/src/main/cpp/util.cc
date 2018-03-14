@@ -123,6 +123,7 @@ namespace tt {
                       graphicsQueueIndex};
     }
 
+
     void Instance::connectDevice() {
         auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(vk::QueueFlagBits::eGraphics);
         std::array<float, 1> queue_priorities{0.0};
