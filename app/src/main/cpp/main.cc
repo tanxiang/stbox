@@ -66,15 +66,18 @@ private:
 };
 
 void Android_handle_cmd(android_app *app, int32_t cmd) {
+    tt::Instance &ttInstace = *reinterpret_cast<tt::Instance*>(app->userData);
     try {
         switch (cmd) {
             case APP_CMD_INIT_WINDOW:
                 // The window is being shown, get it ready.
-                st_main_test(*reinterpret_cast<tt::Instance*>(app->userData));
+                ttInstace.connectWSI();
+                st_main_test(ttInstace);
 
                 break;
             case APP_CMD_TERM_WINDOW:
                 // The window is being hidden or closed, clean it up.
+                ttInstace.disconnectWSI();
                 break;
             default:
                 std::cout<<"event not handled:"<<cmd<<std::endl;
@@ -123,6 +126,7 @@ int Android_handle_input(struct android_app* app, AInputEvent* event) {
                 return 1;
         }
     }
+    return false;
 }
 
 int Android_process(struct android_app * app) {
@@ -142,10 +146,11 @@ void android_main(struct android_app *app) {
     // Set static variables.
     Android_application = app;
     // Set the callback to process system events
-    auto ttInstance = tt::createInstance();
 
     app->onAppCmd = Android_handle_cmd;
     app->onInputEvent = Android_handle_input;
+    auto ttInstance = tt::createInstance();
+
     app->userData = &ttInstance;
 
     // Forward cout/cerr to logcat.

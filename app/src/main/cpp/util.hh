@@ -28,16 +28,17 @@ namespace tt {
         vk::UniqueBuffer mvpBuffer;
         vk::UniqueDeviceMemory mvpMemory;
         std::vector<vk::DescriptorSetLayoutBinding> descriptSlBs{{
-                        0,
-                        vk::DescriptorType::eUniformBuffer,
-                        1,
-                        vk::ShaderStageFlagBits::eVertex
-                },{
-                        1,
-                        vk::DescriptorType::eCombinedImageSampler,
-                        1,
-                        vk::ShaderStageFlagBits::eFragment
-                }
+                                                                         0,
+                                                                         vk::DescriptorType::eUniformBuffer,
+                                                                         1,
+                                                                         vk::ShaderStageFlagBits::eVertex
+                                                                 },
+                                                                 {
+                                                                         1,
+                                                                         vk::DescriptorType::eCombinedImageSampler,
+                                                                         1,
+                                                                         vk::ShaderStageFlagBits::eFragment
+                                                                 }
         };
         vk::UniqueDescriptorSetLayout descriptorSetLayout = createDescriptorSetLayoutUnique(
                 vk::DescriptorSetLayoutCreateInfo{
@@ -49,11 +50,11 @@ namespace tt {
                         vk::PipelineLayoutCreateFlags(), 1, &descriptorSetLayout.get(), 0, nullptr
                 });
         std::vector<vk::DescriptorPoolSize> poolSize{{
-                                                   vk::DescriptorType::eUniformBuffer,        1
-                                           },
-                                           {
-                                                   vk::DescriptorType::eCombinedImageSampler, 1
-                                           }};
+                                                             vk::DescriptorType::eUniformBuffer,        1
+                                                     },
+                                                     {
+                                                             vk::DescriptorType::eCombinedImageSampler, 1
+                                                     }};
         vk::UniqueDescriptorPool descriptorPoll = createDescriptorPoolUnique(
                 vk::DescriptorPoolCreateInfo{
                         vk::DescriptorPoolCreateFlags(), 1, poolSize.size(), poolSize.data()});
@@ -66,6 +67,7 @@ namespace tt {
         vk::UniquePipelineCache vkPipelineCache = createPipelineCacheUnique(
                 vk::PipelineCacheCreateInfo{});
         vk::UniquePipeline graphicsPipeline;
+
         uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
     public:
@@ -102,6 +104,7 @@ namespace tt {
         }
 
         Device() = delete;
+
         ~Device() {
             waitIdle();
             destroy();
@@ -133,12 +136,14 @@ namespace tt {
     };
 
     class Instance : public vk::Instance {
-        vk::SurfaceKHR surfaceKHR = createAndroidSurfaceKHR(
-                vk::AndroidSurfaceCreateInfoKHR{vk::AndroidSurfaceCreateFlagsKHR(),
-                                                AndroidGetApplicationWindow()});
+        vk::UniqueSurfaceKHR surfaceKHR;
         std::vector<vk::PhysicalDevice> vkPhysicalDevices = enumeratePhysicalDevices();
     public:
-        Instance(vk::Instance ins) : vk::Instance{ins} {
+        Instance(vk::Instance &&ins) : vk::Instance{std::move(ins)} {
+
+        }
+        Instance(Instance &&i) : vk::Instance{std::move(i)}, surfaceKHR{std::move(i.surfaceKHR)},
+                                 vkPhysicalDevices{std::move(i.vkPhysicalDevices)} {
 
         }
 
@@ -147,15 +152,23 @@ namespace tt {
         }
 
         vk::SurfaceKHR &defaultSurface() {
-            return surfaceKHR;
+            return surfaceKHR.get();
         }
 
         uint32_t queueFamilyPropertiesFindFlags(vk::QueueFlags);
 
+        void connectWSI() {
+            surfaceKHR = createAndroidSurfaceKHRUnique(
+                    vk::AndroidSurfaceCreateInfoKHR{vk::AndroidSurfaceCreateFlagsKHR(),
+                                                    AndroidGetApplicationWindow()});
+        }
+        void disconnectWSI() {
+            surfaceKHR.reset();
+        }
+
         tt::Device connectToDevice();
 
         ~Instance() {
-            destroySurfaceKHR(surfaceKHR);
             destroy();
         }
 

@@ -21,8 +21,6 @@ int st_main_test(tt::Instance& ttInstance) {
     std::cout << "main_test" << std::endl;
 
 
-    auto default_queue_index = ttInstance.queueFamilyPropertiesFindFlags(
-            vk::QueueFlagBits::eGraphics);
     std::cout << "ttInstance.defaultPhyDevice().createDevice():" << std::endl;
 
     auto ttDevice = ttInstance.connectToDevice();
