@@ -27,7 +27,6 @@ int draw_run(tt::Device &ttDevice,vk::SurfaceKHR &surfaceKHR) {
     auto cmdBuf = ttDevice.defaultPoolAllocBuffer(vk::CommandBufferLevel::ePrimary, 1);
 
 
-    ttDevice.buildSwapchainViewBuffers(surfaceKHR);
 
     auto swapchainExtent = ttDevice.getSwapchainExtent();
     auto Projection = glm::perspective(glm::radians(45.0f),

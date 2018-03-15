@@ -76,16 +76,19 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 assert(app->window);
                 if(!ttInstace.connectedDevice())
                     ttInstace.connectDevice();
-
                 ttInstace.connectWSI(app->window);
+
+                ttInstace.defaultDevice().buildSwapchainViewBuffers(ttInstace.defaultSurface());
+
                 //auto ttDev = ttInstace.connectToDevice();
                 draw_run(ttInstace.defaultDevice(), ttInstace.defaultSurface());
                 break;
             }
             case APP_CMD_TERM_WINDOW:
                 // The window is being hidden or closed, clean it up.
-                ttInstace.disconnectDevice();
+                ttInstace.defaultDevice().clearMisc();
                 ttInstace.disconnectWSI();
+                //ttInstace.disconnectDevice();
                 break;
             case APP_CMD_DESTROY:
                 ttInstace.disconnectDevice();

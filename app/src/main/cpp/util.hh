@@ -124,6 +124,17 @@ namespace tt {
         vk::UniqueDeviceMemory allocMemoryAndWrite(vk::Buffer &buffer, void *pData, size_t dataSize,
                                                    vk::MemoryPropertyFlags memoryPropertyFlags);
 
+        void clearMisc(){
+            renderPass.reset();
+            graphicsPipeline.reset();
+            vkPipelineCache.reset();
+            frameBuffers.clear();
+            vkSwapChainBuffers.clear();
+            swapchainKHR.reset();
+            depthImage.reset();
+            depthImageView.reset();
+            depthImageMemory.reset();
+        }
         void buildSwapchainViewBuffers(vk::SurfaceKHR &surfaceKHR);
 
         void buildMVPBufferAndWrite(glm::mat4 MVP);
