@@ -417,7 +417,7 @@ namespace tt {
                 attachDescs.size(), attachDescs.data(),
                 subpassDescs.size(), subpassDescs.data()
         });
-
+        frameBuffers.clear();
         for (auto &vkSwapChainBuffer : vkSwapChainBuffers) {
             vk::ImageView attachments[2]{vkSwapChainBuffer.second.get(), depthImageView.get()};
             frameBuffers.emplace_back(createFramebufferUnique(vk::FramebufferCreateInfo{
@@ -587,6 +587,6 @@ namespace tt {
         });
         std::cout << "presentKHR:index" << currentBufferIndex.value << "ret:"
                   << vk::to_string(presentRet) << std::endl;
-        sleep(1);
+        //sleep(1);
     }
 }

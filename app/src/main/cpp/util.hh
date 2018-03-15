@@ -125,15 +125,15 @@ namespace tt {
                                                    vk::MemoryPropertyFlags memoryPropertyFlags);
 
         void clearMisc(){
-            renderPass.reset();
-            graphicsPipeline.reset();
-            vkPipelineCache.reset();
-            frameBuffers.clear();
-            vkSwapChainBuffers.clear();
-            swapchainKHR.reset();
-            depthImage.reset();
-            depthImageView.reset();
-            depthImageMemory.reset();
+            //renderPass.reset();
+            //graphicsPipeline.reset();
+            //vkPipelineCache.reset();
+            //frameBuffers.clear();
+            //vkSwapChainBuffers.clear();
+            //swapchainKHR.reset();
+            //depthImage.reset();
+            //depthImageView.reset();
+            //depthImageMemory.reset();
         }
         void buildSwapchainViewBuffers(vk::SurfaceKHR &surfaceKHR);
 
