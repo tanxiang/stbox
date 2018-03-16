@@ -10,6 +10,8 @@
 #include "util.hh"
 
 // Header files.
+#include <android/choreographer.h>
+
 #include <android_native_app_glue.h>
 #include <cstring>
 #include "shaderc/shaderc.hpp"
@@ -67,6 +69,16 @@ private:
     char buffer_[kBufferSize];
 };
 
+void choreographerCallback(long frameTimeNanos, void* data) {
+    std::cout <<data<< "got choreographerCallback:nano=" << frameTimeNanos << " getid:" << gettid()
+              << std::endl;
+    tt::Instance &ttInstace = *reinterpret_cast<tt::Instance *>(data);
+    if (ttInstace.isFocus()) {
+        AChoreographer_postFrameCallback(AChoreographer_getInstance(), choreographerCallback,
+                                         &ttInstace);
+
+    }
+}
 void Android_handle_cmd(android_app *app, int32_t cmd) {
     tt::Instance &ttInstace = *reinterpret_cast<tt::Instance *>(app->userData);
     try {
@@ -86,20 +98,37 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
             }
             case APP_CMD_TERM_WINDOW:
                 // The window is being hidden or closed, clean it up.
-                ttInstace.defaultDevice().clearMisc();
+                //ttInstace.defaultDevice().clearMisc();
+                ttInstace.unsetFocus();
+
                 ttInstace.disconnectWSI();
                 //ttInstace.disconnectDevice();
                 break;
             case APP_CMD_DESTROY:
+                ttInstace.unsetFocus();
+
                 ttInstace.disconnectDevice();
                 break;
+            case APP_CMD_STOP:
             case APP_CMD_PAUSE:
+                ttInstace.unsetFocus();
+                break;
+
             case APP_CMD_RESUME:
             case APP_CMD_SAVE_STATE:
             case APP_CMD_START:
-            case APP_CMD_STOP:
             case APP_CMD_GAINED_FOCUS:
+                std::cout << "send choreographerCallback getid:"<<gettid()<<std::endl;
+                ttInstace.setFocus();
+                AChoreographer_postFrameCallback(AChoreographer_getInstance(),choreographerCallback,&ttInstace);
+                if (ttInstace.isFocus()) {
+                    std::cout << app->userData << "fksend choreographerCallback: getid:" << gettid()
+                              << std::endl;
+                }
+                break;
             case APP_CMD_LOST_FOCUS:
+                ttInstace.unsetFocus();
+                break;
             default:
                 std::cout << "event not handled:" << cmd << std::endl;
         }
@@ -178,15 +207,18 @@ void android_main(struct android_app *app) {
 
     app->userData = &ttInstance;
 
+
     // Forward cout/cerr to logcat.
     std::cout.rdbuf(new AndroidBuffer(ANDROID_LOG_INFO));
     std::cerr.rdbuf(new AndroidBuffer(ANDROID_LOG_ERROR));
+
 
     // Main loop
     do {
         Android_process(app);
     }  // Check if system requested to quit the application
     while (app->destroyRequested == 0);
+
 
     return;
 }

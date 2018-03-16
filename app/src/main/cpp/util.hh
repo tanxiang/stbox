@@ -150,7 +150,7 @@ namespace tt {
         std::vector<vk::PhysicalDevice> vkPhysicalDevices = enumeratePhysicalDevices();
         std::unique_ptr<tt::Device> upDevice;
         vk::UniqueSurfaceKHR surfaceKHR;
-
+        bool focus = false;
     public:
         Instance(vk::Instance &&ins) : vk::Instance{std::move(ins)} {
 
@@ -190,6 +190,15 @@ namespace tt {
         void connectDevice();
         void disconnectDevice(){
             upDevice.reset();
+        }
+        void setFocus(){
+            focus = true;
+        }
+        void unsetFocus(){
+            focus = false;
+        }
+        bool isFocus(){
+            return focus;
         }
         ~Instance() {
             destroy();
