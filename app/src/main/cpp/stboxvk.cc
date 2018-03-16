@@ -17,12 +17,10 @@
 
 
 
-int draw_run(tt::Device &ttDevice,vk::SurfaceKHR &surfaceKHR) {
-    std::cout << "draw_run" << std::endl;
+int draw_run(tt::Device &ttDevice,vk::SurfaceKHR &surfaceKHR,long timeNano) {
+    //std::cout << "draw_run" << std::endl;
 
     auto cmdBuf = ttDevice.defaultPoolAllocBuffer(vk::CommandBufferLevel::ePrimary, 1);
-
-
 
     auto swapchainExtent = ttDevice.getSwapchainExtent();
     auto Projection = glm::perspective(glm::radians(45.0f),
@@ -33,13 +31,13 @@ int draw_run(tt::Device &ttDevice,vk::SurfaceKHR &surfaceKHR) {
                             glm::vec3(0, 0, 0),     // and looks at the origin
                             glm::vec3(0, -1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
     );
-    View = glm::rotate(View,glm::radians(1.0f),glm::vec3(1.0f, 0.0f, 0.0f));
+    glm::rotate(View,glm::radians(1.0f),glm::vec3(1.0f, 0.0f, 0.0f));
     static auto Model = glm::mat4{1.0f};
     // Vulkan clip space has inverted Y and half Z.
     static auto Clip = glm::mat4{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f,
                           0.0f, 0.0f, 0.5f, 1.0f};
 
-    ttDevice.updateMVPBuffer(Clip * Projection * View * Model);
+    ttDevice.updateMVPBuffer(Clip * Projection * glm::rotate(View,glm::radians((float)timeNano/10000000.0f),glm::vec3(1.0f, 0.0f, 0.0f)) * Model);
 
     ttDevice.buildRenderpass(surfaceKHR);
 

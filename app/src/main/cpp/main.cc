@@ -7,6 +7,8 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
+#include <chrono>
+
 #include "util.hh"
 
 // Header files.
@@ -71,11 +73,11 @@ private:
 
 void choreographerCallback(long frameTimeNanos, void* data) {
     assert(data);
-    std::cout <<data<< "got choreographerCallback:nano=" << frameTimeNanos << " getid:" << gettid()
-              << std::endl;
     tt::Instance &ttInstance = *reinterpret_cast<tt::Instance *>(data);
-    draw_run(ttInstance.defaultDevice(), ttInstance.defaultSurface());
-
+    draw_run(ttInstance.defaultDevice(), ttInstance.defaultSurface(),frameTimeNanos);
+    auto nanoTime = std::chrono::steady_clock::now();
+    if(nanoTime.time_since_epoch().count() > frameTimeNanos)
+        std::cout <<"later"<< nanoTime.time_since_epoch().count() - frameTimeNanos  << " nanoseconds" <<std::endl;
     if (ttInstance.isFocus()) {
         AChoreographer_postFrameCallback(AChoreographer_getInstance(), choreographerCallback,
                                          &ttInstance);

@@ -7,5 +7,5 @@
 
 #include "util.hh"
 
-int draw_run(tt::Device &ttInstance,vk::SurfaceKHR &surfaceKHR);
+int draw_run(tt::Device &ttInstance,vk::SurfaceKHR &surfaceKHR,long timeNano = 0);
 #endif //STBOX_STBOXVK_HH

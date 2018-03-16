@@ -556,8 +556,8 @@ namespace tt {
         auto imageAcquiredSemaphore = createSemaphoreUnique(vk::SemaphoreCreateInfo{});
         auto currentBufferIndex = acquireNextImageKHR(swapchainKHR.get(), UINT64_MAX,
                                                       imageAcquiredSemaphore.get(), vk::Fence{});
-        std::cout << "acquireNextImageKHR:" << vk::to_string(currentBufferIndex.result)
-                  << currentBufferIndex.value << std::endl;
+        //std::cout << "acquireNextImageKHR:" << vk::to_string(currentBufferIndex.result)
+        //          << currentBufferIndex.value << std::endl;
         std::array<vk::ClearValue, 2> clearValues{
                 vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
                 vk::ClearDepthStencilValue{1.0f, 0},
@@ -593,14 +593,14 @@ namespace tt {
         vk::Result waitRet;
         do {
             waitRet = waitForFences(1, drawFence.operator->(), true, 1000000);
-            std::cout << "waitForFences ret:" << vk::to_string(waitRet) << std::endl;
+            //std::cout << "waitForFences ret:" << vk::to_string(waitRet) << std::endl;
         } while (waitRet == vk::Result::eTimeout);
 
         auto presentRet = vk_queue.presentKHR(vk::PresentInfoKHR{
                 0, nullptr, 1, &swapchainKHR.get(), &currentBufferIndex.value
         });
-        std::cout << "presentKHR:index" << currentBufferIndex.value << "ret:"
-                  << vk::to_string(presentRet) << std::endl;
+        //std::cout << "presentKHR:index" << currentBufferIndex.value << "ret:"
+        //          << vk::to_string(presentRet) << std::endl;
         //sleep(1);
     }
 }
