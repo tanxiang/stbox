@@ -73,66 +73,66 @@ void choreographerCallback(long frameTimeNanos, void* data) {
     assert(data);
     std::cout <<data<< "got choreographerCallback:nano=" << frameTimeNanos << " getid:" << gettid()
               << std::endl;
-    tt::Instance &ttInstace = *reinterpret_cast<tt::Instance *>(data);
-    draw_run(ttInstace.defaultDevice(), ttInstace.defaultSurface());
+    tt::Instance &ttInstance = *reinterpret_cast<tt::Instance *>(data);
+    draw_run(ttInstance.defaultDevice(), ttInstance.defaultSurface());
 
-    if (ttInstace.isFocus()) {
+    if (ttInstance.isFocus()) {
         AChoreographer_postFrameCallback(AChoreographer_getInstance(), choreographerCallback,
-                                         &ttInstace);
+                                         &ttInstance);
     }
 }
 
 void Android_handle_cmd(android_app *app, int32_t cmd) {
-    tt::Instance &ttInstace = *reinterpret_cast<tt::Instance *>(app->userData);
+    tt::Instance &ttInstance = *reinterpret_cast<tt::Instance *>(app->userData);
     try {
         switch (cmd) {
             case APP_CMD_INIT_WINDOW: {
                 // The window is being shown, get it ready.
                 assert(app->window);
-                if(!ttInstace.connectedDevice())
-                    ttInstace.connectDevice();
-                ttInstace.connectWSI(app->window);
+                if(!ttInstance.connectedDevice())
+                    ttInstance.connectDevice();
+                ttInstance.connectWSI(app->window);
 
-                ttInstace.defaultDevice().buildSwapchainViewBuffers(ttInstace.defaultSurface());
+                ttInstance.defaultDevice().buildSwapchainViewBuffers(ttInstance.defaultSurface());
 
-                //auto ttDev = ttInstace.connectToDevice();
+                //auto ttDev = ttInstance.connectToDevice();
                 break;
             }
             case APP_CMD_TERM_WINDOW:
                 // The window is being hidden or closed, clean it up.
-                ttInstace.defaultDevice().clearFameBuffers();
-                ttInstace.unsetFocus();
+                ttInstance.defaultDevice().clearFameBuffers();
+                ttInstance.unsetFocus();
 
-                ttInstace.disconnectWSI();
-                //ttInstace.disconnectDevice();
+                ttInstance.disconnectWSI();
+                //ttInstance.disconnectDevice();
                 break;
             case APP_CMD_DESTROY:
-                ttInstace.unsetFocus();
-                ttInstace.defaultDevice().clearFameBuffers();
-                ttInstace.disconnectDevice();
+                ttInstance.unsetFocus();
+                ttInstance.defaultDevice().clearFameBuffers();
+                ttInstance.disconnectDevice();
                 break;
             case APP_CMD_STOP:
             case APP_CMD_PAUSE:
-                ttInstace.unsetFocus();
+                ttInstance.unsetFocus();
                 break;
 
             case APP_CMD_RESUME:
-                ttInstace.setFocus();
+                ttInstance.setFocus();
                 break;
             case APP_CMD_SAVE_STATE:
             case APP_CMD_START:
                 break;
             case APP_CMD_GAINED_FOCUS:
-                ttInstace.setFocus();
+                ttInstance.setFocus();
                 std::cout << "got APP_CMD_INIT_WINDOW:" << gettid()<<std::endl;
-                AChoreographer_postFrameCallback(AChoreographer_getInstance(),choreographerCallback,&ttInstace);
-                if (ttInstace.isFocus()) {
+                AChoreographer_postFrameCallback(AChoreographer_getInstance(),choreographerCallback,&ttInstance);
+                if (ttInstance.isFocus()) {
                     std::cout << app->userData << "fksend choreographerCallback: getid:" << gettid()
                               << std::endl;
                 }
                 break;
             case APP_CMD_LOST_FOCUS:
-                ttInstace.unsetFocus();
+                ttInstance.unsetFocus();
                 break;
             default:
                 std::cout << "event not handled:" << cmd << std::endl;
@@ -148,7 +148,7 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
 }
 
 int Android_handle_input(struct android_app *app, AInputEvent *event) {
-    tt::Instance &ttInstace = *reinterpret_cast<tt::Instance *>(app->userData);
+    tt::Instance &ttInstance = *reinterpret_cast<tt::Instance *>(app->userData);
 
     //todo check window instance device state
     if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
