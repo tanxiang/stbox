@@ -368,7 +368,19 @@ namespace tt {
 
     }
 
+    void Device::updateMVPBuffer(glm::mat4 MVP) {
+        if(mvpBuffer&&mvpMemory){
+            auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer.get());
+            memcpy(mapMemory(mvpMemory.get(), 0, mvpBufferMemoryRq.size,
+                             vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
+            unmapMemory(mvpMemory.get());
+        }
+        else return buildMVPBufferAndWrite(MVP);
+    }
+
     void Device::buildRenderpass(vk::SurfaceKHR &surfaceKHR) {
+        if(renderPass && !frameBuffers.empty())
+            return;
         auto surfaceDefaultFormat = getSurfaceDefaultFormat(surfaceKHR);
         std::array<vk::AttachmentDescription, 2> attachDescs{
                 vk::AttachmentDescription{
@@ -431,19 +443,21 @@ namespace tt {
     }
 
     void Device::buildPipeline(uint32_t dataStepSize) {
-        auto vertShaderSpirv = GLSLtoSPV(vk::ShaderStageFlagBits::eVertex, vertShaderText);
+        if(graphicsPipeline)
+            return;
+        static auto vertShaderSpirv = GLSLtoSPV(vk::ShaderStageFlagBits::eVertex, vertShaderText);
         std::cout << "vertShaderSpirv len:" << vertShaderSpirv.size() << 'x'
                   << sizeof(decltype(vertShaderSpirv)
         ::value_type)<<std::endl;
-        auto fargShaderSpirv = GLSLtoSPV(vk::ShaderStageFlagBits::eFragment, fragShaderText);
+        static auto fargShaderSpirv = GLSLtoSPV(vk::ShaderStageFlagBits::eFragment, fragShaderText);
         std::cout << "fargShaderSpirv len:" << fargShaderSpirv.size() << 'x'
                   << sizeof(decltype(fargShaderSpirv)
         ::value_type)<<std::endl;
-        auto vertShaderModule = createShaderModuleUnique(vk::ShaderModuleCreateInfo{
+        static auto vertShaderModule = createShaderModuleUnique(vk::ShaderModuleCreateInfo{
                 vk::ShaderModuleCreateFlags(), vertShaderSpirv.size() *
                                                sizeof(decltype(vertShaderSpirv)::value_type), vertShaderSpirv.data()
         });
-        auto fargShaderModule = createShaderModuleUnique(vk::ShaderModuleCreateInfo{
+        static auto fargShaderModule = createShaderModuleUnique(vk::ShaderModuleCreateInfo{
                 vk::ShaderModuleCreateFlags(), fargShaderSpirv.size() *
                                                sizeof(decltype(fargShaderSpirv)::value_type), fargShaderSpirv.data()
         });
@@ -565,7 +579,7 @@ namespace tt {
         cmdBuffer.draw(12 * 3, 1, 0, 0);
         cmdBuffer.endRenderPass();
         cmdBuffer.end();
-        auto drawFence = createFence(vk::FenceCreateInfo{});
+        auto drawFence = createFenceUnique(vk::FenceCreateInfo{});
         vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
         std::array<vk::SubmitInfo, 1> submitInfos{
                 vk::SubmitInfo{
@@ -575,10 +589,10 @@ namespace tt {
         };
         auto vk_queue = getQueue(queueFamilyIndex, 0);
         //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
-        vk_queue.submit(submitInfos, drawFence);
+        vk_queue.submit(submitInfos, drawFence.get());
         vk::Result waitRet;
         do {
-            waitRet = waitForFences(1, &drawFence, true, 1000000);
+            waitRet = waitForFences(1, drawFence.operator->(), true, 1000000);
             std::cout << "waitForFences ret:" << vk::to_string(waitRet) << std::endl;
         } while (waitRet == vk::Result::eTimeout);
 

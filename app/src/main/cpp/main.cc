@@ -70,15 +70,18 @@ private:
 };
 
 void choreographerCallback(long frameTimeNanos, void* data) {
+    assert(data);
     std::cout <<data<< "got choreographerCallback:nano=" << frameTimeNanos << " getid:" << gettid()
               << std::endl;
     tt::Instance &ttInstace = *reinterpret_cast<tt::Instance *>(data);
+    draw_run(ttInstace.defaultDevice(), ttInstace.defaultSurface());
+
     if (ttInstace.isFocus()) {
         AChoreographer_postFrameCallback(AChoreographer_getInstance(), choreographerCallback,
                                          &ttInstace);
-
     }
 }
+
 void Android_handle_cmd(android_app *app, int32_t cmd) {
     tt::Instance &ttInstace = *reinterpret_cast<tt::Instance *>(app->userData);
     try {
@@ -93,12 +96,11 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 ttInstace.defaultDevice().buildSwapchainViewBuffers(ttInstace.defaultSurface());
 
                 //auto ttDev = ttInstace.connectToDevice();
-                draw_run(ttInstace.defaultDevice(), ttInstace.defaultSurface());
                 break;
             }
             case APP_CMD_TERM_WINDOW:
                 // The window is being hidden or closed, clean it up.
-                //ttInstace.defaultDevice().clearMisc();
+                ttInstace.defaultDevice().clearFameBuffers();
                 ttInstace.unsetFocus();
 
                 ttInstace.disconnectWSI();
@@ -106,7 +108,7 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 break;
             case APP_CMD_DESTROY:
                 ttInstace.unsetFocus();
-
+                ttInstace.defaultDevice().clearFameBuffers();
                 ttInstace.disconnectDevice();
                 break;
             case APP_CMD_STOP:
@@ -115,11 +117,14 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 break;
 
             case APP_CMD_RESUME:
+                ttInstace.setFocus();
+                break;
             case APP_CMD_SAVE_STATE:
             case APP_CMD_START:
+                break;
             case APP_CMD_GAINED_FOCUS:
-                std::cout << "send choreographerCallback getid:"<<gettid()<<std::endl;
                 ttInstace.setFocus();
+                std::cout << "got APP_CMD_INIT_WINDOW:" << gettid()<<std::endl;
                 AChoreographer_postFrameCallback(AChoreographer_getInstance(),choreographerCallback,&ttInstace);
                 if (ttInstace.isFocus()) {
                     std::cout << app->userData << "fksend choreographerCallback: getid:" << gettid()
