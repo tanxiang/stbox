@@ -71,13 +71,16 @@ private:
     char buffer_[kBufferSize];
 };
 
+
 void choreographerCallback(long frameTimeNanos, void* data) {
     assert(data);
+
+
     tt::Instance &ttInstance = *reinterpret_cast<tt::Instance *>(data);
     draw_run(ttInstance.defaultDevice(), ttInstance.defaultSurface(),frameTimeNanos);
-    auto nanoTime = std::chrono::steady_clock::now();
-    if(nanoTime.time_since_epoch().count() > frameTimeNanos)
-        std::cout <<"later"<< nanoTime.time_since_epoch().count() - frameTimeNanos  << " nanoseconds" <<std::endl;
+    auto laterTime = (std::chrono::steady_clock::now().time_since_epoch().count() - frameTimeNanos )/ 1000000;
+    if(laterTime > 12)
+        std::cout <<"later"<< laterTime << " minseconds" <<std::endl;
     if (ttInstance.isFocus()) {
         AChoreographer_postFrameCallback(AChoreographer_getInstance(), choreographerCallback,
                                          &ttInstance);
