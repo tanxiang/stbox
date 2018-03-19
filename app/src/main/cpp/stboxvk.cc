@@ -19,6 +19,7 @@
 
 int draw_run(tt::Device &ttDevice,vk::SurfaceKHR &surfaceKHR,long timeNano) {
     //std::cout << "draw_run" << std::endl;
+    ttDevice.buildPipeline(sizeof(g_vb_solid_face_colors_Data[0]));
 
     auto cmdBuf = ttDevice.defaultPoolAllocBuffer(vk::CommandBufferLevel::ePrimary, 1);
 
@@ -54,7 +55,6 @@ int draw_run(tt::Device &ttDevice,vk::SurfaceKHR &surfaceKHR,long timeNano) {
                                                          vk::MemoryPropertyFlagBits::eHostVisible |
                                                          vk::MemoryPropertyFlagBits::eHostCoherent);
     }
-    ttDevice.buildPipeline(sizeof(g_vb_solid_face_colors_Data[0]));
 
     ttDevice.drawCmdBuffer(cmdBuf[0],vertexBuffer.get());
 

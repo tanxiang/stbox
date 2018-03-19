@@ -575,7 +575,6 @@ namespace tt {
         cmdBuffer.draw(12 * 3, 1, 0, 0);
         cmdBuffer.endRenderPass();
         cmdBuffer.end();
-        auto drawFence = createFenceUnique(vk::FenceCreateInfo{});
         vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
         std::array<vk::SubmitInfo, 1> submitInfos{
                 vk::SubmitInfo{
@@ -585,10 +584,10 @@ namespace tt {
         };
         auto vk_queue = getQueue(queueFamilyIndex, 0);
         //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
-        vk_queue.submit(submitInfos, drawFence.get());
+        vk_queue.submit(submitInfos,std::get<vk::UniqueFence>(vkSwapChainBuffers[currentBufferIndex.value]).get());
         vk::Result waitRet;
         do {
-            waitRet = waitForFences(1, drawFence.operator->(), true, 1000000);
+            waitRet = waitForFences(1, std::get<vk::UniqueFence>(vkSwapChainBuffers[currentBufferIndex.value]).operator->(), true, 1000000);
             //std::cout << "waitForFences ret:" << vk::to_string(waitRet) << std::endl;
         } while (waitRet == vk::Result::eTimeout);
 
