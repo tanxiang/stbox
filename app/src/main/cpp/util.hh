@@ -10,9 +10,9 @@
 #include "vulkan.hpp"
 #include "main.hh"
 #include "glm/glm.hpp"
-
+#include <thread>
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);
-
+#define SWAPCHAIN_NUM 3
 namespace tt {
     class Device : public vk::Device {
         vk::PhysicalDevice &physicalDevice;
@@ -21,7 +21,7 @@ namespace tt {
         vk::UniqueSwapchainKHR swapchainKHR;
         vk::Extent2D swapchainExtent;
         vk::Format depthFormat = vk::Format::eD24UnormS8Uint;
-        std::vector<std::pair<vk::Image, vk::UniqueImageView>> vkSwapChainBuffers;
+        std::vector<std::tuple<vk::Image,vk::UniqueImageView,vk::UniqueFramebuffer,vk::UniqueFence>> vkSwapChainBuffers;
         vk::UniqueImage depthImage;
         vk::UniqueImageView depthImageView;
         vk::UniqueDeviceMemory depthImageMemory;
@@ -63,11 +63,12 @@ namespace tt {
                         descriptorPoll.get(), 1, &descriptorSetLayout.get()
                 });
         vk::UniqueRenderPass renderPass;
-        std::vector<vk::UniqueFramebuffer> frameBuffers;
+        //std::vector<vk::UniqueFramebuffer> frameBuffers;
         vk::UniquePipelineCache vkPipelineCache = createPipelineCacheUnique(
                 vk::PipelineCacheCreateInfo{});
         vk::UniquePipeline graphicsPipeline;
 
+        std::thread submitThread;
         uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
     public:
@@ -97,7 +98,7 @@ namespace tt {
                                    descriptorPoll{std::move(odevice.descriptorPoll)},
                                    descriptorSets{std::move(odevice.descriptorSets)},
                                    renderPass{std::move(odevice.renderPass)},
-                                   frameBuffers{std::move(odevice.frameBuffers)},
+                                   //frameBuffers{std::move(odevice.frameBuffers)},
                                    vkPipelineCache{std::move(odevice.vkPipelineCache)},
                                    graphicsPipeline{std::move(odevice.graphicsPipeline)} {
 
@@ -131,9 +132,8 @@ namespace tt {
         void buildRenderpass(vk::SurfaceKHR &surfaceKHR);
 
         void buildPipeline(uint32_t dataStepSize);
-        void clearFameBuffers(){
+        void renderPassReset(){
             renderPass.reset();
-            frameBuffers.clear();
         }
         void drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer);
     };

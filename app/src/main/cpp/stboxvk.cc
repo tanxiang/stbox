@@ -39,8 +39,6 @@ int draw_run(tt::Device &ttDevice,vk::SurfaceKHR &surfaceKHR,long timeNano) {
 
     ttDevice.updateMVPBuffer(Clip * Projection * glm::rotate(View,glm::radians((float)timeNano/10000000.0f),glm::vec3(1.0f, 0.0f, 0.0f)) * Model);
 
-    ttDevice.buildRenderpass(surfaceKHR);
-
     static vk::UniqueBuffer vertexBuffer;
     static vk::UniqueDeviceMemory vertexMemory;
     if(!vertexBuffer || !vertexMemory) {

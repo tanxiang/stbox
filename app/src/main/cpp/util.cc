@@ -139,8 +139,8 @@ namespace tt {
                                       device_queue_create_infos.data(),
                                       0, nullptr, device_extension_names.size(),
                                       device_extension_names.data()}),
-                              defaultPhyDevice(),
-                              graphicsQueueIndex});
+                                  defaultPhyDevice(),
+                                  graphicsQueueIndex});
     }
 
     vk::SurfaceFormatKHR Device::getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR) {
@@ -229,74 +229,14 @@ namespace tt {
         }
         std::cout << "swapchainExtent : " << swapchainExtent.width << " x "
                   << swapchainExtent.height << std::endl;
-
-        vk::SurfaceTransformFlagBitsKHR preTransform{};
-        if (surfaceCapabilitiesKHR.supportedTransforms &
-            vk::SurfaceTransformFlagBitsKHR::eIdentity) {
-            preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
-        } else {
-            preTransform = surfaceCapabilitiesKHR.currentTransform;
-        }
-        vk::CompositeAlphaFlagBitsKHR compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-        vk::CompositeAlphaFlagBitsKHR compositeAlphaFlags[4] = {
-                vk::CompositeAlphaFlagBitsKHR::eOpaque,
-                vk::CompositeAlphaFlagBitsKHR::ePreMultiplied,
-                vk::CompositeAlphaFlagBitsKHR::ePostMultiplied,
-                vk::CompositeAlphaFlagBitsKHR::eInherit
-        };
-        for (auto &compositeAlphaFlag:compositeAlphaFlags) {
-            if (surfaceCapabilitiesKHR.supportedCompositeAlpha & compositeAlphaFlag) {
-                compositeAlpha = compositeAlphaFlag;
-                break;
-            }
-        }
+        auto defaultDevFormatProps = physicalDevice.getFormatProperties(depthFormat);
         auto surfaceDefaultFormat = getSurfaceDefaultFormat(surfaceKHR);
-        vk::SwapchainCreateInfoKHR swapChainCreateInfo{vk::SwapchainCreateFlagsKHR(),
-                                                       surfaceKHR,
-                                                       surfaceCapabilitiesKHR.minImageCount,
-                                                       surfaceDefaultFormat.format,
-                                                       vk::ColorSpaceKHR::eSrgbNonlinear,
-                                                       swapchainExtent,
-                                                       1,
-                                                       vk::ImageUsageFlags{} |
-                                                       vk::ImageUsageFlagBits::eColorAttachment |
-                                                       vk::ImageUsageFlagBits::eTransferSrc,
-                                                       vk::SharingMode::eExclusive,
-                                                       0,//TODO to spt graphics and present queues from different queue families
-                                                       nullptr,
-                                                       preTransform,
-                                                       compositeAlpha,
-                                                       vk::PresentModeKHR::eFifo,
-                                                       false};
-        swapchainKHR = createSwapchainKHRUnique(swapChainCreateInfo);
-        auto vkSwapChainImages = getSwapchainImagesKHR(swapchainKHR.get());
-        std::cout << "vkSwapChainImages size : " << vkSwapChainImages.size() << std::endl;
 
-        vkSwapChainBuffers.clear();
-        for (auto &vkSwapChainImage : vkSwapChainImages) {
-            vkSwapChainBuffers.emplace_back(vkSwapChainImage,
-                                            createImageViewUnique(vk::ImageViewCreateInfo{
-                                                    vk::ImageViewCreateFlags(),
-                                                    vkSwapChainImage,
-                                                    vk::ImageViewType::e2D,
-                                                    surfaceDefaultFormat.format,
-                                                    vk::ComponentMapping{
-                                                            vk::ComponentSwizzle::eR,
-                                                            vk::ComponentSwizzle::eG,
-                                                            vk::ComponentSwizzle::eB,
-                                                            vk::ComponentSwizzle::eA},
-                                                    vk::ImageSubresourceRange{
-                                                            vk::ImageAspectFlagBits::eColor,
-                                                            0, 1, 0, 1}
-                                            })
-            );
-        }
-        auto vkDefaultDevFormatProps = physicalDevice.getFormatProperties(depthFormat);
         vk::ImageTiling tiling;
-        if (vkDefaultDevFormatProps.linearTilingFeatures &
+        if (defaultDevFormatProps.linearTilingFeatures &
             vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
             tiling = vk::ImageTiling::eLinear;
-        } else if (vkDefaultDevFormatProps.optimalTilingFeatures &
+        } else if (defaultDevFormatProps.optimalTilingFeatures &
                    vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
             tiling = vk::ImageTiling::eOptimal;
         } else {
@@ -333,6 +273,75 @@ namespace tt {
                                                                                vk::ImageAspectFlagBits::eColor,
                                                                                0, 1, 0, 1}
         });
+        vk::SurfaceTransformFlagBitsKHR preTransform{};
+        if (surfaceCapabilitiesKHR.supportedTransforms &
+            vk::SurfaceTransformFlagBitsKHR::eIdentity) {
+            preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
+        } else {
+            preTransform = surfaceCapabilitiesKHR.currentTransform;
+        }
+        vk::CompositeAlphaFlagBitsKHR compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
+        vk::CompositeAlphaFlagBitsKHR compositeAlphaFlags[4] = {
+                vk::CompositeAlphaFlagBitsKHR::eOpaque,
+                vk::CompositeAlphaFlagBitsKHR::ePreMultiplied,
+                vk::CompositeAlphaFlagBitsKHR::ePostMultiplied,
+                vk::CompositeAlphaFlagBitsKHR::eInherit
+        };
+        for (auto &compositeAlphaFlag:compositeAlphaFlags) {
+            if (surfaceCapabilitiesKHR.supportedCompositeAlpha & compositeAlphaFlag) {
+                compositeAlpha = compositeAlphaFlag;
+                break;
+            }
+        }
+        assert(surfaceCapabilitiesKHR.minImageCount <= SWAPCHAIN_NUM &&
+               surfaceCapabilitiesKHR.maxImageCount >= SWAPCHAIN_NUM);
+        vk::SwapchainCreateInfoKHR swapChainCreateInfo{vk::SwapchainCreateFlagsKHR(),
+                                                       surfaceKHR,
+                                                       SWAPCHAIN_NUM,
+                                                       surfaceDefaultFormat.format,
+                                                       vk::ColorSpaceKHR::eSrgbNonlinear,
+                                                       swapchainExtent,
+                                                       1,
+                                                       vk::ImageUsageFlags{} |
+                                                       vk::ImageUsageFlagBits::eColorAttachment |
+                                                       vk::ImageUsageFlagBits::eTransferSrc,
+                                                       vk::SharingMode::eExclusive,
+                                                       0,//TODO to spt graphics and present queues from different queue families
+                                                       nullptr,
+                                                       preTransform,
+                                                       compositeAlpha,
+                                                       vk::PresentModeKHR::eFifo,
+                                                       false};
+        swapchainKHR = createSwapchainKHRUnique(swapChainCreateInfo);
+        auto vkSwapChainImages = getSwapchainImagesKHR(swapchainKHR.get());
+        std::cout << "vkSwapChainImages size : " << vkSwapChainImages.size() << std::endl;
+
+        vkSwapChainBuffers.clear();
+        for (auto &vkSwapChainImage : vkSwapChainImages) {
+            auto imageView = createImageViewUnique(vk::ImageViewCreateInfo{
+                    vk::ImageViewCreateFlags(),
+                    vkSwapChainImage,
+                    vk::ImageViewType::e2D,
+                    surfaceDefaultFormat.format,
+                    vk::ComponentMapping{
+                            vk::ComponentSwizzle::eR,
+                            vk::ComponentSwizzle::eG,
+                            vk::ComponentSwizzle::eB,
+                            vk::ComponentSwizzle::eA},
+                    vk::ImageSubresourceRange{
+                            vk::ImageAspectFlagBits::eColor,
+                            0, 1, 0, 1}
+            });
+            vk::ImageView attachments[2]{imageView.get(), depthImageView.get()};
+            auto frameBuffer = createFramebufferUnique(vk::FramebufferCreateInfo{
+                    vk::FramebufferCreateFlags(),
+                    renderPass.get(),
+                    2, attachments,
+                    swapchainExtent.width, swapchainExtent.height,
+                    1
+            });
+            vkSwapChainBuffers.emplace_back(vkSwapChainImage,std::move(imageView),std::move(frameBuffer),createFenceUnique(vk::FenceCreateInfo{}));
+        }
     }
 
 
@@ -369,18 +378,15 @@ namespace tt {
     }
 
     void Device::updateMVPBuffer(glm::mat4 MVP) {
-        if(mvpBuffer&&mvpMemory){
+        if (mvpBuffer && mvpMemory) {
             auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer.get());
             memcpy(mapMemory(mvpMemory.get(), 0, mvpBufferMemoryRq.size,
                              vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
             unmapMemory(mvpMemory.get());
-        }
-        else return buildMVPBufferAndWrite(MVP);
+        } else return buildMVPBufferAndWrite(MVP);
     }
 
     void Device::buildRenderpass(vk::SurfaceKHR &surfaceKHR) {
-        if(renderPass && !frameBuffers.empty())
-            return;
         auto surfaceDefaultFormat = getSurfaceDefaultFormat(surfaceKHR);
         std::array<vk::AttachmentDescription, 2> attachDescs{
                 vk::AttachmentDescription{
@@ -429,21 +435,11 @@ namespace tt {
                 attachDescs.size(), attachDescs.data(),
                 subpassDescs.size(), subpassDescs.data()
         });
-        frameBuffers.clear();
-        for (auto &vkSwapChainBuffer : vkSwapChainBuffers) {
-            vk::ImageView attachments[2]{vkSwapChainBuffer.second.get(), depthImageView.get()};
-            frameBuffers.emplace_back(createFramebufferUnique(vk::FramebufferCreateInfo{
-                    vk::FramebufferCreateFlags(),
-                    renderPass.get(),
-                    2, attachments,
-                    swapchainExtent.width, swapchainExtent.height,
-                    1
-            }));
-        }
+
     }
 
     void Device::buildPipeline(uint32_t dataStepSize) {
-        if(graphicsPipeline)
+        if (graphicsPipeline)
             return;
         static auto vertShaderSpirv = GLSLtoSPV(vk::ShaderStageFlagBits::eVertex, vertShaderText);
         std::cout << "vertShaderSpirv len:" << vertShaderSpirv.size() << 'x'
@@ -566,7 +562,7 @@ namespace tt {
 
         cmdBuffer.beginRenderPass(vk::RenderPassBeginInfo{
                 renderPass.get(),
-                frameBuffers[currentBufferIndex.value].get(),
+                std::get<vk::UniqueFramebuffer>(vkSwapChainBuffers[currentBufferIndex.value]).get(),
                 vk::Rect2D{vk::Offset2D{}, swapchainExtent},
                 clearValues.size(), clearValues.data()
         }, vk::SubpassContents::eInline);
