@@ -16,7 +16,8 @@
 #include "util.hh"
 #include "stboxvk.hh"
 #include <map>
-using std::chrono_literals::operator""ms;
+
+using namespace std::chrono_literals;
 
 static const char *vertShaderText =
         "#version 400\n"
@@ -323,7 +324,14 @@ namespace tt {
                     swapchainExtent.width, swapchainExtent.height,
                     1
             });
-            vkSwapChainBuffers.emplace_back(vkSwapChainImage,std::move(imageView),std::move(frameBuffer),createFenceUnique(vk::FenceCreateInfo{}));
+            vkSwapChainBuffers.emplace_back(vkSwapChainImage, std::move(imageView),
+                                            std::move(frameBuffer),
+                                            createFenceUnique(vk::FenceCreateInfo{}));
+        }
+        {
+            std::lock_guard<std::mutex> lockFrameIndexs{mutexPresent};
+            while(!frameSubmitIndex.empty())
+                frameSubmitIndex.pop();
         }
     }
 
@@ -532,13 +540,18 @@ namespace tt {
     }
 
     void Device::drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer) {
-        std::unique_lock<std::mutex> lockDraw{mutexDraw};
-        cvDraw.wait(lockDraw);
+        //{
+        //    std::unique_lock<std::mutex> lockFrame{mutexPresent};
+        //    cvPresent.wait(lockFrame, [this]() { return frameSubmitIndex.size() < 3; });
+        //}
         auto imageAcquiredSemaphore = createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+        //auto acquireNextImageFence = createFenceUnique(vk::FenceCreateInfo{});
+        std::cout << "acquireNextImageKHR:" << std::endl;
         auto currentBufferIndex = acquireNextImageKHR(swapchainKHR.get(), UINT64_MAX,
-                                                      imageAcquiredSemaphore.get(), vk::Fence{});
-        //std::cout << "acquireNextImageKHR:" << vk::to_string(currentBufferIndex.result)
-        //          << currentBufferIndex.value << std::endl;
+                                                      imageAcquiredSemaphore.get(),
+                                                      vk::Fence{});
+        std::cout << "acquireNextImageKHR:" << vk::to_string(currentBufferIndex.result)
+                  << currentBufferIndex.value << std::endl;
         std::array<vk::ClearValue, 2> clearValues{
                 vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
                 vk::ClearDepthStencilValue{1.0f, 0},
@@ -569,47 +582,63 @@ namespace tt {
         };
         auto vk_queue = getQueue(queueFamilyIndex, 0);
         //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
-        vk_queue.submit(submitInfos,std::get<vk::UniqueFence>(vkSwapChainBuffers[currentBufferIndex.value]).get());
+        vk_queue.submit(submitInfos, std::get<vk::UniqueFence>(
+                vkSwapChainBuffers[currentBufferIndex.value]).get());
 
         {
-            std::lock_guard<std::mutex> lockFrameIndexs{mutexPresent};
+            //std::lock_guard<std::mutex> lockFrameIndexs{mutexPresent};
             frameSubmitIndex.push(currentBufferIndex.value);
         }
 
     }
-
-    void Device::buildSubmitThread(vk::SurfaceKHR &surfaceKHR){
-        submitThread = std::make_unique<std::thread>([this,&surfaceKHR]{
-            do{
-                draw_run(*this, surfaceKHR);
-            }while(true);
+/*
+    void Device::buildSubmitThread(vk::SurfaceKHR &surfaceKHR) {
+        submitThread = std::make_unique<std::thread>([this, &surfaceKHR] {
+            try {
+                do {
+                    draw_run(*this, surfaceKHR);
+                } while (true);
+            }
+            catch (std::system_error systemError) {
+                std::cout << "got system error:" << systemError.what() << "!#" << systemError.code()
+                          << std::endl;
+            }
+            catch (std::logic_error logicError) {
+                std::cout << "got logic error:" << logicError.what() << std::endl;
+            }
         });
         submitThread->detach();
-        cvDraw.notify_one();
     }
 
-    void Device::stopSubmitThread(){
+    void Device::stopSubmitThread() {
         submitThread.reset();
-    }
+    }*/
 
-    void Device::swapchainPresent(){
-        std::lock_guard<std::mutex> lockFrameIndexs{mutexPresent};
-        if(frameSubmitIndex.empty()){
-            cvDraw.notify_one();
+    void Device::swapchainPresent(vk::SurfaceKHR &surfaceKHR) {
+        //std::lock_guard<std::mutex> lockFrameIndexs{mutexPresent};
+        draw_run(*this, surfaceKHR);
+
+        if (frameSubmitIndex.empty()) {
             return;
         }
         auto vk_queue = getQueue(queueFamilyIndex, 0);
-        vk::Result waitRet;
         uint32_t index = frameSubmitIndex.front();
         frameSubmitIndex.pop();
+        vk::Result waitRet;
         do {
-            waitRet = waitForFences(1, std::get<vk::UniqueFence>(vkSwapChainBuffers[index]).operator->(), true, 1000000);
-            //std::cout << "waitForFences ret:" << vk::to_string(waitRet) << std::endl;
+            waitRet = waitForFences(1, std::get<vk::UniqueFence>(
+                    vkSwapChainBuffers[index]).operator->(), true, 1000000);
+            std::cout << "waitForFences ret:" << vk::to_string(waitRet) << std::endl;
         } while (waitRet == vk::Result::eTimeout);
+        std::cout << "get mutexPresent:" << index << std::endl;
 
-        auto presentRet = vk_queue.presentKHR(vk::PresentInfoKHR{
-                0, nullptr, 1, &swapchainKHR.get(), &index
-        });
-        cvDraw.notify_one();
+        //if (waitForFences(1, std::get<vk::UniqueFence>(vkSwapChainBuffers[index]).operator->(),
+        //                  true, 1000000) == vk::Result::eSuccess) {
+        //    auto presentRet = vk_queue.presentKHR(vk::PresentInfoKHR{
+        //            0, nullptr, 1, &swapchainKHR.get(), &index
+        //    });
+        //}
+        //cvPresent.notify_all();
+        std::cout << "frameSubmitIndex :" << frameSubmitIndex.size() << std::endl;
     }
 }

@@ -71,10 +71,10 @@ namespace tt {
                 vk::PipelineCacheCreateInfo{});
         vk::UniquePipeline graphicsPipeline;
 
-        std::unique_ptr<std::thread> submitThread;
+        //std::unique_ptr<std::thread> submitThread;
         std::queue<uint32_t > frameSubmitIndex;
-        std::mutex mutexDraw,mutexPresent;
-        std::condition_variable cvDraw;
+        std::mutex mutexPresent;
+        std::condition_variable cvPresent;
 
         uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
@@ -133,7 +133,6 @@ namespace tt {
                                                    vk::MemoryPropertyFlags memoryPropertyFlags);
 
         void buildSwapchainViewBuffers(vk::SurfaceKHR &surfaceKHR);
-
         void buildMVPBufferAndWrite(glm::mat4 MVP);
         void updateMVPBuffer(glm::mat4 MVP);
         void buildRenderpass(vk::SurfaceKHR &surfaceKHR);
@@ -144,7 +143,7 @@ namespace tt {
         void drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer);
         void buildSubmitThread(vk::SurfaceKHR &surfaceKHR);
         void stopSubmitThread();
-        void swapchainPresent();
+        void swapchainPresent(vk::SurfaceKHR &surfaceKHR);
     };
 
     class Instance : public vk::Instance {
