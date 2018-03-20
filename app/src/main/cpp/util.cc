@@ -14,7 +14,9 @@
 #include <cstring>
 #include "shaderc/shaderc.hpp"
 #include "util.hh"
+#include "stboxvk.hh"
 #include <map>
+using std::chrono_literals::operator""ms;
 
 static const char *vertShaderText =
         "#version 400\n"
@@ -102,25 +104,6 @@ namespace tt {
             }
         }
         throw std::logic_error{"queueFamilyPropertiesFindFlags Error"};
-    }
-
-    Device Instance::connectToDevice() {
-        auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(vk::QueueFlagBits::eGraphics);
-        std::array<float, 1> queue_priorities{0.0};
-        std::array<vk::DeviceQueueCreateInfo, 1> device_queue_create_infos{
-                vk::DeviceQueueCreateInfo{vk::DeviceQueueCreateFlags(),
-                                          graphicsQueueIndex,
-                                          queue_priorities.size(), queue_priorities.data()
-                }};
-        std::array<const char *, 1> device_extension_names{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-        return Device{defaultPhyDevice().createDevice(
-                vk::DeviceCreateInfo {vk::DeviceCreateFlags(),
-                                      device_queue_create_infos.size(),
-                                      device_queue_create_infos.data(),
-                                      0, nullptr, device_extension_names.size(),
-                                      device_extension_names.data()}),
-                      defaultPhyDevice(),
-                      graphicsQueueIndex};
     }
 
 
@@ -549,6 +532,8 @@ namespace tt {
     }
 
     void Device::drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer) {
+        std::unique_lock<std::mutex> lockDraw{mutexDraw};
+        cvDraw.wait(lockDraw);
         auto imageAcquiredSemaphore = createSemaphoreUnique(vk::SemaphoreCreateInfo{});
         auto currentBufferIndex = acquireNextImageKHR(swapchainKHR.get(), UINT64_MAX,
                                                       imageAcquiredSemaphore.get(), vk::Fence{});
@@ -585,17 +570,46 @@ namespace tt {
         auto vk_queue = getQueue(queueFamilyIndex, 0);
         //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
         vk_queue.submit(submitInfos,std::get<vk::UniqueFence>(vkSwapChainBuffers[currentBufferIndex.value]).get());
+
+        {
+            std::lock_guard<std::mutex> lockFrameIndexs{mutexPresent};
+            frameSubmitIndex.push(currentBufferIndex.value);
+        }
+
+    }
+
+    void Device::buildSubmitThread(vk::SurfaceKHR &surfaceKHR){
+        submitThread = std::make_unique<std::thread>([this,&surfaceKHR]{
+            do{
+                draw_run(*this, surfaceKHR);
+            }while(true);
+        });
+        submitThread->detach();
+        cvDraw.notify_one();
+    }
+
+    void Device::stopSubmitThread(){
+        submitThread.reset();
+    }
+
+    void Device::swapchainPresent(){
+        std::lock_guard<std::mutex> lockFrameIndexs{mutexPresent};
+        if(frameSubmitIndex.empty()){
+            cvDraw.notify_one();
+            return;
+        }
+        auto vk_queue = getQueue(queueFamilyIndex, 0);
         vk::Result waitRet;
+        uint32_t index = frameSubmitIndex.front();
+        frameSubmitIndex.pop();
         do {
-            waitRet = waitForFences(1, std::get<vk::UniqueFence>(vkSwapChainBuffers[currentBufferIndex.value]).operator->(), true, 1000000);
+            waitRet = waitForFences(1, std::get<vk::UniqueFence>(vkSwapChainBuffers[index]).operator->(), true, 1000000);
             //std::cout << "waitForFences ret:" << vk::to_string(waitRet) << std::endl;
         } while (waitRet == vk::Result::eTimeout);
 
         auto presentRet = vk_queue.presentKHR(vk::PresentInfoKHR{
-                0, nullptr, 1, &swapchainKHR.get(), &currentBufferIndex.value
+                0, nullptr, 1, &swapchainKHR.get(), &index
         });
-        //std::cout << "presentKHR:index" << currentBufferIndex.value << "ret:"
-        //          << vk::to_string(presentRet) << std::endl;
-        //sleep(1);
+        cvDraw.notify_one();
     }
 }

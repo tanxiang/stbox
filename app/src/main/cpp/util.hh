@@ -11,6 +11,9 @@
 #include "main.hh"
 #include "glm/glm.hpp"
 #include <thread>
+#include <queue>
+#include <condition_variable>
+
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);
 #define SWAPCHAIN_NUM 3
 namespace tt {
@@ -68,7 +71,11 @@ namespace tt {
                 vk::PipelineCacheCreateInfo{});
         vk::UniquePipeline graphicsPipeline;
 
-        std::thread submitThread;
+        std::unique_ptr<std::thread> submitThread;
+        std::queue<uint32_t > frameSubmitIndex;
+        std::mutex mutexDraw,mutexPresent;
+        std::condition_variable cvDraw;
+
         uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
     public:
@@ -130,12 +137,14 @@ namespace tt {
         void buildMVPBufferAndWrite(glm::mat4 MVP);
         void updateMVPBuffer(glm::mat4 MVP);
         void buildRenderpass(vk::SurfaceKHR &surfaceKHR);
-
         void buildPipeline(uint32_t dataStepSize);
         void renderPassReset(){
             renderPass.reset();
         }
         void drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer);
+        void buildSubmitThread(vk::SurfaceKHR &surfaceKHR);
+        void stopSubmitThread();
+        void swapchainPresent();
     };
 
     class Instance : public vk::Instance {
