@@ -77,7 +77,8 @@ void choreographerCallback(long frameTimeNanos, void* data) {
     tt::Instance &ttInstance = *reinterpret_cast<tt::Instance *>(data);
     ttInstance.defaultDevice().swapchainPresent();
     auto laterTime = (std::chrono::steady_clock::now().time_since_epoch().count() - frameTimeNanos )/ 1000000;
-    std::cout <<"later"<< laterTime << " minseconds" <<std::endl;
+    if(laterTime>12)
+        std::cout <<"later"<< laterTime << " minseconds" <<std::endl;
     if (ttInstance.isFocus()) {
         AChoreographer_postFrameCallback(AChoreographer_getInstance(), choreographerCallback,
                                          &ttInstance);

@@ -20,7 +20,7 @@ int draw_run(tt::Device &ttDevice, vk::SurfaceKHR &surfaceKHR) {
     //std::cout << "draw_run" << std::endl;
     ttDevice.buildPipeline(sizeof(g_vb_solid_face_colors_Data[0]));
 
-    auto cmdBuf = ttDevice.defaultPoolAllocBuffer(vk::CommandBufferLevel::ePrimary, 1);
+    static auto cmdBuf = ttDevice.defaultPoolAllocBuffer(vk::CommandBufferLevel::ePrimary, 1);
 
     auto swapchainExtent = ttDevice.getSwapchainExtent();
     auto Projection = glm::perspective(glm::radians(45.0f),
