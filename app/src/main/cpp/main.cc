@@ -89,30 +89,28 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
     tt::Instance &ttInstance = *reinterpret_cast<tt::Instance *>(app->userData);
     try {
         switch (cmd) {
-            case APP_CMD_INIT_WINDOW: {
-                // The window is being shown, get it ready.
-                assert(app->window);
+            case APP_CMD_START:
                 if(!ttInstance.connectedDevice())
                     ttInstance.connectDevice();
-                ttInstance.connectWSI(app->window);
-
-                ttInstance.defaultDevice().buildRenderpass(ttInstance.defaultSurface());
-
-                ttInstance.defaultDevice().buildSwapchainViewBuffers(ttInstance.defaultSurface());
-
-                //auto ttDev = ttInstance.connectToDevice();
                 break;
-            }
+            case APP_CMD_INIT_WINDOW:
+                // The window is being shown, get it ready.
+                assert(app->window);
+
+                ttInstance.connectWSI(app->window);
+                ttInstance.defaultDevice().buildRenderpass(ttInstance.defaultSurface());
+                ttInstance.defaultDevice().buildSwapchainViewBuffers(ttInstance.defaultSurface());
+                break;
             case APP_CMD_TERM_WINDOW:
                 // The window is being hidden or closed, clean it up.
                 ttInstance.unsetFocus();
-                ttInstance.defaultDevice().renderPassReset();
+                //ttInstance.defaultDevice().renderPassReset();
                 ttInstance.disconnectWSI();
                 //ttInstance.disconnectDevice();
                 break;
             case APP_CMD_DESTROY:
                 ttInstance.unsetFocus();
-                ttInstance.defaultDevice().renderPassReset();
+                //ttInstance.defaultDevice().renderPassReset();
                 ttInstance.disconnectDevice();
                 break;
             case APP_CMD_STOP:
@@ -124,7 +122,6 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 ttInstance.setFocus();
                 break;
             case APP_CMD_SAVE_STATE:
-            case APP_CMD_START:
                 break;
             case APP_CMD_GAINED_FOCUS:
                 ttInstance.setFocus();
