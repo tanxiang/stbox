@@ -75,8 +75,9 @@ namespace tt {
 
         std::unique_ptr<std::thread> submitThread;
         std::queue<uint32_t> frameSubmitIndex;
-        std::mutex mutexPresent;
-        std::condition_variable cvPresent;
+        bool submitExitFlag = false;
+        std::mutex mutexDraw;
+        std::condition_variable cvDraw;
 
         uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
@@ -159,7 +160,13 @@ namespace tt {
 
         void stopSubmitThread();
 
-        void swapchainPresent(vk::SurfaceKHR &surfaceKHR);
+        void resetDraw(){
+            while(!frameSubmitIndex.empty()){
+                swapchainPresent();
+            }
+        }
+
+        void swapchainPresent();
     };
 
     class Instance : public vk::Instance {
@@ -200,7 +207,7 @@ namespace tt {
         }
 
         void disconnectWSI() {
-
+            upDevice->resetDraw();
             surfaceKHR.reset();
         }
 

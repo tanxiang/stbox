@@ -531,18 +531,20 @@ namespace tt {
 
     uint32_t Device::drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer) {
         {
-            std::unique_lock<std::mutex> lockFrame{mutexPresent};
-            cvPresent.wait(lockFrame, [this]() { return frameSubmitIndex.size() < 2; });
+            std::unique_lock<std::mutex> lockFrame{mutexDraw};
+            cvDraw.wait(lockFrame, [this]() { return frameSubmitIndex.size() < 2||submitExitFlag; });
+            if(submitExitFlag)
+                return 0;
         }
         auto imageAcquiredSemaphore = createSemaphoreUnique(vk::SemaphoreCreateInfo{});
         //auto acquireNextImageFence = createFenceUnique(vk::FenceCreateInfo{});
-        std::cout << "acquireNextImageKHR:" << std::endl;
+        //std::cout << "acquireNextImageKHR:" << std::endl;
         auto currentBufferIndex = acquireNextImageKHR(swapchainKHR.get(), UINT64_MAX,
                                                       imageAcquiredSemaphore.get(),
                                                       vk::Fence{});
-        std::cout << "acquireNextImageKHR:" << vk::to_string(currentBufferIndex.result)
-                  << currentBufferIndex.value << std::endl;
-        std::array<vk::ClearValue, 2> clearValues{
+        //std::cout << "acquireNextImageKHR:" << vk::to_string(currentBufferIndex.result)
+        //          << currentBufferIndex.value << std::endl;
+        static std::array<vk::ClearValue, 2> clearValues{
                 vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
                 vk::ClearDepthStencilValue{1.0f, 0},
         };
@@ -578,7 +580,7 @@ namespace tt {
         //std::cout << "push index:" << currentBufferIndex.value << std::endl;
 
         {
-            std::lock_guard<std::mutex> lock{mutexPresent};
+            std::lock_guard<std::mutex> lock{mutexDraw};
             frameSubmitIndex.push(currentBufferIndex.value);
         }
         return 1;
@@ -586,6 +588,7 @@ namespace tt {
 
 
     void Device::buildSubmitThread(vk::SurfaceKHR &surfaceKHR) {
+        submitExitFlag = false;
         submitThread = std::make_unique<std::thread>([this, &surfaceKHR] {
             try {
                 while (draw_run(*this, surfaceKHR));
@@ -598,37 +601,44 @@ namespace tt {
                 std::cout << "got logic error:" << logicError.what() << std::endl;
             }
         });
-        submitThread->detach();
     }
 
     void Device::stopSubmitThread() {
-        submitThread.reset();
+        {
+            std::lock_guard<std::mutex> lock{mutexDraw};
+            submitExitFlag = true;
+        }
+        cvDraw.notify_all();
+        submitThread->join();
     }
 
-    void Device::swapchainPresent(vk::SurfaceKHR &surfaceKHR) {
+    void Device::swapchainPresent() {
 
         if (frameSubmitIndex.empty()) {
+            cvDraw.notify_all();
             return;
         }
         uint32_t index = frameSubmitIndex.front();
         auto waitRet = waitForFences(1, std::get<vk::UniqueFence>(
                 vkSwapChainBuffers[index]).operator->(), true, 100000000);
         if (waitRet != vk::Result::eSuccess) {
+            std::lock_guard<std::mutex> lock{mutexDraw};
             std::cout << "waitForFences ret:" << vk::to_string(waitRet) << std::endl;
             //todo fix timeout
+            frameSubmitIndex.pop();
             return;
         }
         {
-            std::lock_guard<std::mutex> lock{mutexPresent};
+            std::lock_guard<std::mutex> lock{mutexDraw};
             frameSubmitIndex.pop();
             auto presentRet = getQueue(queueFamilyIndex, 0).presentKHR(vk::PresentInfoKHR{
                     0, nullptr, 1, &swapchainKHR.get(), &index
             });
         }
-        std::cout << "frameSubmitIndex pop :" << frameSubmitIndex.size() <<" idx :"<<index<< std::endl;
+        //std::cout << "frameSubmitIndex pop :" << frameSubmitIndex.size() <<" idx :"<<index<< std::endl;
 
         if(frameSubmitIndex.size()<2)
-            cvPresent.notify_all();
+            cvDraw.notify_all();
 
     }
 }

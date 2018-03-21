@@ -75,7 +75,7 @@ void choreographerCallback(long frameTimeNanos, void* data) {
     assert(data);
     tt::Instance &ttInstance = *reinterpret_cast<tt::Instance *>(data);
 
-    ttInstance.defaultDevice().swapchainPresent(ttInstance.defaultSurface());
+    ttInstance.defaultDevice().swapchainPresent();
 
     auto laterTime = (std::chrono::steady_clock::now().time_since_epoch().count() - frameTimeNanos )/ 1000000;
     if(laterTime > 12)
@@ -104,9 +104,12 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 ttInstance.defaultDevice().buildRenderpass(ttInstance.defaultSurface());
                 ttInstance.defaultDevice().buildSwapchainViewBuffers(ttInstance.defaultSurface());
                 ttInstance.defaultDevice().buildSubmitThread(ttInstance.defaultSurface());
+
                 break;
             case APP_CMD_TERM_WINDOW:
                 // The window is being hidden or closed, clean it up.
+                ttInstance.defaultDevice().stopSubmitThread();
+
                 ttInstance.unsetFocus();
                 //ttInstance.defaultDevice().renderPassReset();
                 ttInstance.disconnectWSI();
