@@ -16,11 +16,12 @@
 #include "cube_data.hh"
 
 
-int draw_run(tt::Device &ttDevice, vk::SurfaceKHR &surfaceKHR) {
+
+uint32_t draw_run(tt::Device &ttDevice,vk::SurfaceKHR &surfaceKHR) {
     //std::cout << "draw_run" << std::endl;
     ttDevice.buildPipeline(sizeof(g_vb_solid_face_colors_Data[0]));
 
-    static auto cmdBuf = ttDevice.defaultPoolAllocBuffer(vk::CommandBufferLevel::ePrimary, 1);
+    auto & cmdBuf = ttDevice.defaultPoolAllocBuffer();
 
     auto swapchainExtent = ttDevice.getSwapchainExtent();
     auto Projection = glm::perspective(glm::radians(45.0f),
@@ -59,7 +60,6 @@ int draw_run(tt::Device &ttDevice, vk::SurfaceKHR &surfaceKHR) {
                                                     vk::MemoryPropertyFlagBits::eHostCoherent);
     }
 
-    ttDevice.drawCmdBuffer(cmdBuf[0], vertexBuffer.get());
+    return ttDevice.drawCmdBuffer(cmdBuf[0].get(), vertexBuffer.get());
 
-    return 0;
 }

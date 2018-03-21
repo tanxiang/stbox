@@ -137,11 +137,6 @@ namespace tt {
         return vkDefaultDeviceFormats[0];
     }
 
-    std::vector<vk::CommandBuffer>
-    Device::defaultPoolAllocBuffer(vk::CommandBufferLevel bufferLevel, uint32_t num) {
-        return allocateCommandBuffers(
-                vk::CommandBufferAllocateInfo{commandPool.get(), bufferLevel, num});
-    }
 
     uint32_t Device::findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags) {
         auto memoryProperties = physicalDevice.getMemoryProperties();
@@ -327,11 +322,6 @@ namespace tt {
             vkSwapChainBuffers.emplace_back(vkSwapChainImage, std::move(imageView),
                                             std::move(frameBuffer),
                                             createFenceUnique(vk::FenceCreateInfo{}));
-        }
-        {
-            std::lock_guard<std::mutex> lockFrameIndexs{mutexPresent};
-            while(!frameSubmitIndex.empty())
-                frameSubmitIndex.pop();
         }
     }
 
@@ -539,11 +529,11 @@ namespace tt {
         graphicsPipeline = createGraphicsPipelineUnique(vkPipelineCache.get(), pipelineCreateInfo);
     }
 
-    void Device::drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer) {
-        //{
-        //    std::unique_lock<std::mutex> lockFrame{mutexPresent};
-        //    cvPresent.wait(lockFrame, [this]() { return frameSubmitIndex.size() < 3; });
-        //}
+    uint32_t Device::drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer) {
+        {
+            std::unique_lock<std::mutex> lockFrame{mutexPresent};
+            cvPresent.wait(lockFrame, [this]() { return frameSubmitIndex.size() < 2; });
+        }
         auto imageAcquiredSemaphore = createSemaphoreUnique(vk::SemaphoreCreateInfo{});
         //auto acquireNextImageFence = createFenceUnique(vk::FenceCreateInfo{});
         std::cout << "acquireNextImageKHR:" << std::endl;
@@ -584,20 +574,21 @@ namespace tt {
         //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
         vk_queue.submit(submitInfos, std::get<vk::UniqueFence>(
                 vkSwapChainBuffers[currentBufferIndex.value]).get());
+         currentBufferIndex.value;
+        //std::cout << "push index:" << currentBufferIndex.value << std::endl;
 
         {
-            //std::lock_guard<std::mutex> lockFrameIndexs{mutexPresent};
+            std::lock_guard<std::mutex> lock{mutexPresent};
             frameSubmitIndex.push(currentBufferIndex.value);
         }
-
+        return 1;
     }
-/*
+
+
     void Device::buildSubmitThread(vk::SurfaceKHR &surfaceKHR) {
         submitThread = std::make_unique<std::thread>([this, &surfaceKHR] {
             try {
-                do {
-                    draw_run(*this, surfaceKHR);
-                } while (true);
+                while (draw_run(*this, surfaceKHR));
             }
             catch (std::system_error systemError) {
                 std::cout << "got system error:" << systemError.what() << "!#" << systemError.code()
@@ -612,33 +603,32 @@ namespace tt {
 
     void Device::stopSubmitThread() {
         submitThread.reset();
-    }*/
+    }
 
     void Device::swapchainPresent(vk::SurfaceKHR &surfaceKHR) {
-        //std::lock_guard<std::mutex> lockFrameIndexs{mutexPresent};
-        draw_run(*this, surfaceKHR);
 
         if (frameSubmitIndex.empty()) {
             return;
         }
-        auto vk_queue = getQueue(queueFamilyIndex, 0);
         uint32_t index = frameSubmitIndex.front();
-        frameSubmitIndex.pop();
-        vk::Result waitRet;
-        do {
-            waitRet = waitForFences(1, std::get<vk::UniqueFence>(
-                    vkSwapChainBuffers[index]).operator->(), true, 1000000);
+        auto waitRet = waitForFences(1, std::get<vk::UniqueFence>(
+                vkSwapChainBuffers[index]).operator->(), true, 100000000);
+        if (waitRet != vk::Result::eSuccess) {
             std::cout << "waitForFences ret:" << vk::to_string(waitRet) << std::endl;
-        } while (waitRet == vk::Result::eTimeout);
-        std::cout << "get mutexPresent:" << index << std::endl;
+            //todo fix timeout
+            return;
+        }
+        {
+            std::lock_guard<std::mutex> lock{mutexPresent};
+            frameSubmitIndex.pop();
+            auto presentRet = getQueue(queueFamilyIndex, 0).presentKHR(vk::PresentInfoKHR{
+                    0, nullptr, 1, &swapchainKHR.get(), &index
+            });
+        }
+        std::cout << "frameSubmitIndex pop :" << frameSubmitIndex.size() <<" idx :"<<index<< std::endl;
 
-        //if (waitForFences(1, std::get<vk::UniqueFence>(vkSwapChainBuffers[index]).operator->(),
-        //                  true, 1000000) == vk::Result::eSuccess) {
-        //    auto presentRet = vk_queue.presentKHR(vk::PresentInfoKHR{
-        //            0, nullptr, 1, &swapchainKHR.get(), &index
-        //    });
-        //}
-        //cvPresent.notify_all();
-        std::cout << "frameSubmitIndex :" << frameSubmitIndex.size() << std::endl;
+        if(frameSubmitIndex.size()<2)
+            cvPresent.notify_all();
+
     }
 }

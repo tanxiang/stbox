@@ -15,16 +15,18 @@
 #include <condition_variable>
 
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);
+
 #define SWAPCHAIN_NUM 3
 namespace tt {
     class Device : public vk::Device {
         vk::PhysicalDevice &physicalDevice;
         uint32_t queueFamilyIndex;
         vk::UniqueCommandPool commandPool;
+        std::vector<vk::UniqueCommandBuffer> commandBuffers;
         vk::UniqueSwapchainKHR swapchainKHR;
         vk::Extent2D swapchainExtent;
         vk::Format depthFormat = vk::Format::eD24UnormS8Uint;
-        std::vector<std::tuple<vk::Image,vk::UniqueImageView,vk::UniqueFramebuffer,vk::UniqueFence>> vkSwapChainBuffers;
+        std::vector<std::tuple<vk::Image, vk::UniqueImageView, vk::UniqueFramebuffer, vk::UniqueFence>> vkSwapChainBuffers;
         vk::UniqueImage depthImage;
         vk::UniqueImageView depthImageView;
         vk::UniqueDeviceMemory depthImageMemory;
@@ -71,8 +73,8 @@ namespace tt {
                 vk::PipelineCacheCreateInfo{});
         vk::UniquePipeline graphicsPipeline;
 
-        //std::unique_ptr<std::thread> submitThread;
-        std::queue<uint32_t > frameSubmitIndex;
+        std::unique_ptr<std::thread> submitThread;
+        std::queue<uint32_t> frameSubmitIndex;
         std::mutex mutexPresent;
         std::condition_variable cvPresent;
 
@@ -82,13 +84,17 @@ namespace tt {
         Device(vk::Device dev, vk::PhysicalDevice &phy, uint32_t qidx) : vk::Device{
                 dev}, physicalDevice{phy}, queueFamilyIndex{qidx}, commandPool{
                 createCommandPoolUnique(vk::CommandPoolCreateInfo{
-                        vk::CommandPoolCreateFlagBits::eResetCommandBuffer, qidx})} {
+                        vk::CommandPoolCreateFlagBits::eResetCommandBuffer, qidx})}, commandBuffers{
+                allocateCommandBuffersUnique(vk::CommandBufferAllocateInfo{commandPool.get(),
+                                                                           vk::CommandBufferLevel::ePrimary,
+                                                                           1})} {
 
         }
 
         Device(Device &&odevice) : physicalDevice{odevice.physicalDevice},
                                    queueFamilyIndex{odevice.queueFamilyIndex},
                                    commandPool{std::move(odevice.commandPool)},
+                                   commandBuffers{std::move(odevice.commandBuffers)},
                                    swapchainKHR{std::move(odevice.swapchainKHR)},
                                    swapchainExtent{std::move(odevice.swapchainExtent)},
                                    depthFormat{odevice.depthFormat},
@@ -105,7 +111,6 @@ namespace tt {
                                    descriptorPoll{std::move(odevice.descriptorPoll)},
                                    descriptorSets{std::move(odevice.descriptorSets)},
                                    renderPass{std::move(odevice.renderPass)},
-                                   //frameBuffers{std::move(odevice.frameBuffers)},
                                    vkPipelineCache{std::move(odevice.vkPipelineCache)},
                                    graphicsPipeline{std::move(odevice.graphicsPipeline)} {
 
@@ -122,8 +127,9 @@ namespace tt {
             return swapchainExtent;
         }
 
-        std::vector<vk::CommandBuffer>
-        defaultPoolAllocBuffer(vk::CommandBufferLevel bufferLevel, uint32_t num);
+        std::vector<vk::UniqueCommandBuffer> & defaultPoolAllocBuffer(){
+            return commandBuffers;
+        }
 
         vk::SurfaceFormatKHR getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR);
 
@@ -133,16 +139,26 @@ namespace tt {
                                                    vk::MemoryPropertyFlags memoryPropertyFlags);
 
         void buildSwapchainViewBuffers(vk::SurfaceKHR &surfaceKHR);
+
         void buildMVPBufferAndWrite(glm::mat4 MVP);
+
         void updateMVPBuffer(glm::mat4 MVP);
+
         void buildRenderpass(vk::SurfaceKHR &surfaceKHR);
+
         void buildPipeline(uint32_t dataStepSize);
-        void renderPassReset(){
+
+        void renderPassReset() {
+            vkSwapChainBuffers.clear();
             renderPass.reset();
         }
-        void drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer);
+
+        uint32_t drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer);
+
         void buildSubmitThread(vk::SurfaceKHR &surfaceKHR);
+
         void stopSubmitThread();
+
         void swapchainPresent(vk::SurfaceKHR &surfaceKHR);
     };
 
@@ -155,8 +171,11 @@ namespace tt {
         Instance(vk::Instance &&ins) : vk::Instance{std::move(ins)} {
 
         }
-        Instance(Instance &&i) : vk::Instance{std::move(i)}, vkPhysicalDevices{std::move(i.vkPhysicalDevices)},
-                                 surfaceKHR{std::move(i.surfaceKHR)},upDevice{std::move(i.upDevice)} {
+
+        Instance(Instance &&i) : vk::Instance{std::move(i)},
+                                 vkPhysicalDevices{std::move(i.vkPhysicalDevices)},
+                                 surfaceKHR{std::move(i.surfaceKHR)},
+                                 upDevice{std::move(i.upDevice)} {
 
         }
 
@@ -174,32 +193,41 @@ namespace tt {
 
         uint32_t queueFamilyPropertiesFindFlags(vk::QueueFlags);
 
-        void connectWSI(ANativeWindow* window) {
+        void connectWSI(ANativeWindow *window) {
             surfaceKHR = createAndroidSurfaceKHRUnique(
                     vk::AndroidSurfaceCreateInfoKHR{vk::AndroidSurfaceCreateFlagsKHR(),
                                                     window});
         }
+
         void disconnectWSI() {
+
             surfaceKHR.reset();
         }
 
         tt::Device connectToDevice();
-        bool connectedDevice(){
+
+        bool connectedDevice() {
             return upDevice.operator bool();
         }
+
         void connectDevice();
-        void disconnectDevice(){
+
+        void disconnectDevice() {
             upDevice.reset();
         }
-        void setFocus(){
+
+        void setFocus() {
             focus = true;
         }
-        void unsetFocus(){
+
+        void unsetFocus() {
             focus = false;
         }
-        bool isFocus(){
+
+        bool isFocus() {
             return focus;
         }
+
         ~Instance() {
             destroy();
         }
