@@ -631,7 +631,7 @@ namespace tt {
         {
             std::lock_guard<std::mutex> lock{mutexDraw};
             frameSubmitIndex.pop();
-            auto presentRet = getQueue(queueFamilyIndex, 0).presentKHR(vk::PresentInfoKHR{
+            getQueue(queueFamilyIndex, 0).presentKHR(vk::PresentInfoKHR{
                     0, nullptr, 1, &swapchainKHR.get(), &index
             });
         }

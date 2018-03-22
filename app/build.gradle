@@ -11,8 +11,11 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                cppFlags "-std=c++14 -fexceptions"
+                cppFlags "-std=c++14 -fexceptions -fno-rtti"
             }
+        }
+        shaders {
+            glslcArgs.addAll(['-c','-g'])
         }
     }
     buildTypes {
