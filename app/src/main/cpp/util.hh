@@ -13,6 +13,7 @@
 #include <thread>
 #include <queue>
 #include <condition_variable>
+#include <android_native_app_glue.h>
 
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);
 
@@ -81,6 +82,8 @@ namespace tt {
 
         uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
+        vk::UniqueShaderModule loadShaderFromFile(const char* filePath,
+                           android_app *androidAppCtx);
     public:
         Device(vk::Device dev, vk::PhysicalDevice &phy, uint32_t qidx) : vk::Device{
                 dev}, physicalDevice{phy}, queueFamilyIndex{qidx}, commandPool{
@@ -147,7 +150,7 @@ namespace tt {
 
         void buildRenderpass(vk::SurfaceKHR &surfaceKHR);
 
-        void buildPipeline(uint32_t dataStepSize);
+        void buildPipeline(uint32_t dataStepSize,android_app *app);
 
         void renderPassReset() {
             vkSwapChainBuffers.clear();

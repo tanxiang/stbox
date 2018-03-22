@@ -12,7 +12,7 @@
 // Header files.
 #include <android_native_app_glue.h>
 #include <cstring>
-#include "shaderc/shaderc.hpp"
+//#include "shaderc/shaderc.hpp"
 #include "util.hh"
 #include "stboxvk.hh"
 #include <map>
@@ -43,7 +43,7 @@ static const char *fragShaderText =
                 "void main() {\n"
                 "   outColor = color;\n"
                 "}\n";
-
+/*
 static const std::map<vk::ShaderStageFlagBits, shaderc_shader_kind> shader_map_table{
         {vk::ShaderStageFlagBits::eVertex,                 shaderc_glsl_vertex_shader},
         {vk::ShaderStageFlagBits::eTessellationControl,    shaderc_glsl_tess_control_shader},
@@ -71,7 +71,7 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
     }
     return std::vector<uint32_t>{module.cbegin(), module.cend()};
 }
-
+*/
 namespace tt {
     Instance createInstance() {
         auto instance_layer_props = vk::enumerateInstanceLayerProperties();
@@ -419,25 +419,42 @@ namespace tt {
 
     }
 
-    void Device::buildPipeline(uint32_t dataStepSize) {
+    vk::UniqueShaderModule Device::loadShaderFromFile(const char* filePath,
+                                android_app *androidAppCtx) {
+        // Read the file
+        assert(androidAppCtx);
+        AAsset* file = AAssetManager_open(androidAppCtx->activity->assetManager,
+                                          filePath, AASSET_MODE_BUFFER);
+        size_t fileLength = AAsset_getLength(file);
+
+        auto fileContent = std::make_unique<char[]>(fileLength);
+
+        AAsset_read(file, fileContent.get(), fileLength);
+
+        return createShaderModuleUnique(vk::ShaderModuleCreateInfo{
+                vk::ShaderModuleCreateFlags(), fileLength,
+                reinterpret_cast<uint32_t *>(fileContent.get())});
+
+    }
+
+    void Device::buildPipeline(uint32_t dataStepSize,android_app *app) {
         if (graphicsPipeline)
             return;
-        static auto vertShaderSpirv = GLSLtoSPV(vk::ShaderStageFlagBits::eVertex, vertShaderText);
-        std::cout << "vertShaderSpirv len:" << vertShaderSpirv.size() << 'x'
-                  << sizeof(decltype(vertShaderSpirv)
-        ::value_type)<<std::endl;
-        static auto fargShaderSpirv = GLSLtoSPV(vk::ShaderStageFlagBits::eFragment, fragShaderText);
+
+        /*
+        std::basic_ifstream<uint32_t> infileMVP{"shaders/mvp.vert.spv", std::ios::in | std::ifstream::binary};
+        std::vector<uint32_t> vertShaderSpirv{std::istreambuf_iterator<uint32_t>{infileMVP},
+                                               std::istreambuf_iterator<uint32_t>{}};
+        std::cout <<"vertShaderSpirv len:" << vertShaderSpirv.size() << 'x'
+                  << sizeof(decltype(vertShaderSpirv) ::value_type)<<std::endl;
+        std::basic_ifstream<uint32_t> infileCopy{"shaders/copy.frag.spv", std::ios::in | std::ifstream::binary};
+        std::vector<uint32_t> fargShaderSpirv{std::istreambuf_iterator<uint32_t>{infileCopy},
+                                              std::istreambuf_iterator<uint32_t>{}};
         std::cout << "fargShaderSpirv len:" << fargShaderSpirv.size() << 'x'
-                  << sizeof(decltype(fargShaderSpirv)
-        ::value_type)<<std::endl;
-        static auto vertShaderModule = createShaderModuleUnique(vk::ShaderModuleCreateInfo{
-                vk::ShaderModuleCreateFlags(), vertShaderSpirv.size() *
-                                               sizeof(decltype(vertShaderSpirv)::value_type), vertShaderSpirv.data()
-        });
-        static auto fargShaderModule = createShaderModuleUnique(vk::ShaderModuleCreateInfo{
-                vk::ShaderModuleCreateFlags(), fargShaderSpirv.size() *
-                                               sizeof(decltype(fargShaderSpirv)::value_type), fargShaderSpirv.data()
-        });
+                  << sizeof(decltype(fargShaderSpirv) ::value_type)<<std::endl;
+        */
+        auto vertShaderModule = loadShaderFromFile("shaders/mvp.vert.spv",app);
+        auto fargShaderModule = loadShaderFromFile("shaders/copy.frag.spv",app);
         std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStageCreateInfos{
                 vk::PipelineShaderStageCreateInfo{
                         vk::PipelineShaderStageCreateFlags(),
@@ -532,8 +549,9 @@ namespace tt {
     uint32_t Device::drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer) {
         {
             std::unique_lock<std::mutex> lockFrame{mutexDraw};
-            cvDraw.wait(lockFrame, [this]() { return frameSubmitIndex.size() < 2||submitExitFlag; });
-            if(submitExitFlag)
+            cvDraw.wait(lockFrame,
+                        [this]() { return frameSubmitIndex.size() < 2 || submitExitFlag; });
+            if (submitExitFlag)
                 return 0;
         }
         auto imageAcquiredSemaphore = createSemaphoreUnique(vk::SemaphoreCreateInfo{});
@@ -576,7 +594,7 @@ namespace tt {
         //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
         vk_queue.submit(submitInfos, std::get<vk::UniqueFence>(
                 vkSwapChainBuffers[currentBufferIndex.value]).get());
-         currentBufferIndex.value;
+        currentBufferIndex.value;
         //std::cout << "push index:" << currentBufferIndex.value << std::endl;
 
         {
@@ -637,7 +655,7 @@ namespace tt {
         }
         //std::cout << "frameSubmitIndex pop :" << frameSubmitIndex.size() <<" idx :"<<index<< std::endl;
 
-        if(frameSubmitIndex.size()<2)
+        if (frameSubmitIndex.size() < 2)
             cvDraw.notify_all();
 
     }

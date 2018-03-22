@@ -19,7 +19,6 @@
 
 uint32_t draw_run(tt::Device &ttDevice,vk::SurfaceKHR &surfaceKHR) {
     //std::cout << "draw_run" << std::endl;
-    ttDevice.buildPipeline(sizeof(g_vb_solid_face_colors_Data[0]));
 
     auto & cmdBuf = ttDevice.defaultPoolAllocBuffer();
 

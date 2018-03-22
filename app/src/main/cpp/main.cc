@@ -19,6 +19,7 @@
 #include "shaderc/shaderc.hpp"
 #include "main.hh"
 #include "stboxvk.hh"
+#include "cube_data.hh"
 
 static android_app *Android_application = nullptr;
 
@@ -103,6 +104,7 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 ttInstance.connectWSI(app->window);
                 ttInstance.defaultDevice().buildRenderpass(ttInstance.defaultSurface());
                 ttInstance.defaultDevice().buildSwapchainViewBuffers(ttInstance.defaultSurface());
+                ttInstance.defaultDevice().buildPipeline(sizeof(g_vb_solid_face_colors_Data[0]),app);
                 ttInstance.defaultDevice().buildSubmitThread(ttInstance.defaultSurface());
 
                 break;
