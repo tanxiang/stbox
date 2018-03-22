@@ -28,7 +28,8 @@ target_include_directories(stbox PRIVATE
                ${ANDROID_NDK}/sources/android/native_app_glue
                #${ANDROID_NDK}/sources/third_party/vulkan/src/include
                #${ANDROID_NDK}/sources/third_party/vulkan/src/libs
-               ${ANDROID_NDK}/sources/third_party/shaderc/include )
+               #${ANDROID_NDK}/sources/third_party/shaderc/include
+               )
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
@@ -61,9 +62,9 @@ find_library( # Sets the name of the path variable.
 # build script, prebuilt third-party libraries, or system libraries.
 
 # Import shaderc lib in NDK
-get_filename_component(SHADERC_SRC
-                       ${ANDROID_NDK}/sources/third_party/shaderc
-                       ABSOLUTE)
+#get_filename_component(SHADERC_SRC
+#                       ${ANDROID_NDK}/sources/third_party/shaderc
+#                       ABSOLUTE)
 # Build Util Lib
 set(UTILS_NAME  vsamputils)
 set(GLSLANG_SPIRV_INCLUDE_DIR ${SHADERC_SRC}/third_party/glslang)
@@ -73,9 +74,9 @@ get_filename_component(PROJECT_SOURCE_DIR
 get_filename_component(GLMINC_PREFIX
                        "${CMAKE_SOURCE_DIR}/../utils"
                        ABSOLUTE)
-add_library(shaderc_lib STATIC IMPORTED)
-set_target_properties(shaderc_lib PROPERTIES IMPORTED_LOCATION
-                      ${SHADERC_SRC}/libs/${ANDROID_STL}/${ANDROID_ABI}/libshaderc.a)
+#add_library(shaderc_lib STATIC IMPORTED)
+#set_target_properties(shaderc_lib PROPERTIES IMPORTED_LOCATION
+#                      ${SHADERC_SRC}/libs/${ANDROID_STL}/${ANDROID_ABI}/libshaderc.a)
 
 set(CMAKE_SHARED_LINKER_FLAGS
     "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
@@ -87,4 +88,5 @@ target_link_libraries( # Specifies the target library.
                        ${log-lib}
                        ${vulkan-lib}
                        ${android-lib}
-                       shaderc_lib )
+                       #shaderc_lib
+                       )

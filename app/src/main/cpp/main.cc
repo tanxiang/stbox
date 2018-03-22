@@ -16,7 +16,7 @@
 
 #include <android_native_app_glue.h>
 #include <cstring>
-#include "shaderc/shaderc.hpp"
+//#include "shaderc/shaderc.hpp"
 #include "main.hh"
 #include "stboxvk.hh"
 #include "cube_data.hh"
