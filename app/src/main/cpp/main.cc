@@ -135,7 +135,7 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
             case APP_CMD_GAINED_FOCUS:
                 ttInstance.setFocus();
                 std::cout << "got APP_CMD_INIT_WINDOW:" << gettid()<<std::endl;
-                AChoreographer_postFrameCallback(AChoreographer_getInstance(),choreographerCallback,&ttInstance);
+                AChoreographer_postFrameCallbackDelayed(AChoreographer_getInstance(),choreographerCallback,&ttInstance,40);
                 if (ttInstance.isFocus()) {
                     std::cout << app->userData << "fksend choreographerCallback: getid:" << gettid()
                               << std::endl;
