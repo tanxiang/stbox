@@ -39,7 +39,7 @@ namespace tt {
                     vk::DescriptorSetLayoutBinding{
                             0,
                             vk::DescriptorType::eUniformBuffer,
-                            2,
+                            1,
                             vk::ShaderStageFlagBits::eVertex
                     },
                     vk::DescriptorSetLayoutBinding{
