@@ -440,19 +440,6 @@ namespace tt {
     void Device::buildPipeline(uint32_t dataStepSize,android_app *app) {
         if (graphicsPipeline)
             return;
-
-        /*
-        std::basic_ifstream<uint32_t> infileMVP{"shaders/mvp.vert.spv", std::ios::in | std::ifstream::binary};
-        std::vector<uint32_t> vertShaderSpirv{std::istreambuf_iterator<uint32_t>{infileMVP},
-                                               std::istreambuf_iterator<uint32_t>{}};
-        std::cout <<"vertShaderSpirv len:" << vertShaderSpirv.size() << 'x'
-                  << sizeof(decltype(vertShaderSpirv) ::value_type)<<std::endl;
-        std::basic_ifstream<uint32_t> infileCopy{"shaders/copy.frag.spv", std::ios::in | std::ifstream::binary};
-        std::vector<uint32_t> fargShaderSpirv{std::istreambuf_iterator<uint32_t>{infileCopy},
-                                              std::istreambuf_iterator<uint32_t>{}};
-        std::cout << "fargShaderSpirv len:" << fargShaderSpirv.size() << 'x'
-                  << sizeof(decltype(fargShaderSpirv) ::value_type)<<std::endl;
-        */
         auto vertShaderModule = loadShaderFromFile("shaders/mvp.vert.spv",app);
         auto fargShaderModule = loadShaderFromFile("shaders/copy.frag.spv",app);
         std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStageCreateInfos{
@@ -590,9 +577,8 @@ namespace tt {
                         1, &cmdBuffer
                 }
         };
-        auto vk_queue = getQueue(queueFamilyIndex, 0);
         //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
-        vk_queue.submit(submitInfos, std::get<vk::UniqueFence>(
+        getQueue(queueFamilyIndex, 0).submit(submitInfos, std::get<vk::UniqueFence>(
                 vkSwapChainBuffers[currentBufferIndex.value]).get());
         currentBufferIndex.value;
         //std::cout << "push index:" << currentBufferIndex.value << std::endl;

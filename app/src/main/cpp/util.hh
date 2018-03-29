@@ -33,43 +33,51 @@ namespace tt {
         vk::UniqueDeviceMemory depthImageMemory;
         vk::UniqueBuffer mvpBuffer;
         vk::UniqueDeviceMemory mvpMemory;
-        std::vector<vk::DescriptorSetLayoutBinding> descriptSlBs{{
-                                                                         0,
-                                                                         vk::DescriptorType::eUniformBuffer,
-                                                                         1,
-                                                                         vk::ShaderStageFlagBits::eVertex
-                                                                 },
-                                                                 {
-                                                                         1,
-                                                                         vk::DescriptorType::eCombinedImageSampler,
-                                                                         1,
-                                                                         vk::ShaderStageFlagBits::eFragment
-                                                                 }
-        };
-        vk::UniqueDescriptorSetLayout descriptorSetLayout = createDescriptorSetLayoutUnique(
-                vk::DescriptorSetLayoutCreateInfo{
-                        vk::DescriptorSetLayoutCreateFlags(), descriptSlBs.size(),
-                        descriptSlBs.data()
-                });
+
+        vk::UniqueDescriptorSetLayout ttcreateDescriptorSetLayoutUnique() {
+            std::array<vk::DescriptorSetLayoutBinding, 2> descriptSlBs{
+                    vk::DescriptorSetLayoutBinding{
+                            0,
+                            vk::DescriptorType::eUniformBuffer,
+                            2,
+                            vk::ShaderStageFlagBits::eVertex
+                    },
+                    vk::DescriptorSetLayoutBinding{
+                            1,
+                            vk::DescriptorType::eCombinedImageSampler,
+                            1,
+                            vk::ShaderStageFlagBits::eFragment
+                    }
+            };
+            return createDescriptorSetLayoutUnique(
+                    vk::DescriptorSetLayoutCreateInfo{
+                            vk::DescriptorSetLayoutCreateFlags(), descriptSlBs.size(),
+                            descriptSlBs.data()
+                    });
+        }
+
+        vk::UniqueDescriptorSetLayout descriptorSetLayout = ttcreateDescriptorSetLayoutUnique();
         vk::UniquePipelineLayout pipelineLayout = createPipelineLayoutUnique(
                 vk::PipelineLayoutCreateInfo{
                         vk::PipelineLayoutCreateFlags(), 1, &descriptorSetLayout.get(), 0, nullptr
                 });
-        std::vector<vk::DescriptorPoolSize> poolSize{{
-                                                             vk::DescriptorType::eUniformBuffer,        1
-                                                     },
-                                                     {
-                                                             vk::DescriptorType::eCombinedImageSampler, 1
-                                                     }};
-        vk::UniqueDescriptorPool descriptorPoll = createDescriptorPoolUnique(
-                vk::DescriptorPoolCreateInfo{
-                        vk::DescriptorPoolCreateFlags(), 1, poolSize.size(), poolSize.data()});
+        vk::UniqueDescriptorPool ttcreateDescriptorPoolUnique(){
+            std::array<vk::DescriptorPoolSize,2> poolSize{vk::DescriptorPoolSize{
+                                                                 vk::DescriptorType::eUniformBuffer,        2
+                                                         },
+                                                         vk::DescriptorPoolSize{
+                                                                 vk::DescriptorType::eCombinedImageSampler, 1
+                                                         }};
+            return createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo{
+                            vk::DescriptorPoolCreateFlags(), 1, poolSize.size(), poolSize.data()});
+        }
+
+        vk::UniqueDescriptorPool descriptorPoll = ttcreateDescriptorPoolUnique();
         std::vector<vk::UniqueDescriptorSet> descriptorSets = allocateDescriptorSetsUnique(
                 vk::DescriptorSetAllocateInfo{
                         descriptorPoll.get(), 1, &descriptorSetLayout.get()
                 });
         vk::UniqueRenderPass renderPass;
-        //std::vector<vk::UniqueFramebuffer> frameBuffers;
         vk::UniquePipelineCache vkPipelineCache = createPipelineCacheUnique(
                 vk::PipelineCacheCreateInfo{});
         vk::UniquePipeline graphicsPipeline;
@@ -82,18 +90,19 @@ namespace tt {
 
         uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
-        vk::UniqueShaderModule loadShaderFromFile(const char* filePath,
-                           android_app *androidAppCtx);
+        vk::UniqueShaderModule loadShaderFromFile(const char *filePath,
+                                                  android_app *androidAppCtx);
+
     public:
-        Device(vk::Device dev, vk::PhysicalDevice &phy, uint32_t qidx) : vk::Device{
-                dev}, physicalDevice{phy}, queueFamilyIndex{qidx}, commandPool{
-                createCommandPoolUnique(vk::CommandPoolCreateInfo{
-                        vk::CommandPoolCreateFlagBits::eResetCommandBuffer, qidx})}, commandBuffers{
+        Device(vk::Device dev, vk::PhysicalDevice &phy, uint32_t qidx) :
+                vk::Device{dev}, physicalDevice{phy}, queueFamilyIndex{qidx},
+                commandPool{createCommandPoolUnique(
+                        vk::CommandPoolCreateInfo{
+                                vk::CommandPoolCreateFlagBits::eResetCommandBuffer, qidx})
+                }, commandBuffers{
                 allocateCommandBuffersUnique(vk::CommandBufferAllocateInfo{commandPool.get(),
                                                                            vk::CommandBufferLevel::ePrimary,
-                                                                           1})} {
-
-        }
+                                                                           1})} {}
 
         Device(Device &&odevice) : physicalDevice{odevice.physicalDevice},
                                    queueFamilyIndex{odevice.queueFamilyIndex},
@@ -108,17 +117,13 @@ namespace tt {
                                    depthImageMemory{std::move(odevice.depthImageMemory)},
                                    mvpBuffer{std::move(odevice.mvpBuffer)},
                                    mvpMemory{std::move(odevice.mvpMemory)},
-                                   descriptSlBs{std::move(odevice.descriptSlBs)},
                                    descriptorSetLayout{std::move(odevice.descriptorSetLayout)},
                                    pipelineLayout{std::move(odevice.pipelineLayout)},
-                                   poolSize{std::move(odevice.poolSize)},
                                    descriptorPoll{std::move(odevice.descriptorPoll)},
                                    descriptorSets{std::move(odevice.descriptorSets)},
                                    renderPass{std::move(odevice.renderPass)},
                                    vkPipelineCache{std::move(odevice.vkPipelineCache)},
-                                   graphicsPipeline{std::move(odevice.graphicsPipeline)} {
-
-        }
+                                   graphicsPipeline{std::move(odevice.graphicsPipeline)} {}
 
         Device() = delete;
 
@@ -131,7 +136,7 @@ namespace tt {
             return swapchainExtent;
         }
 
-        std::vector<vk::UniqueCommandBuffer> & defaultPoolAllocBuffer(){
+        std::vector<vk::UniqueCommandBuffer> &defaultPoolAllocBuffer() {
             return commandBuffers;
         }
 
@@ -150,7 +155,7 @@ namespace tt {
 
         void buildRenderpass(vk::SurfaceKHR &surfaceKHR);
 
-        void buildPipeline(uint32_t dataStepSize,android_app *app);
+        void buildPipeline(uint32_t dataStepSize, android_app *app);
 
         void renderPassReset() {
             vkSwapChainBuffers.clear();
@@ -163,13 +168,14 @@ namespace tt {
 
         void stopSubmitThread();
 
-        void resetDraw(){
-            while(!frameSubmitIndex.empty()){
+        void resetDraw() {
+            while (!frameSubmitIndex.empty()) {
                 swapchainPresent();
             }
         }
 
         void swapchainPresent();
+
     };
 
     class Instance : public vk::Instance {
@@ -245,5 +251,6 @@ namespace tt {
     };
 
     Instance createInstance();
+
 }
 #endif //STBOX_UTIL_H
