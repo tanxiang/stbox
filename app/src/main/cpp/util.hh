@@ -31,7 +31,7 @@ namespace tt {
         vk::UniqueImage depthImage;
         vk::UniqueImageView depthImageView;
         vk::UniqueDeviceMemory depthImageMemory;
-        vk::UniqueBuffer mvpBuffer;
+        vk::UniqueBuffer mvpBuffer[2];
         vk::UniqueDeviceMemory mvpMemory;
 
         vk::UniqueDescriptorSetLayout ttcreateDescriptorSetLayoutUnique() {
@@ -69,13 +69,13 @@ namespace tt {
                                                                  vk::DescriptorType::eCombinedImageSampler, 1
                                                          }};
             return createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo{
-                            vk::DescriptorPoolCreateFlags(), 1, poolSize.size(), poolSize.data()});
+                            vk::DescriptorPoolCreateFlags(), 2, poolSize.size(), poolSize.data()});
         }
 
         vk::UniqueDescriptorPool descriptorPoll = ttcreateDescriptorPoolUnique();
         std::vector<vk::UniqueDescriptorSet> descriptorSets = allocateDescriptorSetsUnique(
                 vk::DescriptorSetAllocateInfo{
-                        descriptorPoll.get(), 1, &descriptorSetLayout.get()
+                        descriptorPoll.get(), 2, &descriptorSetLayout.get()
                 });
         vk::UniqueRenderPass renderPass;
         vk::UniquePipelineCache vkPipelineCache = createPipelineCacheUnique(

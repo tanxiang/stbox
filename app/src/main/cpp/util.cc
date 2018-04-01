@@ -327,40 +327,52 @@ namespace tt {
 
 
     void Device::buildMVPBufferAndWrite(glm::mat4 MVP) {
-        mvpBuffer = createBufferUnique(
+        mvpBuffer[0] = createBufferUnique(
                 vk::BufferCreateInfo{
                         vk::BufferCreateFlags(),
                         sizeof(MVP),
                         vk::BufferUsageFlagBits::eUniformBuffer});
-        auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer.get());
-        uint32_t typeIndex = findMemoryTypeIndex(mvpBufferMemoryRq.memoryTypeBits,
+        mvpBuffer[1] = createBufferUnique(
+                vk::BufferCreateInfo{
+                        vk::BufferCreateFlags(),
+                        sizeof(MVP),
+                        vk::BufferUsageFlagBits::eUniformBuffer});
+        auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[0].get());
+        uint32_t typeIndex = findMemoryTypeIndex(mvpBufferMemoryRq.memoryTypeBits ,
                                                  vk::MemoryPropertyFlags() |
                                                  vk::MemoryPropertyFlagBits::eHostVisible |
                                                  vk::MemoryPropertyFlagBits::eHostCoherent);
 
         mvpMemory = allocateMemoryUnique(vk::MemoryAllocateInfo{
-                mvpBufferMemoryRq.size, typeIndex
+                mvpBufferMemoryRq.size * 2, typeIndex
         });
         std::cout << "mvpMemory:alloc index:" << typeIndex << std::endl;
 
-        memcpy(mapMemory(mvpMemory.get(), 0, mvpBufferMemoryRq.size,
+        memcpy(mapMemory(mvpMemory.get(), 0, mvpBufferMemoryRq.size * 2,
                          vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
 
         unmapMemory(mvpMemory.get());
-        auto mvpBufferInfo = vk::DescriptorBufferInfo{mvpBuffer.get(), 0, sizeof(MVP)};
-        bindBufferMemory(mvpBuffer.get(), mvpMemory.get(), 0);
+        auto mvpBufferInfo0 = vk::DescriptorBufferInfo{mvpBuffer[0].get(), 0, sizeof(MVP)};
+        bindBufferMemory(mvpBuffer[0].get(), mvpMemory.get(), 0);
+        auto mvpBufferInfo1 = vk::DescriptorBufferInfo{mvpBuffer[1].get(), mvpBufferMemoryRq.size, sizeof(MVP)};
+        bindBufferMemory(mvpBuffer[1].get(), mvpMemory.get(), mvpBufferMemoryRq.size);
+
         updateDescriptorSets(
                 std::vector<vk::WriteDescriptorSet>{
                         vk::WriteDescriptorSet{descriptorSets[0].get(), 0, 0, 1,
                                                vk::DescriptorType::eUniformBuffer,
-                                               nullptr, &mvpBufferInfo}},
+                                               nullptr, &mvpBufferInfo0},
+                        vk::WriteDescriptorSet{descriptorSets[1].get(), 0, 0, 1,
+                                               vk::DescriptorType::eUniformBuffer,
+                                               nullptr, &mvpBufferInfo1}},
+
                 nullptr);    //todo use_texture
 
     }
 
     void Device::updateMVPBuffer(glm::mat4 MVP) {
         if (mvpBuffer && mvpMemory) {
-            auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer.get());
+            auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[0].get());
             memcpy(mapMemory(mvpMemory.get(), 0, mvpBufferMemoryRq.size,
                              vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
             unmapMemory(mvpMemory.get());
