@@ -15,6 +15,7 @@
 #include <condition_variable>
 #include <android_native_app_glue.h>
 #include <iostream>
+
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);
 
 #define SWAPCHAIN_NUM 3
@@ -44,13 +45,13 @@ namespace tt {
                 getBufferMemoryRequirements(mvpBuffer[0].get()),
                 getBufferMemoryRequirements(mvpBuffer[1].get())
         };
-        vk::UniqueDeviceMemory mvpMemory = allocateMemoryUnique(vk::MemoryAllocateInfo{
+        vk::UniqueDeviceMemory mvpMemory{allocateMemoryUnique(vk::MemoryAllocateInfo{
                 mvpBufferMemoryRqs[0].size + mvpBufferMemoryRqs[1].size,
                 findMemoryTypeIndex(mvpBufferMemoryRqs[0].memoryTypeBits,
                                     vk::MemoryPropertyFlags() |
                                     vk::MemoryPropertyFlagBits::eHostVisible |
                                     vk::MemoryPropertyFlagBits::eHostCoherent)
-        });
+        })};
 
         vk::UniqueDescriptorSetLayout ttcreateDescriptorSetLayoutUnique() {
             std::array<vk::DescriptorSetLayoutBinding, 2> descriptSlBs{
@@ -74,11 +75,11 @@ namespace tt {
                     });
         }
 
-        vk::UniqueDescriptorSetLayout descriptorSetLayout = ttcreateDescriptorSetLayoutUnique();
-        std::array<vk::DescriptorSetLayout,2> descriptorSetLayouts{descriptorSetLayout.get(),descriptorSetLayout.get()};
+        vk::UniqueDescriptorSetLayout descriptorSetLayout{ttcreateDescriptorSetLayoutUnique()};
+
         vk::UniquePipelineLayout pipelineLayout = createPipelineLayoutUnique(
                 vk::PipelineLayoutCreateInfo{
-                        vk::PipelineLayoutCreateFlags(), 1,&descriptorSetLayout.get(), 0, nullptr
+                        vk::PipelineLayoutCreateFlags(), 1, &descriptorSetLayout.get(), 0, nullptr
                 });
 
         vk::UniqueDescriptorPool ttcreateDescriptorPoolUnique() {
@@ -90,9 +91,17 @@ namespace tt {
         }
 
         vk::UniqueDescriptorPool descriptorPoll = ttcreateDescriptorPoolUnique();
-        std::vector<vk::UniqueDescriptorSet> descriptorSets = allocateDescriptorSetsUnique(
-                vk::DescriptorSetAllocateInfo{
-                        descriptorPoll.get(), 2,  descriptorSetLayouts.data()});
+
+        std::vector<vk::UniqueDescriptorSet> ttcreateDescriptorSets() {
+            std::array<vk::DescriptorSetLayout, 2> descriptorSetLayouts{descriptorSetLayout.get(),
+                                                                        descriptorSetLayout.get()};
+            return allocateDescriptorSetsUnique(
+                    vk::DescriptorSetAllocateInfo{
+                            descriptorPoll.get(), descriptorSetLayouts.size(),
+                            descriptorSetLayouts.data()});
+        }
+
+        std::vector<vk::UniqueDescriptorSet> descriptorSets{ttcreateDescriptorSets()};
         vk::UniqueRenderPass renderPass;
         vk::UniquePipelineCache vkPipelineCache = createPipelineCacheUnique(
                 vk::PipelineCacheCreateInfo{});
@@ -128,16 +137,12 @@ namespace tt {
             bindBufferMemory(mvpBuffer[1].get(), mvpMemory.get(), mvpBufferMemoryRqs[0].size);
 
             assert(descriptorSets.size() == 2);
-            std::cout<<"descriptorSets.size()"<<descriptorSets.size()<<std::endl;
+            std::cout << "descriptorSets.size()" << descriptorSets.size() << std::endl;
             updateDescriptorSets(
                     std::vector<vk::WriteDescriptorSet>{
                             vk::WriteDescriptorSet{descriptorSets[0].get(), 0, 0, 1,
                                                    vk::DescriptorType::eUniformBuffer,
-                                                   nullptr, &mvpBufferInfo0}},
-
-                    nullptr);    //todo use_texture
-            updateDescriptorSets(
-                    std::vector<vk::WriteDescriptorSet>{
+                                                   nullptr, &mvpBufferInfo0},
                             vk::WriteDescriptorSet{descriptorSets[1].get(), 0, 0, 1,
                                                    vk::DescriptorType::eUniformBuffer,
                                                    nullptr, &mvpBufferInfo1}},
