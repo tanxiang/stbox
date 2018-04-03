@@ -326,57 +326,11 @@ namespace tt {
     }
 
 
-    void Device::buildMVPBufferAndWrite(glm::mat4 MVP) {
-        mvpBuffer[0] = createBufferUnique(
-                vk::BufferCreateInfo{
-                        vk::BufferCreateFlags(),
-                        sizeof(MVP),
-                        vk::BufferUsageFlagBits::eUniformBuffer});
-        mvpBuffer[1] = createBufferUnique(
-                vk::BufferCreateInfo{
-                        vk::BufferCreateFlags(),
-                        sizeof(MVP),
-                        vk::BufferUsageFlagBits::eUniformBuffer});
-        auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[0].get());
-        uint32_t typeIndex = findMemoryTypeIndex(mvpBufferMemoryRq.memoryTypeBits ,
-                                                 vk::MemoryPropertyFlags() |
-                                                 vk::MemoryPropertyFlagBits::eHostVisible |
-                                                 vk::MemoryPropertyFlagBits::eHostCoherent);
-
-        mvpMemory = allocateMemoryUnique(vk::MemoryAllocateInfo{
-                mvpBufferMemoryRq.size * 2, typeIndex
-        });
-        std::cout << "mvpMemory:alloc index:" << typeIndex << std::endl;
-
-        memcpy(mapMemory(mvpMemory.get(), 0, mvpBufferMemoryRq.size * 2,
-                         vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
-
-        unmapMemory(mvpMemory.get());
-        auto mvpBufferInfo0 = vk::DescriptorBufferInfo{mvpBuffer[0].get(), 0, sizeof(MVP)};
-        bindBufferMemory(mvpBuffer[0].get(), mvpMemory.get(), 0);
-        auto mvpBufferInfo1 = vk::DescriptorBufferInfo{mvpBuffer[1].get(), mvpBufferMemoryRq.size, sizeof(MVP)};
-        bindBufferMemory(mvpBuffer[1].get(), mvpMemory.get(), mvpBufferMemoryRq.size);
-
-        updateDescriptorSets(
-                std::vector<vk::WriteDescriptorSet>{
-                        vk::WriteDescriptorSet{descriptorSets[0].get(), 0, 0, 1,
-                                               vk::DescriptorType::eUniformBuffer,
-                                               nullptr, &mvpBufferInfo0},
-                        vk::WriteDescriptorSet{descriptorSets[1].get(), 0, 0, 1,
-                                               vk::DescriptorType::eUniformBuffer,
-                                               nullptr, &mvpBufferInfo1}},
-
-                nullptr);    //todo use_texture
-
-    }
-
     void Device::updateMVPBuffer(glm::mat4 MVP) {
-        if (mvpBuffer && mvpMemory) {
-            auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[0].get());
-            memcpy(mapMemory(mvpMemory.get(), 0, mvpBufferMemoryRq.size,
-                             vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
-            unmapMemory(mvpMemory.get());
-        } else return buildMVPBufferAndWrite(MVP);
+        auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[0].get());
+        memcpy(mapMemory(mvpMemory.get(), 0, mvpBufferMemoryRq.size,
+                         vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
+        unmapMemory(mvpMemory.get());
     }
 
     void Device::buildRenderpass(vk::SurfaceKHR &surfaceKHR) {
@@ -431,11 +385,11 @@ namespace tt {
 
     }
 
-    vk::UniqueShaderModule Device::loadShaderFromFile(const char* filePath,
-                                android_app *androidAppCtx) {
+    vk::UniqueShaderModule Device::loadShaderFromFile(const char *filePath,
+                                                      android_app *androidAppCtx) {
         // Read the file
         assert(androidAppCtx);
-        AAsset* file = AAssetManager_open(androidAppCtx->activity->assetManager,
+        AAsset *file = AAssetManager_open(androidAppCtx->activity->assetManager,
                                           filePath, AASSET_MODE_BUFFER);
         size_t fileLength = AAsset_getLength(file);
 
@@ -449,11 +403,11 @@ namespace tt {
 
     }
 
-    void Device::buildPipeline(uint32_t dataStepSize,android_app *app) {
+    void Device::buildPipeline(uint32_t dataStepSize, android_app *app) {
         if (graphicsPipeline)
             return;
-        auto vertShaderModule = loadShaderFromFile("shaders/mvp.vert.spv",app);
-        auto fargShaderModule = loadShaderFromFile("shaders/copy.frag.spv",app);
+        auto vertShaderModule = loadShaderFromFile("shaders/mvp.vert.spv", app);
+        auto fargShaderModule = loadShaderFromFile("shaders/copy.frag.spv", app);
         std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStageCreateInfos{
                 vk::PipelineShaderStageCreateInfo{
                         vk::PipelineShaderStageCreateFlags(),
@@ -545,7 +499,16 @@ namespace tt {
         graphicsPipeline = createGraphicsPipelineUnique(vkPipelineCache.get(), pipelineCreateInfo);
     }
 
-    uint32_t Device::drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer) {
+    uint32_t
+    Device::drawCmdBuffer(vk::CommandBuffer &cmdBuffer, glm::mat4 MVP, vk::Buffer vertexBuffer) {
+        static int32_t frameIndex;
+
+        auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[frameIndex % 2].get());
+        memcpy(mapMemory(mvpMemory.get(), frameIndex % 2 ? 0 : mvpBufferMemoryRq.size,
+                         mvpBufferMemoryRq.size,
+                         vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
+        unmapMemory(mvpMemory.get());
+
         {
             std::unique_lock<std::mutex> lockFrame{mutexDraw};
             cvDraw.wait(lockFrame,
@@ -574,7 +537,7 @@ namespace tt {
                 clearValues.size(), clearValues.data()
         }, vk::SubpassContents::eInline);
         cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.get());
-        std::array<vk::DescriptorSet, 1> tmpDescriptorSets{this->descriptorSets[0].get()};
+        std::array<vk::DescriptorSet, 1> tmpDescriptorSets{this->descriptorSets[frameIndex % 2].get()};
         cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout.get(), 0,
                                      tmpDescriptorSets, std::vector<uint32_t>{});
         vk::DeviceSize offsets[1] = {0};
@@ -599,6 +562,7 @@ namespace tt {
             std::lock_guard<std::mutex> lock{mutexDraw};
             frameSubmitIndex.push(currentBufferIndex.value);
         }
+        frameIndex++;
         return 1;
     }
 

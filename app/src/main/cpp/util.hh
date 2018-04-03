@@ -14,7 +14,7 @@
 #include <queue>
 #include <condition_variable>
 #include <android_native_app_glue.h>
-
+#include <iostream>
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);
 
 #define SWAPCHAIN_NUM 3
@@ -31,8 +31,26 @@ namespace tt {
         vk::UniqueImage depthImage;
         vk::UniqueImageView depthImageView;
         vk::UniqueDeviceMemory depthImageMemory;
-        vk::UniqueBuffer mvpBuffer[2];
-        vk::UniqueDeviceMemory mvpMemory;
+        std::array<vk::UniqueBuffer, 2> mvpBuffer{createBufferUnique(
+                vk::BufferCreateInfo{
+                        vk::BufferCreateFlags(),
+                        sizeof(glm::mat4),
+                        vk::BufferUsageFlagBits::eUniformBuffer}), createBufferUnique(
+                vk::BufferCreateInfo{
+                        vk::BufferCreateFlags(),
+                        sizeof(glm::mat4),
+                        vk::BufferUsageFlagBits::eUniformBuffer})};
+        std::array<vk::MemoryRequirements, 2> mvpBufferMemoryRqs{
+                getBufferMemoryRequirements(mvpBuffer[0].get()),
+                getBufferMemoryRequirements(mvpBuffer[1].get())
+        };
+        vk::UniqueDeviceMemory mvpMemory = allocateMemoryUnique(vk::MemoryAllocateInfo{
+                mvpBufferMemoryRqs[0].size + mvpBufferMemoryRqs[1].size,
+                findMemoryTypeIndex(mvpBufferMemoryRqs[0].memoryTypeBits,
+                                    vk::MemoryPropertyFlags() |
+                                    vk::MemoryPropertyFlagBits::eHostVisible |
+                                    vk::MemoryPropertyFlagBits::eHostCoherent)
+        });
 
         vk::UniqueDescriptorSetLayout ttcreateDescriptorSetLayoutUnique() {
             std::array<vk::DescriptorSetLayoutBinding, 2> descriptSlBs{
@@ -57,26 +75,24 @@ namespace tt {
         }
 
         vk::UniqueDescriptorSetLayout descriptorSetLayout = ttcreateDescriptorSetLayoutUnique();
+        std::array<vk::DescriptorSetLayout,2> descriptorSetLayouts{descriptorSetLayout.get(),descriptorSetLayout.get()};
         vk::UniquePipelineLayout pipelineLayout = createPipelineLayoutUnique(
                 vk::PipelineLayoutCreateInfo{
-                        vk::PipelineLayoutCreateFlags(), 1, &descriptorSetLayout.get(), 0, nullptr
+                        vk::PipelineLayoutCreateFlags(), 1,&descriptorSetLayout.get(), 0, nullptr
                 });
-        vk::UniqueDescriptorPool ttcreateDescriptorPoolUnique(){
-            std::array<vk::DescriptorPoolSize,2> poolSize{vk::DescriptorPoolSize{
-                                                                 vk::DescriptorType::eUniformBuffer,        2
-                                                         },
-                                                         vk::DescriptorPoolSize{
-                                                                 vk::DescriptorType::eCombinedImageSampler, 1
-                                                         }};
+
+        vk::UniqueDescriptorPool ttcreateDescriptorPoolUnique() {
+            std::array<vk::DescriptorPoolSize, 2> poolSize{
+                    vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 2},
+                    vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 2}};
             return createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo{
-                            vk::DescriptorPoolCreateFlags(), 2, poolSize.size(), poolSize.data()});
+                    vk::DescriptorPoolCreateFlags(), 2, poolSize.size(), poolSize.data()});
         }
 
         vk::UniqueDescriptorPool descriptorPoll = ttcreateDescriptorPoolUnique();
         std::vector<vk::UniqueDescriptorSet> descriptorSets = allocateDescriptorSetsUnique(
                 vk::DescriptorSetAllocateInfo{
-                        descriptorPoll.get(), 2, &descriptorSetLayout.get()
-                });
+                        descriptorPoll.get(), 2,  descriptorSetLayouts.data()});
         vk::UniqueRenderPass renderPass;
         vk::UniquePipelineCache vkPipelineCache = createPipelineCacheUnique(
                 vk::PipelineCacheCreateInfo{});
@@ -102,7 +118,32 @@ namespace tt {
                 }, commandBuffers{
                 allocateCommandBuffersUnique(vk::CommandBufferAllocateInfo{commandPool.get(),
                                                                            vk::CommandBufferLevel::ePrimary,
-                                                                           1})} {}
+                                                                           1})} {
+            auto mvpBufferInfo0 = vk::DescriptorBufferInfo{mvpBuffer[0].get(), 0,
+                                                           sizeof(glm::mat4)};
+            bindBufferMemory(mvpBuffer[0].get(), mvpMemory.get(), 0);
+            auto mvpBufferInfo1 = vk::DescriptorBufferInfo{mvpBuffer[1].get(),
+                                                           mvpBufferMemoryRqs[0].size,
+                                                           sizeof(glm::mat4)};
+            bindBufferMemory(mvpBuffer[1].get(), mvpMemory.get(), mvpBufferMemoryRqs[0].size);
+
+            assert(descriptorSets.size() == 2);
+            std::cout<<"descriptorSets.size()"<<descriptorSets.size()<<std::endl;
+            updateDescriptorSets(
+                    std::vector<vk::WriteDescriptorSet>{
+                            vk::WriteDescriptorSet{descriptorSets[0].get(), 0, 0, 1,
+                                                   vk::DescriptorType::eUniformBuffer,
+                                                   nullptr, &mvpBufferInfo0}},
+
+                    nullptr);    //todo use_texture
+            updateDescriptorSets(
+                    std::vector<vk::WriteDescriptorSet>{
+                            vk::WriteDescriptorSet{descriptorSets[1].get(), 0, 0, 1,
+                                                   vk::DescriptorType::eUniformBuffer,
+                                                   nullptr, &mvpBufferInfo1}},
+
+                    nullptr);    //todo use_texture
+        }
 
         Device(Device &&odevice) : physicalDevice{odevice.physicalDevice},
                                    queueFamilyIndex{odevice.queueFamilyIndex},
@@ -149,7 +190,7 @@ namespace tt {
 
         void buildSwapchainViewBuffers(vk::SurfaceKHR &surfaceKHR);
 
-        void buildMVPBufferAndWrite(glm::mat4 MVP);
+        //void buildMVPBufferAndWrite(glm::mat4 MVP);
 
         void updateMVPBuffer(glm::mat4 MVP);
 
@@ -157,12 +198,13 @@ namespace tt {
 
         void buildPipeline(uint32_t dataStepSize, android_app *app);
 
-        void renderPassReset() {
-            vkSwapChainBuffers.clear();
-            renderPass.reset();
-        }
+        //void renderPassReset() {
+        //    vkSwapChainBuffers.clear();
+        //    renderPass.reset();
+        //}
 
-        uint32_t drawCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::Buffer vertexBuffer);
+        uint32_t
+        drawCmdBuffer(vk::CommandBuffer &cmdBuffer, glm::mat4 MVP, vk::Buffer vertexBuffer);
 
         void buildSubmitThread(vk::SurfaceKHR &surfaceKHR);
 
