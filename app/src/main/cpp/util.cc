@@ -326,13 +326,6 @@ namespace tt {
     }
 
 
-    void Device::updateMVPBuffer(glm::mat4 MVP) {
-        auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[0].get());
-        memcpy(mapMemory(mvpMemory.get(), 0, mvpBufferMemoryRq.size,
-                         vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
-        unmapMemory(mvpMemory.get());
-    }
-
     void Device::buildRenderpass(vk::SurfaceKHR &surfaceKHR) {
         auto surfaceDefaultFormat = getSurfaceDefaultFormat(surfaceKHR);
         std::array<vk::AttachmentDescription, 2> attachDescs{
@@ -504,10 +497,12 @@ namespace tt {
         static int32_t frameIndex;
 
         auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[frameIndex % 2].get());
-        memcpy(mapMemory(mvpMemory.get(), frameIndex % 2 ? 0 : mvpBufferMemoryRq.size,
+        memcpy(mapMemory(mvpMemorys[frameIndex % 2].get(),0,
                          mvpBufferMemoryRq.size,
                          vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
-        unmapMemory(mvpMemory.get());
+
+
+        unmapMemory(mvpMemorys[frameIndex % 2].get());
 
         {
             std::unique_lock<std::mutex> lockFrame{mutexDraw};

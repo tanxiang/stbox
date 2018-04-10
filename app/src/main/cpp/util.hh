@@ -32,26 +32,40 @@ namespace tt {
         vk::UniqueImage depthImage;
         vk::UniqueImageView depthImageView;
         vk::UniqueDeviceMemory depthImageMemory;
-        std::array<vk::UniqueBuffer, 2> mvpBuffer{createBufferUnique(
-                vk::BufferCreateInfo{
-                        vk::BufferCreateFlags(),
-                        sizeof(glm::mat4),
-                        vk::BufferUsageFlagBits::eUniformBuffer}), createBufferUnique(
-                vk::BufferCreateInfo{
-                        vk::BufferCreateFlags(),
-                        sizeof(glm::mat4),
-                        vk::BufferUsageFlagBits::eUniformBuffer})};
+        std::array<vk::UniqueBuffer, 2> mvpBuffer{
+                createBufferUnique(
+                        vk::BufferCreateInfo{
+                                vk::BufferCreateFlags(),
+                                sizeof(glm::mat4),
+                                vk::BufferUsageFlagBits::eUniformBuffer}),
+                createBufferUnique(
+                        vk::BufferCreateInfo{
+                                vk::BufferCreateFlags(),
+                                sizeof(glm::mat4),
+                                vk::BufferUsageFlagBits::eUniformBuffer})};
         std::array<vk::MemoryRequirements, 2> mvpBufferMemoryRqs{
                 getBufferMemoryRequirements(mvpBuffer[0].get()),
                 getBufferMemoryRequirements(mvpBuffer[1].get())
         };
-        vk::UniqueDeviceMemory mvpMemory{allocateMemoryUnique(vk::MemoryAllocateInfo{
-                mvpBufferMemoryRqs[0].size + mvpBufferMemoryRqs[1].size,
-                findMemoryTypeIndex(mvpBufferMemoryRqs[0].memoryTypeBits,
-                                    vk::MemoryPropertyFlags() |
-                                    vk::MemoryPropertyFlagBits::eHostVisible |
-                                    vk::MemoryPropertyFlagBits::eHostCoherent)
-        })};
+        std::array<vk::UniqueDeviceMemory, 2> mvpMemorys{
+                allocateMemoryUnique(vk::MemoryAllocateInfo{
+                                             mvpBufferMemoryRqs[0].size + mvpBufferMemoryRqs[1].size,
+                                             findMemoryTypeIndex(mvpBufferMemoryRqs[0].memoryTypeBits,
+                                                                 vk::MemoryPropertyFlags() |
+                                                                 vk::MemoryPropertyFlagBits::eHostVisible |
+                                                                 vk::MemoryPropertyFlagBits::eHostCoherent)
+                                     }
+                ),
+                allocateMemoryUnique(vk::MemoryAllocateInfo{
+                                             mvpBufferMemoryRqs[0].size + mvpBufferMemoryRqs[1].size,
+                                             findMemoryTypeIndex(mvpBufferMemoryRqs[0].memoryTypeBits,
+                                                                 vk::MemoryPropertyFlags() |
+                                                                 vk::MemoryPropertyFlagBits::eHostVisible |
+                                                                 vk::MemoryPropertyFlagBits::eHostCoherent)
+                                     }
+                )
+        };
+
 
         vk::UniqueDescriptorSetLayout ttcreateDescriptorSetLayoutUnique() {
             std::array<vk::DescriptorSetLayoutBinding, 2> descriptSlBs{
@@ -130,11 +144,10 @@ namespace tt {
                                                                            1})} {
             auto mvpBufferInfo0 = vk::DescriptorBufferInfo{mvpBuffer[0].get(), 0,
                                                            sizeof(glm::mat4)};
-            bindBufferMemory(mvpBuffer[0].get(), mvpMemory.get(), 0);
-            auto mvpBufferInfo1 = vk::DescriptorBufferInfo{mvpBuffer[1].get(),
-                                                           mvpBufferMemoryRqs[0].size,
+            bindBufferMemory(mvpBuffer[0].get(), mvpMemorys[0].get(), 0);
+            auto mvpBufferInfo1 = vk::DescriptorBufferInfo{mvpBuffer[1].get(), 0,
                                                            sizeof(glm::mat4)};
-            bindBufferMemory(mvpBuffer[1].get(), mvpMemory.get(), mvpBufferMemoryRqs[0].size);
+            bindBufferMemory(mvpBuffer[1].get(), mvpMemorys[1].get(), 0);
 
             assert(descriptorSets.size() == 2);
             std::cout << "descriptorSets.size()" << descriptorSets.size() << std::endl;
@@ -162,7 +175,7 @@ namespace tt {
                                    depthImageView{std::move(odevice.depthImageView)},
                                    depthImageMemory{std::move(odevice.depthImageMemory)},
                                    mvpBuffer{std::move(odevice.mvpBuffer)},
-                                   mvpMemory{std::move(odevice.mvpMemory)},
+                                   mvpMemorys{std::move(odevice.mvpMemorys)},
                                    descriptorSetLayout{std::move(odevice.descriptorSetLayout)},
                                    pipelineLayout{std::move(odevice.pipelineLayout)},
                                    descriptorPoll{std::move(odevice.descriptorPoll)},
