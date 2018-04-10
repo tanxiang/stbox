@@ -493,9 +493,10 @@ namespace tt {
     }
 
     uint32_t
-    Device::drawCmdBuffer(vk::CommandBuffer &cmdBuffer, glm::mat4 MVP, vk::Buffer vertexBuffer) {
+    Device::drawCmdBuffer(glm::mat4 MVP, vk::Buffer vertexBuffer) {
         static int32_t frameIndex;
 
+        auto &cmdBuffer =commandBuffers[frameIndex % 2].get();
         auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[frameIndex % 2].get());
         memcpy(mapMemory(mvpMemorys[frameIndex % 2].get(),0,
                          mvpBufferMemoryRq.size,

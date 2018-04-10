@@ -138,10 +138,8 @@ namespace tt {
                 commandPool{createCommandPoolUnique(
                         vk::CommandPoolCreateInfo{
                                 vk::CommandPoolCreateFlagBits::eResetCommandBuffer, qidx})
-                }, commandBuffers{
-                allocateCommandBuffersUnique(vk::CommandBufferAllocateInfo{commandPool.get(),
-                                                                           vk::CommandBufferLevel::ePrimary,
-                                                                           1})} {
+                }, commandBuffers{allocateCommandBuffersUnique(vk::CommandBufferAllocateInfo{commandPool.get(),
+                                                                           vk::CommandBufferLevel::ePrimary, 2})} {
             auto mvpBufferInfo0 = vk::DescriptorBufferInfo{mvpBuffer[0].get(), 0,
                                                            sizeof(glm::mat4)};
             bindBufferMemory(mvpBuffer[0].get(), mvpMemorys[0].get(), 0);
@@ -222,7 +220,7 @@ namespace tt {
         //}
 
         uint32_t
-        drawCmdBuffer(vk::CommandBuffer &cmdBuffer, glm::mat4 MVP, vk::Buffer vertexBuffer);
+        drawCmdBuffer(glm::mat4 MVP, vk::Buffer vertexBuffer);
 
         void buildSubmitThread(vk::SurfaceKHR &surfaceKHR);
 

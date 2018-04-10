@@ -19,7 +19,7 @@
 uint32_t draw_run(tt::Device &ttDevice, vk::SurfaceKHR &surfaceKHR) {
     //std::cout << "draw_run" << std::endl;
 
-    auto &cmdBuf = ttDevice.defaultPoolAllocBuffer();
+    //auto &cmdBuf = ttDevice.defaultPoolAllocBuffer();
 
     auto swapchainExtent = ttDevice.getSwapchainExtent();
     auto Projection = glm::perspective(glm::radians(45.0f),
@@ -54,8 +54,7 @@ uint32_t draw_run(tt::Device &ttDevice, vk::SurfaceKHR &surfaceKHR) {
                                                     vk::MemoryPropertyFlagBits::eHostCoherent);
     }
 
-    return ttDevice.drawCmdBuffer(cmdBuf[0].get(),
-                                  Clip * Projection * glm::rotate(View, glm::radians(
+    return ttDevice.drawCmdBuffer(Clip * Projection * glm::rotate(View, glm::radians(
                                           (float) std::chrono::steady_clock::now().time_since_epoch().count() /
                                           10000000.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * Model,
                                   vertexBuffer.get());
