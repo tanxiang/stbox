@@ -508,7 +508,7 @@ namespace tt {
         {
             std::unique_lock<std::mutex> lockFrame{mutexDraw};
             cvDraw.wait(lockFrame,
-                        [this]() { return frameSubmitIndex.size() < 2 || submitExitFlag; });
+                        [this]() { return frameSubmitIndex.size() < SWAPCHAIN_NUM - 1 || submitExitFlag; });
             if (submitExitFlag)
                 return 0;
         }

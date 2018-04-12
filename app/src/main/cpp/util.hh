@@ -18,7 +18,7 @@
 
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);
 
-#define SWAPCHAIN_NUM 3
+#define SWAPCHAIN_NUM 2
 namespace tt {
     class Device : public vk::Device {
         vk::PhysicalDevice &physicalDevice;
