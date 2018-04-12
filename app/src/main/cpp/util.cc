@@ -505,7 +505,7 @@ namespace tt {
 
         unmapMemory(mvpMemorys[frameIndex % 2].get());
 
-        {
+        {//FIXME acquireNextImageKHR present complete ???
             std::unique_lock<std::mutex> lockFrame{mutexDraw};
             cvDraw.wait(lockFrame,
                         [this]() { return frameSubmitIndex.size() < SWAPCHAIN_NUM - 1 || submitExitFlag; });
