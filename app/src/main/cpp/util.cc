@@ -551,7 +551,7 @@ namespace tt {
         //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
         getQueue(queueFamilyIndex, 0).submit(submitInfos, std::get<vk::UniqueFence>(
                 vkSwapChainBuffers[currentBufferIndex.value]).get());
-        currentBufferIndex.value;
+        //currentBufferIndex.value;
         //std::cout << "push index:" << currentBufferIndex.value << std::endl;
 
         {
