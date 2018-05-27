@@ -21,5 +21,10 @@ namespace tt {
     private:
 
     };
+
+    template <typename Dtype>
+    class FullConnect:public Connecter{
+
+    };
 }
 #endif //STBOX_CONNECT_HH
