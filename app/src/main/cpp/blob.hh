@@ -19,7 +19,14 @@ namespace tt {
             shape[2] = height;
             shape[3] = width;
         }
-
+        int num() const {return shape[0];}
+        int channelNum() const {return shape[1];}
+        int height() const {return shape[2];}
+        int width() const {return shape[3];}
+        int offset(const int n, const int c = 0, const int h = 0,
+                             const int w = 0) const {
+            return ((n * channelNum() + c) * height() + h) * width() + w;
+        }
     private:
         std::array<int,4> shape;
         std::unique_ptr<Dtype[]> data;
