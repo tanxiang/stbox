@@ -10,12 +10,16 @@ namespace tt {
     template <typename Dtype>
     class connect{
     public:
+        connect(){
+
+        };
         Dtype forward();
         Dtype backward();
     protected:
-    private:
         std::shared_ptr<Blob<Dtype>> top;
         std::shared_ptr<Blob<Dtype>> buttom;
+    private:
+
     };
 }
 #endif //STBOX_CONNECT_HH

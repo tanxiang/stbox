@@ -5,10 +5,13 @@
 #ifndef STBOX_ACTIVATION_HH
 #define STBOX_ACTIVATION_HH
 
+#include "connect.hh"
 
-class activation {
+namespace tt {
+    template<typename Dtype>
+    class activation: public connect<Dtype> {
 
-};
-
+    };
+}
 
 #endif //STBOX_ACTIVATION_HH
