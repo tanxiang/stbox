@@ -5,6 +5,6 @@
 #ifndef STBOX_NET_HH
 #define STBOX_NET_HH
 
-#include "connect.hh"
+#include "connecter.hh"
 
 #endif //STBOX_NET_HH

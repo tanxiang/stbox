@@ -8,9 +8,9 @@
 #include "blob.hh"
 namespace tt {
     template <typename Dtype>
-    class connect{
+    class connecter{
     public:
-        connect(){
+        connecter(){
 
         };
         Dtype forward();
