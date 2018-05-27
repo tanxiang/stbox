@@ -13,8 +13,6 @@ namespace tt {
         Connecter(){
 
         };
-        Dtype forward();
-        Dtype backward();
     protected:
         std::shared_ptr<Blob<Dtype>> top;
         std::shared_ptr<Blob<Dtype>> buttom;
@@ -23,7 +21,13 @@ namespace tt {
     };
 
     template <typename Dtype>
-    class FullConnect:public Connecter{
+    class FullConnect:public Connecter<Dtype>{
+    public:
+        FullConnect(){
+
+        }
+        Dtype forward();
+        Dtype backward();
 
     };
 }
