@@ -5,11 +5,11 @@
 #ifndef STBOX_ACTIVATION_HH
 #define STBOX_ACTIVATION_HH
 
-#include "connecter.hh"
+#include "Connecter.hh"
 
 namespace tt {
     template<typename Dtype>
-    class activation: public connecter<Dtype> {
+    class Activation: public Connecter<Dtype> {
 
     };
 }

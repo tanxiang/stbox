@@ -5,12 +5,12 @@
 #ifndef STBOX_CONNECT_HH
 #define STBOX_CONNECT_HH
 
-#include "blob.hh"
+#include "Blob.hh"
 namespace tt {
     template <typename Dtype>
-    class connecter{
+    class Connecter{
     public:
-        connecter(){
+        Connecter(){
 
         };
         Dtype forward();

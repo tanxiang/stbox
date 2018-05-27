@@ -5,6 +5,12 @@
 #ifndef STBOX_NET_HH
 #define STBOX_NET_HH
 
-#include "connecter.hh"
+#include "Connecter.hh"
+namespace tt{
+    template <typename Dtype>
+    class Net{
 
+    };
+
+}
 #endif //STBOX_NET_HH
