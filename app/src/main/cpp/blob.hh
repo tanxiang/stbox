@@ -5,6 +5,7 @@
 #ifndef STBOX_BLOB_HH
 #define STBOX_BLOB_HH
 
+
 #include "util.hh"
 
 namespace tt {
@@ -21,6 +22,8 @@ namespace tt {
 
     private:
         std::array<int,4> shape;
+        std::unique_ptr<Dtype[]> data;
+
     };
 }
 
