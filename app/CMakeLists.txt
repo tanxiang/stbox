@@ -22,7 +22,9 @@ add_library( # Sets the name of the library.
              ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
              src/main/cpp/util.cc
              src/main/cpp/main.cc
-             src/main/cpp/stboxvk.cc )
+             src/main/cpp/stboxvk.cc
+             src/main/cpp/blob.cc
+             src/main/cpp/connect.cc )
 
 target_include_directories(stbox PRIVATE
                ${ANDROID_NDK}/sources/android/native_app_glue
