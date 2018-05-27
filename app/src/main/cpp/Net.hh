@@ -6,10 +6,14 @@
 #define STBOX_NET_HH
 
 #include "Connecter.hh"
+#include "Activation.hh"
+#include <list>
+
 namespace tt{
     template <typename Dtype>
     class Net{
-
+    private:
+        std::list<Connecter> data;
     };
 
 }

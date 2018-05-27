@@ -30,5 +30,15 @@ namespace tt {
         Dtype backward();
 
     };
+    template <typename Dtype>
+    class ConvConnect:public Connecter<Dtype>{
+    public:
+        ConvConnect(){
+
+        }
+        Dtype forward();
+        Dtype backward();
+
+    };
 }
 #endif //STBOX_CONNECT_HH
