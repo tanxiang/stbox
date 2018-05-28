@@ -13,8 +13,8 @@ namespace tt {
         Connecter(){
 
         };
-        virtual Dtype forward();
-        virtual Dtype backward();
+        virtual Dtype forward()=0;
+        virtual Dtype backward()=0;
     protected:
         std::shared_ptr<Blob<Dtype>> top;
         std::shared_ptr<Blob<Dtype>> buttom;
