@@ -6,6 +6,7 @@
 #define STBOX_CONNECT_HH
 
 #include "Blob.hh"
+#include <set>
 namespace tt {
     template <typename Dtype>
     class Connecter{
@@ -19,7 +20,8 @@ namespace tt {
         std::shared_ptr<Blob<Dtype>> top;
         std::shared_ptr<Blob<Dtype>> buttom;
     private:
-
+        std::set<Connecter<Dtype>> forwardLink;
+        std::set<Connecter<Dtype>*> backwardLink;
     };
 
     template <typename Dtype>
