@@ -6,6 +6,7 @@
 #define STBOX_CONNECT_HH
 
 #include "Blob.hh"
+#include <memory>
 #include <set>
 namespace tt {
     template <typename Dtype>
