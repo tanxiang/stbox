@@ -17,32 +17,12 @@
 #include "stboxvk.hh"
 #include <map>
 
+#include "cube_data.hh"
+#include <algorithm>
+
+
 using namespace std::chrono_literals;
 
-static const char *vertShaderText =
-        "#version 400\n"
-                "#extension GL_ARB_separate_shader_objects : enable\n"
-                "#extension GL_ARB_shading_language_420pack : enable\n"
-                "layout (std140, binding = 0) uniform bufferVals {\n"
-                "    mat4 mvp;\n"
-                "} myBufferVals;\n"
-                "layout (location = 0) in vec4 pos;\n"
-                "layout (location = 1) in vec4 inColor;\n"
-                "layout (location = 0) out vec4 outColor;\n"
-                "void main() {\n"
-                "   outColor = inColor;\n"
-                "   gl_Position = myBufferVals.mvp * pos;\n"
-                "}\n";
-
-static const char *fragShaderText =
-        "#version 400\n"
-                "#extension GL_ARB_separate_shader_objects : enable\n"
-                "#extension GL_ARB_shading_language_420pack : enable\n"
-                "layout (location = 0) in vec4 color;\n"
-                "layout (location = 0) out vec4 outColor;\n"
-                "void main() {\n"
-                "   outColor = color;\n"
-                "}\n";
 /*
 static const std::map<vk::ShaderStageFlagBits, shaderc_shader_kind> shader_map_table{
         {vk::ShaderStageFlagBits::eVertex,                 shaderc_glsl_vertex_shader},
@@ -185,10 +165,9 @@ namespace tt {
 
     void Device::buildSwapchainViewBuffers(vk::SurfaceKHR &surfaceKHR) {
         auto surfaceCapabilitiesKHR = physicalDevice.getSurfaceCapabilitiesKHR(surfaceKHR);
-        //auto surface_present_mods = physicalDevice.getSurfacePresentModesKHR(surfaceKHR);
         std::tie(swapchainExtent.width, swapchainExtent.height) = AndroidGetWindowSize();
-        std::cout << "AndroidGetWindowSize() : " << swapchainExtent.width << " x "
-                  << swapchainExtent.height << std::endl;
+        //std::cout << "AndroidGetWindowSize() : " << swapchainExtent.width << " x "
+        //          << swapchainExtent.height << std::endl;
         if (surfaceCapabilitiesKHR.currentExtent.width == 0xFFFFFFFF) {
             // If the surface size is undefined, the size is set to
             // the size of the images requested.
@@ -208,6 +187,11 @@ namespace tt {
         }
         std::cout << "swapchainExtent : " << swapchainExtent.width << " x "
                   << swapchainExtent.height << std::endl;
+        auto surfacePresentMods = physicalDevice.getSurfacePresentModesKHR(surfaceKHR);
+
+        if(std::find(surfacePresentMods.begin(),surfacePresentMods.end(),vk::PresentModeKHR::eMailbox) != surfacePresentMods.end()){
+            std::cout << "surfacePresentMods have: eMailbox\n";
+        }
         auto defaultDevFormatProps = physicalDevice.getFormatProperties(depthFormat);
         auto surfaceDefaultFormat = getSurfaceDefaultFormat(surfaceKHR);
 
@@ -311,11 +295,11 @@ namespace tt {
                             vk::ImageAspectFlagBits::eColor,
                             0, 1, 0, 1}
             });
-            vk::ImageView attachments[2]{imageView.get(), depthImageView.get()};
+            std::array<vk::ImageView,2> attachments{imageView.get(), depthImageView.get()};
             auto frameBuffer = createFramebufferUnique(vk::FramebufferCreateInfo{
                     vk::FramebufferCreateFlags(),
                     renderPass.get(),
-                    2, attachments,
+                    attachments.size(), attachments.data(),
                     swapchainExtent.width, swapchainExtent.height,
                     1
             });
@@ -496,14 +480,14 @@ namespace tt {
     Device::drawCmdBuffer(glm::mat4 MVP, vk::Buffer vertexBuffer) {
         static int32_t frameIndex;
 
-        auto &cmdBuffer =commandBuffers[frameIndex % 2].get();
-        auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[frameIndex % 2].get());
-        memcpy(mapMemory(mvpMemorys[frameIndex % 2].get(),0,
+        auto &cmdBuffer =commandBuffers[frameIndex % SWAPCHAIN_NUM].get();
+        auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[frameIndex % SWAPCHAIN_NUM].get());
+        memcpy(mapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get(),0,
                          mvpBufferMemoryRq.size,
                          vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
 
 
-        unmapMemory(mvpMemorys[frameIndex % 2].get());
+        unmapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get());
 
         {//FIXME acquireNextImageKHR present complete ???
             std::unique_lock<std::mutex> lockFrame{mutexDraw};
@@ -565,6 +549,7 @@ namespace tt {
 
     void Device::buildSubmitThread(vk::SurfaceKHR &surfaceKHR) {
         submitExitFlag = false;
+        return;
         submitThread = std::make_unique<std::thread>([this, &surfaceKHR] {
             try {
                 while (draw_run(*this, surfaceKHR));
@@ -589,7 +574,6 @@ namespace tt {
     }
 
     void Device::swapchainPresent() {
-
         if (frameSubmitIndex.empty()) {
             cvDraw.notify_all();
             return;
@@ -609,6 +593,130 @@ namespace tt {
             frameSubmitIndex.pop();
             getQueue(queueFamilyIndex, 0).presentKHR(vk::PresentInfoKHR{
                     0, nullptr, 1, &swapchainKHR.get(), &index
+            });
+        }
+        //std::cout << "frameSubmitIndex pop :" << frameSubmitIndex.size() <<" idx :"<<index<< std::endl;
+
+        if (frameSubmitIndex.size() < 2)
+            cvDraw.notify_all();
+
+    }
+    void Device::swapchainPresentSync() {
+
+        auto swapchainExtent = getSwapchainExtent();
+        static auto Projection = glm::perspective(glm::radians(45.0f),
+                                                  static_cast<float>(swapchainExtent.width) /
+                                                  static_cast<float>(swapchainExtent.height), 0.1f,
+                                                  100.0f);
+        static auto View = glm::lookAt(
+                glm::vec3(-5, 3, -10),  // Camera is at (-5,3,-10), in World Space
+                glm::vec3(0, 0, 0),     // and looks at the origin
+                glm::vec3(0, -1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
+        );
+        glm::rotate(View, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        static auto Model = glm::mat4{1.0f};
+        // Vulkan clip space has inverted Y and half Z.
+        static auto Clip = glm::mat4{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f,
+                                     0.0f,
+                                     0.0f, 0.0f, 0.5f, 1.0f};
+
+        static vk::UniqueBuffer vertexBuffer;
+        static vk::UniqueDeviceMemory vertexMemory;
+        if (!vertexBuffer || !vertexMemory) {
+            vertexBuffer = createBufferUnique(
+                    vk::BufferCreateInfo{
+                            vk::BufferCreateFlags(),
+                            sizeof(g_vb_solid_face_colors_Data),
+                            vk::BufferUsageFlagBits::eVertexBuffer});
+            vertexMemory = allocMemoryAndWrite(vertexBuffer.get(),
+                                                        (void *) &g_vb_solid_face_colors_Data,
+                                                        sizeof(g_vb_solid_face_colors_Data),
+                                                        vk::MemoryPropertyFlags() |
+                                                        vk::MemoryPropertyFlagBits::eHostVisible |
+                                                        vk::MemoryPropertyFlagBits::eHostCoherent);
+        }
+        auto MVP = Clip * Projection * glm::rotate(View, glm::radians(
+                (float) std::chrono::steady_clock::now().time_since_epoch().count() /
+                10000000.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * Model;
+        static int32_t frameIndex;
+
+        auto &cmdBuffer =commandBuffers[frameIndex % SWAPCHAIN_NUM].get();
+        auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[frameIndex % SWAPCHAIN_NUM].get());
+        memcpy(mapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get(),0,
+                         mvpBufferMemoryRq.size,
+                         vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
+
+
+        unmapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get());
+
+        {//FIXME acquireNextImageKHR present complete ???
+            std::unique_lock<std::mutex> lockFrame{mutexDraw};
+            cvDraw.wait(lockFrame,
+                        [this]() { return frameSubmitIndex.size() < SWAPCHAIN_NUM - 1 || submitExitFlag; });
+            if (submitExitFlag)
+                return ;
+        }
+        auto imageAcquiredSemaphore = createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+        //auto acquireNextImageFence = createFenceUnique(vk::FenceCreateInfo{});
+        //std::cout << "acquireNextImageKHR:" << std::endl;
+        auto currentBufferIndex = acquireNextImageKHR(swapchainKHR.get(), UINT64_MAX,
+                                                      imageAcquiredSemaphore.get(),
+                                                      vk::Fence{});
+        //std::cout << "acquireNextImageKHR:" << vk::to_string(currentBufferIndex.result)
+        //          << currentBufferIndex.value << std::endl;
+        static std::array<vk::ClearValue, 2> clearValues{
+                vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
+                vk::ClearDepthStencilValue{1.0f, 0},
+        };
+        cmdBuffer.begin(vk::CommandBufferBeginInfo{});
+
+        cmdBuffer.beginRenderPass(vk::RenderPassBeginInfo{
+                renderPass.get(),
+                std::get<vk::UniqueFramebuffer>(vkSwapChainBuffers[currentBufferIndex.value]).get(),
+                vk::Rect2D{vk::Offset2D{}, swapchainExtent},
+                clearValues.size(), clearValues.data()
+        }, vk::SubpassContents::eInline);
+        cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.get());
+        std::array<vk::DescriptorSet, 1> tmpDescriptorSets{this->descriptorSets[frameIndex % 2].get()};
+        cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout.get(), 0,
+                                     tmpDescriptorSets, std::vector<uint32_t>{});
+        vk::DeviceSize offsets[1] = {0};
+        cmdBuffer.bindVertexBuffers(0, 1, &vertexBuffer.get(), offsets);
+        cmdBuffer.draw(12 * 3, 1, 0, 0);
+        cmdBuffer.endRenderPass();
+        cmdBuffer.end();
+        vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+        std::array<vk::SubmitInfo, 1> submitInfos{
+                vk::SubmitInfo{
+                        1, &imageAcquiredSemaphore.get(), &pipelineStageFlags,
+                        1, &cmdBuffer
+                }
+        };
+        //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
+        getQueue(queueFamilyIndex, 0).submit(submitInfos, std::get<vk::UniqueFence>(
+                vkSwapChainBuffers[currentBufferIndex.value]).get());
+        //currentBufferIndex.value;
+        //std::cout << "push index:" << currentBufferIndex.value << std::endl;
+
+        {
+            std::lock_guard<std::mutex> lock{mutexDraw};
+            frameSubmitIndex.push(currentBufferIndex.value);
+        }
+        frameIndex++;
+        auto waitRet = waitForFences(1, &std::get<vk::UniqueFence>(
+                vkSwapChainBuffers[currentBufferIndex.value]).get(), true, 100000000);
+        if (waitRet != vk::Result::eSuccess) {
+            std::lock_guard<std::mutex> lock{mutexDraw};
+            std::cout << "waitForFences ret:" << vk::to_string(waitRet) << std::endl;
+            //todo fix timeout
+            frameSubmitIndex.pop();
+            return;
+        }
+        {
+            std::lock_guard<std::mutex> lock{mutexDraw};
+            frameSubmitIndex.pop();
+            getQueue(queueFamilyIndex, 0).presentKHR(vk::PresentInfoKHR{
+                    0, nullptr, 1, &swapchainKHR.get()
             });
         }
         //std::cout << "frameSubmitIndex pop :" << frameSubmitIndex.size() <<" idx :"<<index<< std::endl;

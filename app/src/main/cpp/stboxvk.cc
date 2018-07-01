@@ -22,7 +22,7 @@ uint32_t draw_run(tt::Device &ttDevice, vk::SurfaceKHR &surfaceKHR) {
     //auto &cmdBuf = ttDevice.defaultPoolAllocBuffer();
 
     auto swapchainExtent = ttDevice.getSwapchainExtent();
-    auto Projection = glm::perspective(glm::radians(45.0f),
+    static auto Projection = glm::perspective(glm::radians(45.0f),
                                        static_cast<float>(swapchainExtent.width) /
                                        static_cast<float>(swapchainExtent.height), 0.1f,
                                        100.0f);
