@@ -96,6 +96,9 @@ namespace tt {
                                           graphicsQueueIndex,
                                           queue_priorities.size(), queue_priorities.data()
                 }};
+        auto deviceExtensionProperties = defaultPhyDevice().enumerateDeviceExtensionProperties();
+        for(auto & deviceExtensionPropertie:deviceExtensionProperties)
+            std::cout<<"PhyDeviceExtensionPropertie : " << deviceExtensionPropertie.extensionName << std::endl;
         std::array<const char *, 1> device_extension_names{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
         upDevice.reset(new Device{defaultPhyDevice().createDevice(
                 vk::DeviceCreateInfo {vk::DeviceCreateFlags(),
@@ -108,13 +111,12 @@ namespace tt {
     }
 
     vk::SurfaceFormatKHR Device::getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR) {
-        auto vkDefaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surfaceKHR);
-        std::cout << "vk_default_device_formats.size():" << vkDefaultDeviceFormats.size() << " :"
-                  << std::endl;
-        for (auto &format:vkDefaultDeviceFormats) {
-            std::cout << "\t\t" << vk::to_string(format.format) << std::endl;
+        auto defaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surfaceKHR);
+
+        for (auto &format:defaultDeviceFormats) {
+            std::cout << "\t\tSurfaceFormatsKHR have " << vk::to_string(format.format) << std::endl;
         }
-        return vkDefaultDeviceFormats[0];
+        return defaultDeviceFormats[0];
     }
 
 
@@ -189,8 +191,11 @@ namespace tt {
                   << swapchainExtent.height << std::endl;
         auto surfacePresentMods = physicalDevice.getSurfacePresentModesKHR(surfaceKHR);
 
-        if(std::find(surfacePresentMods.begin(),surfacePresentMods.end(),vk::PresentModeKHR::eMailbox) != surfacePresentMods.end()){
-            std::cout << "surfacePresentMods have: eMailbox\n";
+        //if(std::find(surfacePresentMods.begin(),surfacePresentMods.end(),vk::PresentModeKHR::eMailbox) != surfacePresentMods.end()){
+        //    std::cout << "surfacePresentMods have: eMailbox\n";
+        //}
+        for (auto &surfacePresentMod :surfacePresentMods) {
+            std::cout << "\t\tsurfacePresentMods have " << vk::to_string(surfacePresentMod) << std::endl;
         }
         auto defaultDevFormatProps = physicalDevice.getFormatProperties(depthFormat);
         auto surfaceDefaultFormat = getSurfaceDefaultFormat(surfaceKHR);
@@ -265,7 +270,6 @@ namespace tt {
                                                        vk::ColorSpaceKHR::eSrgbNonlinear,
                                                        swapchainExtent,
                                                        1,
-                                                       vk::ImageUsageFlags{} |
                                                        vk::ImageUsageFlagBits::eColorAttachment |
                                                        vk::ImageUsageFlagBits::eTransferSrc,
                                                        vk::SharingMode::eExclusive,
@@ -273,9 +277,10 @@ namespace tt {
                                                        nullptr,
                                                        preTransform,
                                                        compositeAlpha,
-                                                       vk::PresentModeKHR::eFifo,
-                                                       false};
+                                                       vk::PresentModeKHR::eMailbox,
+                                                       true};
         swapchainKHR = createSwapchainKHRUnique(swapChainCreateInfo);
+
         auto vkSwapChainImages = getSwapchainImagesKHR(swapchainKHR.get());
         std::cout << "vkSwapChainImages size : " << vkSwapChainImages.size() << std::endl;
 
@@ -354,10 +359,29 @@ namespace tt {
                         &depthAttacheRefs,
                 }
         };
+        std::array<vk::SubpassDependency,2> subpassDeps{
+                vk::SubpassDependency{
+                        VK_SUBPASS_EXTERNAL,0,
+                        vk::PipelineStageFlagBits::eBottomOfPipe,
+                        vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                        vk::AccessFlagBits::eMemoryRead,
+                        vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite,
+                        vk::DependencyFlagBits::eByRegion
+                },
+                vk::SubpassDependency{
+                        0,VK_SUBPASS_EXTERNAL,
+                        vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                        vk::PipelineStageFlagBits::eBottomOfPipe,
+                        vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite,
+                        vk::AccessFlagBits::eMemoryRead,
+                        vk::DependencyFlagBits::eByRegion
+                }
+        };
         renderPass = createRenderPassUnique(vk::RenderPassCreateInfo{
                 vk::RenderPassCreateFlags(),
                 attachDescs.size(), attachDescs.data(),
-                subpassDescs.size(), subpassDescs.data()
+                subpassDescs.size(), subpassDescs.data(),
+                subpassDeps.size(),subpassDeps.data()
         });
 
     }
@@ -372,11 +396,11 @@ namespace tt {
 
         auto fileContent = std::make_unique<char[]>(fileLength);
 
-        AAsset_read(file, fileContent.get(), fileLength);
+        AAsset_read(file, reinterpret_cast<void*>(fileContent.get()), fileLength);
 
         return createShaderModuleUnique(vk::ShaderModuleCreateInfo{
                 vk::ShaderModuleCreateFlags(), fileLength,
-                reinterpret_cast<uint32_t *>(fileContent.get())});
+                reinterpret_cast<const uint32_t *>(fileContent.get())});
 
     }
 
@@ -508,6 +532,7 @@ namespace tt {
                 vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
                 vk::ClearDepthStencilValue{1.0f, 0},
         };
+        cmdBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
         cmdBuffer.begin(vk::CommandBufferBeginInfo{});
 
         cmdBuffer.beginRenderPass(vk::RenderPassBeginInfo{
@@ -682,7 +707,7 @@ namespace tt {
                                      tmpDescriptorSets, std::vector<uint32_t>{});
         vk::DeviceSize offsets[1] = {0};
         cmdBuffer.bindVertexBuffers(0, 1, &vertexBuffer.get(), offsets);
-        cmdBuffer.draw(12 * 3, 1, 0, 0);
+        cmdBuffer.draw(6, 1, 0, 0);
         cmdBuffer.endRenderPass();
         cmdBuffer.end();
         vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
