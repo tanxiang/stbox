@@ -15,6 +15,7 @@
 #include "util.hh"
 #include "cube_data.hh"
 
+#if 0
 
 uint32_t draw_run(tt::Device &ttDevice, vk::SurfaceKHR &surfaceKHR) {
     //std::cout << "draw_run" << std::endl;
@@ -60,3 +61,4 @@ uint32_t draw_run(tt::Device &ttDevice, vk::SurfaceKHR &surfaceKHR) {
                                   vertexBuffer.get());
 
 }
+#endif

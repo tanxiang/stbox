@@ -53,31 +53,32 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
 }
 */
 namespace tt {
-    Instance createInstance() {
+    tt::Instance createInstance() {
         auto instance_layer_props = vk::enumerateInstanceLayerProperties();
         std::cout << "enumerateInstanceLayerProperties:" << instance_layer_props.size()
                   << std::endl;
         for (auto &prop:instance_layer_props)
             std::cout << prop.layerName << std::endl;
-        vk::ApplicationInfo vkAppInfo{"stbox", VK_MAKE_VERSION(1, 0, 0), "stbox",
-                                      VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_0};
+        vk::ApplicationInfo vkAppInfo{"stbox", VK_VERSION_1_0, "stbox",
+                                      VK_VERSION_1_0, VK_API_VERSION_1_0};
         std::array<const char *, 2> instanceEtensionNames{VK_KHR_SURFACE_EXTENSION_NAME,
                                                           VK_KHR_ANDROID_SURFACE_EXTENSION_NAME};
-        vk::InstanceCreateInfo vkInstanceInfo{vk::InstanceCreateFlags(), &vkAppInfo,
+        vk::InstanceCreateInfo instanceInfo{vk::InstanceCreateFlags(), &vkAppInfo,
                                               0, nullptr,
                                               instanceEtensionNames.size(),
                                               instanceEtensionNames.data()};
-        return tt::Instance{vk::createInstance(vkInstanceInfo)};
+        return tt::Instance{vk::createInstance(instanceInfo)};
     }
 
-    uint32_t Instance::queueFamilyPropertiesFindFlags(vk::QueueFlags flags) {
-        auto queueFamilyProperties = defaultPhyDevice().getQueueFamilyProperties();
+    uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
+                                            vk::SurfaceKHR surface) {
+        auto queueFamilyProperties = PhyDevice.getQueueFamilyProperties();
         std::cout << "ttInstance.defaultPhyDevice() getQueueFamilyProperties : "
                   << queueFamilyProperties.size() << std::endl;
         for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {
             std::cout << "QueueFamilyProperties : " << i << "\tflags:"
                       << vk::to_string(queueFamilyProperties[i].queueFlags) << std::endl;
-            if (defaultPhyDevice().getSurfaceSupportKHR(i, defaultSurface()) &&
+            if (PhyDevice.getSurfaceSupportKHR(i, surface) &&
                 (queueFamilyProperties[i].queueFlags & flags)) {
                 std::cout << "default_queue_index :" << i << "\tgetSurfaceSupportKHR:true"
                           << std::endl;
@@ -88,26 +89,31 @@ namespace tt {
     }
 
 
-    void Instance::connectDevice() {
-        auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(vk::QueueFlagBits::eGraphics);
+    tt::Device Instance::connectToDevice(vk::SurfaceKHR surface) {
+        auto phyDevice = defaultPhyDevice();
+        auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevice,
+                                                                 vk::QueueFlagBits::eGraphics,
+                                                                 surface);
         std::array<float, 1> queue_priorities{0.0};
         std::array<vk::DeviceQueueCreateInfo, 1> device_queue_create_infos{
                 vk::DeviceQueueCreateInfo{vk::DeviceQueueCreateFlags(),
                                           graphicsQueueIndex,
                                           queue_priorities.size(), queue_priorities.data()
-                }};
-        auto deviceExtensionProperties = defaultPhyDevice().enumerateDeviceExtensionProperties();
-        for(auto & deviceExtensionPropertie:deviceExtensionProperties)
-            std::cout<<"PhyDeviceExtensionPropertie : " << deviceExtensionPropertie.extensionName << std::endl;
+                }
+        };
+        auto deviceExtensionProperties = phyDevice.enumerateDeviceExtensionProperties();
+        for (auto &deviceExtensionPropertie:deviceExtensionProperties)
+            std::cout << "PhyDeviceExtensionPropertie : " << deviceExtensionPropertie.extensionName
+                      << std::endl;
         std::array<const char *, 1> device_extension_names{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-        upDevice.reset(new Device{defaultPhyDevice().createDevice(
+        return Device{phyDevice.createDeviceUnique(
                 vk::DeviceCreateInfo {vk::DeviceCreateFlags(),
                                       device_queue_create_infos.size(),
                                       device_queue_create_infos.data(),
                                       0, nullptr, device_extension_names.size(),
                                       device_extension_names.data()}),
-                                  defaultPhyDevice(),
-                                  graphicsQueueIndex});
+                                               phyDevice,
+                                               graphicsQueueIndex};
     }
 
     vk::SurfaceFormatKHR Device::getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR) {
@@ -135,6 +141,7 @@ namespace tt {
         exit(-1);//todo throw
     }
 
+/*
     vk::UniqueDeviceMemory
     Device::allocBindImageMemory(vk::Image image, vk::MemoryPropertyFlags flags) {
         auto imageMemoryRq = getImageMemoryRequirements(image);
@@ -165,226 +172,8 @@ namespace tt {
         return memoryUnique;
     }
 
-    void Device::buildSwapchainViewBuffers(vk::SurfaceKHR &surfaceKHR) {
-        auto surfaceCapabilitiesKHR = physicalDevice.getSurfaceCapabilitiesKHR(surfaceKHR);
-        std::tie(swapchainExtent.width, swapchainExtent.height) = AndroidGetWindowSize();
-        //std::cout << "AndroidGetWindowSize() : " << swapchainExtent.width << " x "
-        //          << swapchainExtent.height << std::endl;
-        if (surfaceCapabilitiesKHR.currentExtent.width == 0xFFFFFFFF) {
-            // If the surface size is undefined, the size is set to
-            // the size of the images requested.
-            if (swapchainExtent.width < surfaceCapabilitiesKHR.minImageExtent.width) {
-                swapchainExtent.width = surfaceCapabilitiesKHR.minImageExtent.width;
-            } else if (swapchainExtent.width > surfaceCapabilitiesKHR.maxImageExtent.width) {
-                swapchainExtent.width = surfaceCapabilitiesKHR.maxImageExtent.width;
-            }
-            if (swapchainExtent.height < surfaceCapabilitiesKHR.minImageExtent.height) {
-                swapchainExtent.height = surfaceCapabilitiesKHR.minImageExtent.height;
-            } else if (swapchainExtent.height > surfaceCapabilitiesKHR.maxImageExtent.height) {
-                swapchainExtent.height = surfaceCapabilitiesKHR.maxImageExtent.height;
-            }
-        } else {
-            // If the surface size is defined, the swap chain size must match
-            swapchainExtent = surfaceCapabilitiesKHR.currentExtent;
-        }
-        std::cout << "swapchainExtent : " << swapchainExtent.width << " x "
-                  << swapchainExtent.height << std::endl;
-        auto surfacePresentMods = physicalDevice.getSurfacePresentModesKHR(surfaceKHR);
+*/
 
-        //if(std::find(surfacePresentMods.begin(),surfacePresentMods.end(),vk::PresentModeKHR::eMailbox) != surfacePresentMods.end()){
-        //    std::cout << "surfacePresentMods have: eMailbox\n";
-        //}
-        for (auto &surfacePresentMod :surfacePresentMods) {
-            std::cout << "\t\tsurfacePresentMods have " << vk::to_string(surfacePresentMod) << std::endl;
-        }
-        auto defaultDevFormatProps = physicalDevice.getFormatProperties(depthFormat);
-        auto surfaceDefaultFormat = getSurfaceDefaultFormat(surfaceKHR);
-
-        vk::ImageTiling tiling;
-        if (defaultDevFormatProps.linearTilingFeatures &
-            vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
-            tiling = vk::ImageTiling::eLinear;
-        } else if (defaultDevFormatProps.optimalTilingFeatures &
-                   vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
-            tiling = vk::ImageTiling::eOptimal;
-        } else {
-            std::cout << "vk::ImageTiling no match exit!" << std::endl;
-            exit(-1);//todo throw
-        }
-        depthImage = createImageUnique(vk::ImageCreateInfo{vk::ImageCreateFlags(),
-                                                           vk::ImageType::e2D,
-                                                           depthFormat,
-                                                           vk::Extent3D{swapchainExtent.width,
-                                                                        swapchainExtent.height, 1},
-                                                           1,
-                                                           1,
-                                                           vk::SampleCountFlagBits::e1,
-                                                           tiling,
-                                                           vk::ImageUsageFlagBits::eDepthStencilAttachment,
-                                                           vk::SharingMode::eExclusive,
-                                                           0, nullptr,
-                                                           vk::ImageLayout::eUndefined});
-
-        depthImageMemory = allocBindImageMemory(depthImage.get(),
-                                                vk::MemoryPropertyFlagBits::eDeviceLocal);
-
-        depthImageView = createImageViewUnique(vk::ImageViewCreateInfo{vk::ImageViewCreateFlags(),
-                                                                       depthImage.get(),
-                                                                       vk::ImageViewType::e2D,
-                                                                       surfaceDefaultFormat.format,
-                                                                       vk::ComponentMapping{
-                                                                               vk::ComponentSwizzle::eR,
-                                                                               vk::ComponentSwizzle::eG,
-                                                                               vk::ComponentSwizzle::eB,
-                                                                               vk::ComponentSwizzle::eA},
-                                                                       vk::ImageSubresourceRange{
-                                                                               vk::ImageAspectFlagBits::eColor,
-                                                                               0, 1, 0, 1}
-        });
-        vk::SurfaceTransformFlagBitsKHR preTransform{};
-        if (surfaceCapabilitiesKHR.supportedTransforms &
-            vk::SurfaceTransformFlagBitsKHR::eIdentity) {
-            preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
-        } else {
-            preTransform = surfaceCapabilitiesKHR.currentTransform;
-        }
-        vk::CompositeAlphaFlagBitsKHR compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-        vk::CompositeAlphaFlagBitsKHR compositeAlphaFlags[4] = {
-                vk::CompositeAlphaFlagBitsKHR::eOpaque,
-                vk::CompositeAlphaFlagBitsKHR::ePreMultiplied,
-                vk::CompositeAlphaFlagBitsKHR::ePostMultiplied,
-                vk::CompositeAlphaFlagBitsKHR::eInherit
-        };
-        for (auto &compositeAlphaFlag:compositeAlphaFlags) {
-            if (surfaceCapabilitiesKHR.supportedCompositeAlpha & compositeAlphaFlag) {
-                compositeAlpha = compositeAlphaFlag;
-                break;
-            }
-        }
-        assert(surfaceCapabilitiesKHR.minImageCount <= SWAPCHAIN_NUM &&
-               surfaceCapabilitiesKHR.maxImageCount >= SWAPCHAIN_NUM);
-        vk::SwapchainCreateInfoKHR swapChainCreateInfo{vk::SwapchainCreateFlagsKHR(),
-                                                       surfaceKHR,
-                                                       SWAPCHAIN_NUM,
-                                                       surfaceDefaultFormat.format,
-                                                       vk::ColorSpaceKHR::eSrgbNonlinear,
-                                                       swapchainExtent,
-                                                       1,
-                                                       vk::ImageUsageFlagBits::eColorAttachment |
-                                                       vk::ImageUsageFlagBits::eTransferSrc,
-                                                       vk::SharingMode::eExclusive,
-                                                       0,//TODO to spt graphics and present queues from different queue families
-                                                       nullptr,
-                                                       preTransform,
-                                                       compositeAlpha,
-                                                       vk::PresentModeKHR::eMailbox,
-                                                       true};
-        swapchainKHR = createSwapchainKHRUnique(swapChainCreateInfo);
-
-        auto vkSwapChainImages = getSwapchainImagesKHR(swapchainKHR.get());
-        std::cout << "vkSwapChainImages size : " << vkSwapChainImages.size() << std::endl;
-
-        vkSwapChainBuffers.clear();
-        for (auto &vkSwapChainImage : vkSwapChainImages) {
-            auto imageView = createImageViewUnique(vk::ImageViewCreateInfo{
-                    vk::ImageViewCreateFlags(),
-                    vkSwapChainImage,
-                    vk::ImageViewType::e2D,
-                    surfaceDefaultFormat.format,
-                    vk::ComponentMapping{
-                            vk::ComponentSwizzle::eR,
-                            vk::ComponentSwizzle::eG,
-                            vk::ComponentSwizzle::eB,
-                            vk::ComponentSwizzle::eA},
-                    vk::ImageSubresourceRange{
-                            vk::ImageAspectFlagBits::eColor,
-                            0, 1, 0, 1}
-            });
-            std::array<vk::ImageView,2> attachments{imageView.get(), depthImageView.get()};
-            auto frameBuffer = createFramebufferUnique(vk::FramebufferCreateInfo{
-                    vk::FramebufferCreateFlags(),
-                    renderPass.get(),
-                    attachments.size(), attachments.data(),
-                    swapchainExtent.width, swapchainExtent.height,
-                    1
-            });
-            vkSwapChainBuffers.emplace_back(vkSwapChainImage, std::move(imageView),
-                                            std::move(frameBuffer),
-                                            createFenceUnique(vk::FenceCreateInfo{}));
-        }
-    }
-
-
-    void Device::buildRenderpass(vk::SurfaceKHR &surfaceKHR) {
-        auto surfaceDefaultFormat = getSurfaceDefaultFormat(surfaceKHR);
-        std::array<vk::AttachmentDescription, 2> attachDescs{
-                vk::AttachmentDescription{
-                        vk::AttachmentDescriptionFlags(),
-                        surfaceDefaultFormat.format,
-                        vk::SampleCountFlagBits::e1,
-                        vk::AttachmentLoadOp::eClear,
-                        vk::AttachmentStoreOp::eStore,
-                        vk::AttachmentLoadOp::eDontCare,
-                        vk::AttachmentStoreOp::eDontCare,
-                        vk::ImageLayout::eUndefined,
-                        vk::ImageLayout::ePresentSrcKHR
-                },
-                vk::AttachmentDescription{
-                        vk::AttachmentDescriptionFlags(),
-                        depthFormat,
-                        vk::SampleCountFlagBits::e1,
-                        vk::AttachmentLoadOp::eClear,
-                        vk::AttachmentStoreOp::eStore,
-                        vk::AttachmentLoadOp::eLoad,
-                        vk::AttachmentStoreOp::eStore,
-                        vk::ImageLayout::eUndefined,
-                        vk::ImageLayout::eColorAttachmentOptimal
-                }
-        };
-        std::array<vk::AttachmentReference, 1> attachmentRefs{
-                vk::AttachmentReference{
-                        0, vk::ImageLayout::eColorAttachmentOptimal
-                }
-        };
-        vk::AttachmentReference depthAttacheRefs{
-                1, vk::ImageLayout::eDepthStencilAttachmentOptimal
-        };
-        std::array<vk::SubpassDescription, 1> subpassDescs{
-                vk::SubpassDescription{
-                        vk::SubpassDescriptionFlags(),
-                        vk::PipelineBindPoint::eGraphics,
-                        0, nullptr,
-                        attachmentRefs.size(), attachmentRefs.data(),
-                        nullptr,
-                        &depthAttacheRefs,
-                }
-        };
-        std::array<vk::SubpassDependency,2> subpassDeps{
-                vk::SubpassDependency{
-                        VK_SUBPASS_EXTERNAL,0,
-                        vk::PipelineStageFlagBits::eBottomOfPipe,
-                        vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                        vk::AccessFlagBits::eMemoryRead,
-                        vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite,
-                        vk::DependencyFlagBits::eByRegion
-                },
-                vk::SubpassDependency{
-                        0,VK_SUBPASS_EXTERNAL,
-                        vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                        vk::PipelineStageFlagBits::eBottomOfPipe,
-                        vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite,
-                        vk::AccessFlagBits::eMemoryRead,
-                        vk::DependencyFlagBits::eByRegion
-                }
-        };
-        renderPass = createRenderPassUnique(vk::RenderPassCreateInfo{
-                vk::RenderPassCreateFlags(),
-                attachDescs.size(), attachDescs.data(),
-                subpassDescs.size(), subpassDescs.data(),
-                subpassDeps.size(),subpassDeps.data()
-        });
-
-    }
 
     vk::UniqueShaderModule Device::loadShaderFromFile(const char *filePath,
                                                       android_app *androidAppCtx) {
@@ -396,15 +185,15 @@ namespace tt {
 
         auto fileContent = std::make_unique<char[]>(fileLength);
 
-        AAsset_read(file, reinterpret_cast<void*>(fileContent.get()), fileLength);
+        AAsset_read(file, reinterpret_cast<void *>(fileContent.get()), fileLength);
 
-        return createShaderModuleUnique(vk::ShaderModuleCreateInfo{
+        return get().createShaderModuleUnique(vk::ShaderModuleCreateInfo{
                 vk::ShaderModuleCreateFlags(), fileLength,
                 reinterpret_cast<const uint32_t *>(fileContent.get())});
 
     }
 
-    void Device::buildPipeline(uint32_t dataStepSize, android_app *app) {
+    void Device::buildPipeline(uint32_t dataStepSize, android_app *app,Swapchain& swapchain,vk::PipelineLayout pipelineLayout) {
         if (graphicsPipeline)
             return;
         auto vertShaderModule = loadShaderFromFile("shaders/mvp.vert.spv", app);
@@ -447,6 +236,7 @@ namespace tt {
                 vk::PipelineInputAssemblyStateCreateFlags(), vk::PrimitiveTopology::eTriangleList
         };
         //vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{};
+        auto swapchainExtent = swapchain.getSwapchainExtent();
         vk::Viewport viewport{
                 0, 0, swapchainExtent.width, swapchainExtent.height, 0.0f, 1.0f
         };
@@ -482,6 +272,7 @@ namespace tt {
                 &pipelineColorBlendAttachmentState, {1.0f, 1.0f, 1.0f, 1.0f}
         };
         vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{};
+        auto renderPass = swapchain.getRenderPass();
         vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
                 vk::PipelineCreateFlags(),
                 shaderStageCreateInfos.size(), shaderStageCreateInfos.data(),
@@ -494,83 +285,170 @@ namespace tt {
                 &pipelineDepthStencilStateCreateInfo,
                 &pipelineColorBlendStateCreateInfo,
                 &pipelineDynamicStateCreateInfo,
-                pipelineLayout.get(),
-                renderPass.get()
+                pipelineLayout,
+                renderPass
         };
-        graphicsPipeline = createGraphicsPipelineUnique(vkPipelineCache.get(), pipelineCreateInfo);
+        graphicsPipeline = get().createGraphicsPipelineUnique(pipelineCache.get(), pipelineCreateInfo);
     }
 
     uint32_t
-    Device::drawCmdBuffer(glm::mat4 MVP, vk::Buffer vertexBuffer) {
-        static int32_t frameIndex;
+    Device::buildCmdBuffers(vk::Buffer vertexBuffer,tt::Swapchain& swapchain,vk::PipelineLayout pipelineLayout) {
+        commandBuffers = get().allocateCommandBuffersUnique(
+                vk::CommandBufferAllocateInfo{commandPool.get(),
+                                              vk::CommandBufferLevel::ePrimary, swapchain.getFrameBufferNum()});
+        //commandBufferFences.resize(swapchain.getFrameBufferNum());
+        //for (auto &commandBufferFence:commandBufferFences)
+        //    commandBufferFence = createFenceUnique(
+        //            vk::FenceCreateInfo{vk::FenceCreateFlagBits::eSignaled});
 
-        auto &cmdBuffer =commandBuffers[frameIndex % SWAPCHAIN_NUM].get();
-        auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[frameIndex % SWAPCHAIN_NUM].get());
-        memcpy(mapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get(),0,
-                         mvpBufferMemoryRq.size,
-                         vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
-
-
-        unmapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get());
-
-        {//FIXME acquireNextImageKHR present complete ???
-            std::unique_lock<std::mutex> lockFrame{mutexDraw};
-            cvDraw.wait(lockFrame,
-                        [this]() { return frameSubmitIndex.size() < SWAPCHAIN_NUM - 1 || submitExitFlag; });
-            if (submitExitFlag)
-                return 0;
-        }
-        auto imageAcquiredSemaphore = createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-        //auto acquireNextImageFence = createFenceUnique(vk::FenceCreateInfo{});
-        //std::cout << "acquireNextImageKHR:" << std::endl;
-        auto currentBufferIndex = acquireNextImageKHR(swapchainKHR.get(), UINT64_MAX,
-                                                      imageAcquiredSemaphore.get(),
-                                                      vk::Fence{});
-        //std::cout << "acquireNextImageKHR:" << vk::to_string(currentBufferIndex.result)
-        //          << currentBufferIndex.value << std::endl;
-        static std::array<vk::ClearValue, 2> clearValues{
+        //auto &cmdBuffer = commandBuffers[frameIndex % SWAPCHAIN_NUM].get();
+        std::array<vk::ClearValue, 2> clearValues{
                 vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
                 vk::ClearDepthStencilValue{1.0f, 0},
         };
-        cmdBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
-        cmdBuffer.begin(vk::CommandBufferBeginInfo{});
+        uint32_t frameIndex = 0;
+        for(auto &cmdBuffer : commandBuffers){
+            cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+            cmdBuffer->begin(vk::CommandBufferBeginInfo{});
 
-        cmdBuffer.beginRenderPass(vk::RenderPassBeginInfo{
-                renderPass.get(),
-                std::get<vk::UniqueFramebuffer>(vkSwapChainBuffers[currentBufferIndex.value]).get(),
-                vk::Rect2D{vk::Offset2D{}, swapchainExtent},
-                clearValues.size(), clearValues.data()
-        }, vk::SubpassContents::eInline);
-        cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.get());
-        std::array<vk::DescriptorSet, 1> tmpDescriptorSets{this->descriptorSets[frameIndex % 2].get()};
-        cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout.get(), 0,
-                                     tmpDescriptorSets, std::vector<uint32_t>{});
-        vk::DeviceSize offsets[1] = {0};
-        cmdBuffer.bindVertexBuffers(0, 1, &vertexBuffer, offsets);
-        cmdBuffer.draw(12 * 3, 1, 0, 0);
-        cmdBuffer.endRenderPass();
-        cmdBuffer.end();
+            cmdBuffer->beginRenderPass(
+                    vk::RenderPassBeginInfo{
+                            swapchain.getRenderPass(),
+                            swapchain.getFrameBuffer()[frameIndex].get(),
+                            vk::Rect2D{
+                                    vk::Offset2D{},
+                                    swapchain.getSwapchainExtent()
+                            },
+                            clearValues.size(), clearValues.data()
+                    }, vk::SubpassContents::eInline);
+            cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.get());
+            std::array<vk::DescriptorSet, 1> tmpDescriptorSets{
+                    this->descriptorSets[frameIndex % 2].get()
+            };
+            cmdBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0,
+                                         tmpDescriptorSets, std::vector<uint32_t>{});
+            vk::DeviceSize offsets[1] = {0};
+            cmdBuffer->bindVertexBuffers(0, 1, &vertexBuffer, offsets);
+            cmdBuffer->draw(12 * 3, 1, 0, 0);
+            cmdBuffer->endRenderPass();
+            cmdBuffer->end();
+            ++frameIndex;
+        }
+        return commandBuffers.size();
+
+        //auto mvpBufferMemoryRq = getBufferMemoryRequirements(
+        //       mvpBuffer[frameIndex % SWAPCHAIN_NUM].get());
+        //memcpy(mapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get(), 0,
+        //                 mvpBufferMemoryRq.size,
+        //                 vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
+
+
+        //unmapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get());
+
+    }
+
+    uint32_t
+    Device::submitCmdBuffer(vk::SwapchainKHR swapchain) {
+        auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+        //auto acquireNextImageFence = createFenceUnique(vk::FenceCreateInfo{});
+        //std::cout << "acquireNextImageKHR:" << std::endl;
+
+        auto currentBufferIndex = get().acquireNextImageKHR(swapchain, UINT64_MAX,
+                                                      imageAcquiredSemaphore.get(),
+                                                      vk::Fence{});
         vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
         std::array<vk::SubmitInfo, 1> submitInfos{
                 vk::SubmitInfo{
                         1, &imageAcquiredSemaphore.get(), &pipelineStageFlags,
-                        1, &cmdBuffer
+                        1, &commandBuffers[currentBufferIndex.value].get()
                 }
         };
         //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
-        getQueue(queueFamilyIndex, 0).submit(submitInfos, std::get<vk::UniqueFence>(
-                vkSwapChainBuffers[currentBufferIndex.value]).get());
+        get().getQueue(queueFamilyIndex, 0).submit(submitInfos, vk::Fence{});
         //currentBufferIndex.value;
         //std::cout << "push index:" << currentBufferIndex.value << std::endl;
 
         {
-            std::lock_guard<std::mutex> lock{mutexDraw};
-            frameSubmitIndex.push(currentBufferIndex.value);
+            //std::lock_guard<std::mutex> lock{mutexDraw};
+            //frameSubmitIndex.push(currentBufferIndex.value);
         }
-        frameIndex++;
-        return 1;
+        return 0;
     }
 
+    Device::ImageViewMemory Device::createImageAndMemory(vk::Format format, vk::Extent3D extent3D,
+                                                         vk::ImageUsageFlags imageUsageFlags,
+                                                         vk::ComponentMapping componentMapping,
+                                                         vk::ImageSubresourceRange imageSubresourceRange) {
+        ImageViewMemory IVM{};
+        std::get<vk::UniqueImage>(IVM) = get().createImageUnique(
+                vk::ImageCreateInfo{vk::ImageCreateFlags(),
+                                    vk::ImageType::e2D,
+                                    format,
+                                    extent3D,
+                                    1,
+                                    1,
+                                    vk::SampleCountFlagBits::e1,
+                                    vk::ImageTiling::eOptimal,
+                                    imageUsageFlags,
+                                    vk::SharingMode::eExclusive});
+
+        auto imageMemoryRq = get().getImageMemoryRequirements(std::get<vk::UniqueImage>(IVM).get());
+        auto typeIndex = findMemoryTypeIndex(imageMemoryRq.memoryTypeBits,
+                                             vk::MemoryPropertyFlagBits::eDeviceLocal);
+        std::get<vk::UniqueDeviceMemory>(IVM) = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
+                imageMemoryRq.size, findMemoryTypeIndex(imageMemoryRq.memoryTypeBits,
+                                                        vk::MemoryPropertyFlagBits::eDeviceLocal)
+        });
+        std::cout << "ImageMemory:alloc index:" << typeIndex << std::endl;
+        get().bindImageMemory(std::get<vk::UniqueImage>(IVM).get(),
+                        std::get<vk::UniqueDeviceMemory>(IVM).get(), 0);
+
+        std::get<vk::UniqueImageView>(IVM) = get().createImageViewUnique(
+                vk::ImageViewCreateInfo{vk::ImageViewCreateFlags(),
+                                        std::get<vk::UniqueImage>(IVM).get(),
+                                        vk::ImageViewType::e2D,
+                                        format,
+                                        componentMapping,
+                                        imageSubresourceRange});
+        return IVM;
+    }
+
+    Device::BufferViewMemory
+    Device::createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
+                                  vk::MemoryPropertyFlags memoryPropertyFlags) {
+        BufferViewMemory BVM{};
+        std::get<vk::UniqueBuffer>(BVM) = get().createBufferUnique(
+                vk::BufferCreateInfo{
+                        vk::BufferCreateFlags(),
+                        dataSize,
+                        bufferUsageFlags});
+        auto memoryRequirements = get().getBufferMemoryRequirements(
+                std::get<vk::UniqueBuffer>(BVM).get());
+        auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits,
+                                             memoryPropertyFlags);
+        std::get<vk::UniqueDeviceMemory>(BVM) = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
+                memoryRequirements.size, typeIndex
+        });
+        std::get<size_t>(BVM) = memoryRequirements.size;
+        get().bindBufferMemory(std::get<vk::UniqueBuffer>(BVM).get(),
+                         std::get<vk::UniqueDeviceMemory>(BVM).get(), 0);
+        return BVM;
+    }
+
+    Device::BufferViewMemoryPtr
+    Device::mapBufferAndMemory(Device::BufferViewMemory &bufferViewMemory, size_t offset) {
+        return BufferViewMemoryPtr{
+                get().mapMemory(std::get<vk::UniqueDeviceMemory>(bufferViewMemory).get(),
+                          offset,
+                          std::get<size_t>(bufferViewMemory),
+                          vk::MemoryMapFlagBits()),
+                [this, &bufferViewMemory](void *pVoid) {
+                    get().unmapMemory(std::get<vk::UniqueDeviceMemory>(bufferViewMemory).get());
+                }
+        };
+    }
+
+#if 0
 
     void Device::buildSubmitThread(vk::SurfaceKHR &surfaceKHR) {
         submitExitFlag = false;
@@ -626,6 +504,7 @@ namespace tt {
             cvDraw.notify_all();
 
     }
+
     void Device::swapchainPresentSync() {
 
         auto swapchainExtent = getSwapchainExtent();
@@ -641,7 +520,8 @@ namespace tt {
         glm::rotate(View, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         static auto Model = glm::mat4{1.0f};
         // Vulkan clip space has inverted Y and half Z.
-        static auto Clip = glm::mat4{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f,
+        static auto Clip = glm::mat4{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                                     0.5f,
                                      0.0f,
                                      0.0f, 0.0f, 0.5f, 1.0f};
 
@@ -654,20 +534,21 @@ namespace tt {
                             sizeof(g_vb_solid_face_colors_Data),
                             vk::BufferUsageFlagBits::eVertexBuffer});
             vertexMemory = allocMemoryAndWrite(vertexBuffer.get(),
-                                                        (void *) &g_vb_solid_face_colors_Data,
-                                                        sizeof(g_vb_solid_face_colors_Data),
-                                                        vk::MemoryPropertyFlags() |
-                                                        vk::MemoryPropertyFlagBits::eHostVisible |
-                                                        vk::MemoryPropertyFlagBits::eHostCoherent);
+                                               (void *) &g_vb_solid_face_colors_Data,
+                                               sizeof(g_vb_solid_face_colors_Data),
+                                               vk::MemoryPropertyFlags() |
+                                               vk::MemoryPropertyFlagBits::eHostVisible |
+                                               vk::MemoryPropertyFlagBits::eHostCoherent);
         }
         auto MVP = Clip * Projection * glm::rotate(View, glm::radians(
                 (float) std::chrono::steady_clock::now().time_since_epoch().count() /
                 10000000.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * Model;
         static int32_t frameIndex;
 
-        auto &cmdBuffer =commandBuffers[frameIndex % SWAPCHAIN_NUM].get();
-        auto mvpBufferMemoryRq = getBufferMemoryRequirements(mvpBuffer[frameIndex % SWAPCHAIN_NUM].get());
-        memcpy(mapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get(),0,
+        auto &cmdBuffer = commandBuffers[frameIndex % SWAPCHAIN_NUM].get();
+        auto mvpBufferMemoryRq = getBufferMemoryRequirements(
+                mvpBuffer[frameIndex % SWAPCHAIN_NUM].get());
+        memcpy(mapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get(), 0,
                          mvpBufferMemoryRq.size,
                          vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
 
@@ -677,9 +558,11 @@ namespace tt {
         {//FIXME acquireNextImageKHR present complete ???
             std::unique_lock<std::mutex> lockFrame{mutexDraw};
             cvDraw.wait(lockFrame,
-                        [this]() { return frameSubmitIndex.size() < SWAPCHAIN_NUM - 1 || submitExitFlag; });
+                        [this]() {
+                            return frameSubmitIndex.size() < SWAPCHAIN_NUM - 1 || submitExitFlag;
+                        });
             if (submitExitFlag)
-                return ;
+                return;
         }
         auto imageAcquiredSemaphore = createSemaphoreUnique(vk::SemaphoreCreateInfo{});
         //auto acquireNextImageFence = createFenceUnique(vk::FenceCreateInfo{});
@@ -702,12 +585,13 @@ namespace tt {
                 clearValues.size(), clearValues.data()
         }, vk::SubpassContents::eInline);
         cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.get());
-        std::array<vk::DescriptorSet, 1> tmpDescriptorSets{this->descriptorSets[frameIndex % 2].get()};
+        std::array<vk::DescriptorSet, 1> tmpDescriptorSets{
+                this->descriptorSets[frameIndex % 2].get()};
         cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout.get(), 0,
                                      tmpDescriptorSets, std::vector<uint32_t>{});
         vk::DeviceSize offsets[1] = {0};
         cmdBuffer.bindVertexBuffers(0, 1, &vertexBuffer.get(), offsets);
-        cmdBuffer.draw(6, 1, 0, 0);
+        cmdBuffer.draw(0, 0, 0, 0);
         cmdBuffer.endRenderPass();
         cmdBuffer.end();
         vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
@@ -749,5 +633,240 @@ namespace tt {
         if (frameSubmitIndex.size() < 2)
             cvDraw.notify_all();
 
+    }
+#endif
+
+    Swapchain::Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device)
+            : vk::UniqueSwapchainKHR{}, surface{std::move(sf)} {
+        auto physicalDevice = device.phyDevice();
+        auto surfaceCapabilitiesKHR = physicalDevice.getSurfaceCapabilitiesKHR(surface.get());
+        std::tie(swapchainExtent.width, swapchainExtent.height) = AndroidGetWindowSize();
+        //std::cout << "AndroidGetWindowSize() : " << swapchainExtent.width << " x "
+        //          << swapchainExtent.height << std::endl;
+        if (surfaceCapabilitiesKHR.currentExtent.width == 0xFFFFFFFF) {
+            // If the surface size is undefined, the size is set to
+            // the size of the images requested.
+            if (swapchainExtent.width < surfaceCapabilitiesKHR.minImageExtent.width) {
+                swapchainExtent.width = surfaceCapabilitiesKHR.minImageExtent.width;
+            } else if (swapchainExtent.width > surfaceCapabilitiesKHR.maxImageExtent.width) {
+                swapchainExtent.width = surfaceCapabilitiesKHR.maxImageExtent.width;
+            }
+            if (swapchainExtent.height < surfaceCapabilitiesKHR.minImageExtent.height) {
+                swapchainExtent.height = surfaceCapabilitiesKHR.minImageExtent.height;
+            } else if (swapchainExtent.height > surfaceCapabilitiesKHR.maxImageExtent.height) {
+                swapchainExtent.height = surfaceCapabilitiesKHR.maxImageExtent.height;
+            }
+        } else {
+            // If the surface size is defined, the swap chain size must match
+            swapchainExtent = surfaceCapabilitiesKHR.currentExtent;
+        }
+        std::cout << "swapchainExtent : " << swapchainExtent.width << " x "
+                  << swapchainExtent.height << std::endl;
+        auto surfacePresentMods = physicalDevice.getSurfacePresentModesKHR(surface.get());
+
+        //if(std::find(surfacePresentMods.begin(),surfacePresentMods.end(),vk::PresentModeKHR::eMailbox) != surfacePresentMods.end()){
+        //    std::cout << "surfacePresentMods have: eMailbox\n";
+        //}
+        for (auto &surfacePresentMod :surfacePresentMods) {
+            std::cout << "\t\tsurfacePresentMods have " << vk::to_string(surfacePresentMod)
+                      << std::endl;
+        }
+        uint32_t desiredNumberOfSwapchainImages = surfaceCapabilitiesKHR.minImageCount + 1;
+        auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
+        vk::SurfaceTransformFlagBitsKHR preTransform{};
+        if (surfaceCapabilitiesKHR.supportedTransforms &
+            vk::SurfaceTransformFlagBitsKHR::eIdentity) {
+            preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
+        } else {
+            preTransform = surfaceCapabilitiesKHR.currentTransform;
+        }
+        vk::CompositeAlphaFlagBitsKHR compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
+        vk::CompositeAlphaFlagBitsKHR compositeAlphaFlags[4] = {
+                vk::CompositeAlphaFlagBitsKHR::eOpaque,
+                vk::CompositeAlphaFlagBitsKHR::ePreMultiplied,
+                vk::CompositeAlphaFlagBitsKHR::ePostMultiplied,
+                vk::CompositeAlphaFlagBitsKHR::eInherit
+        };
+        for (auto &compositeAlphaFlag:compositeAlphaFlags) {
+            if (surfaceCapabilitiesKHR.supportedCompositeAlpha & compositeAlphaFlag) {
+                compositeAlpha = compositeAlphaFlag;
+                break;
+            }
+        }
+        assert(surfaceCapabilitiesKHR.minImageCount <= desiredNumberOfSwapchainImages &&
+               surfaceCapabilitiesKHR.maxImageCount >= desiredNumberOfSwapchainImages);
+        vk::SwapchainCreateInfoKHR swapChainCreateInfo{vk::SwapchainCreateFlagsKHR(),
+                                                       surface.get(),
+                                                       desiredNumberOfSwapchainImages,
+                                                       surfaceDefaultFormat.format,
+                                                       vk::ColorSpaceKHR::eSrgbNonlinear,
+                                                       swapchainExtent,
+                                                       1,
+                                                       vk::ImageUsageFlagBits::eColorAttachment |
+                                                       vk::ImageUsageFlagBits::eTransferSrc,
+                                                       vk::SharingMode::eExclusive,
+                                                       0,//TODO to spt graphics and present queues from different queue families
+                                                       nullptr,
+                                                       preTransform,
+                                                       compositeAlpha,
+                                                       vk::PresentModeKHR::eMailbox,
+                                                       true};
+
+        reset(device->createSwapchainKHR(swapChainCreateInfo));
+
+
+        auto vkSwapChainImages = device->getSwapchainImagesKHR(get());
+        std::cout << "vkSwapChainImages size : " << vkSwapChainImages.size() << std::endl;
+
+        imageViews.clear();
+        for (auto &vkSwapChainImage : vkSwapChainImages)
+            imageViews.emplace_back(device->createImageViewUnique(vk::ImageViewCreateInfo{
+                    vk::ImageViewCreateFlags(),
+                    vkSwapChainImage,
+                    vk::ImageViewType::e2D,
+                    surfaceDefaultFormat.format,
+                    vk::ComponentMapping{
+                            vk::ComponentSwizzle::eR,
+                            vk::ComponentSwizzle::eG,
+                            vk::ComponentSwizzle::eB,
+                            vk::ComponentSwizzle::eA},
+                    vk::ImageSubresourceRange{
+                            vk::ImageAspectFlagBits::eColor,
+                            0, 1, 0, 1}
+            }));
+
+
+        auto defaultDevFormatProps = physicalDevice.getFormatProperties(depthFormat);
+
+        vk::ImageTiling tiling;
+        if (defaultDevFormatProps.linearTilingFeatures &
+            vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
+            tiling = vk::ImageTiling::eLinear;
+        } else if (defaultDevFormatProps.optimalTilingFeatures &
+                   vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
+            tiling = vk::ImageTiling::eOptimal;
+        } else {
+            std::cout << "vk::ImageTiling no match exit!" << std::endl;
+            exit(-1);//todo throw
+        }
+        depth = device.createImageAndMemory(depthFormat, vk::Extent3D{swapchainExtent.width,
+                                                                      swapchainExtent.height, 1});
+/*
+        depthImage = device.createImageUnique(vk::ImageCreateInfo{vk::ImageCreateFlags(),
+                                                                  vk::ImageType::e2D,
+                                                                  depthFormat,
+                                                                  vk::Extent3D{
+                                                                          swapchainExtent.width,
+                                                                          swapchainExtent.height,
+                                                                          1},
+                                                                  1,
+                                                                  1,
+                                                                  vk::SampleCountFlagBits::e1,
+                                                                  vk::ImageTiling::eOptimal,
+                                                                  vk::ImageUsageFlagBits::eDepthStencilAttachment |
+                                                                  vk::ImageUsageFlagBits::eTransientAttachment,
+                                                                  vk::SharingMode::eExclusive});
+
+        depthImageMemory = device.allocBindImageMemory(depthImage.get(),
+                                                       vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+        depthImageView = device.createImageViewUnique(
+                vk::ImageViewCreateInfo{vk::ImageViewCreateFlags(),
+                                        depthImage.get(),
+                                        vk::ImageViewType::e2D,
+                                        depthFormat,
+                                        vk::ComponentMapping{},
+                                        vk::ImageSubresourceRange{
+                                                vk::ImageAspectFlagBits::eDepth |
+                                                vk::ImageAspectFlagBits::eStencil,
+                                                0, 1, 0, 1}
+                });        */
+        createRenderpass(device);
+
+        frameBuffers.clear();
+        for (auto &imageView : imageViews) {
+            std::array<vk::ImageView, 2> attachments{imageView.get(),
+                                                     std::get<vk::UniqueImageView>(depth).get()};
+            frameBuffers.emplace_back(device->createFramebufferUnique(vk::FramebufferCreateInfo{
+                    vk::FramebufferCreateFlags(),
+                    renderPass.get(),
+                    attachments.size(), attachments.data(),
+                    swapchainExtent.width, swapchainExtent.height,
+                    1
+            }));
+        }
+
+    }
+
+    void Swapchain::createRenderpass(Device &device) {
+        auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
+        std::array<vk::AttachmentDescription, 2> attachDescs{
+                vk::AttachmentDescription{
+                        vk::AttachmentDescriptionFlags(),
+                        surfaceDefaultFormat.format,
+                        vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eClear,
+                        vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare,
+                        vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::ePresentSrcKHR
+                },
+                vk::AttachmentDescription{
+                        vk::AttachmentDescriptionFlags(),
+                        depthFormat,
+                        vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eClear,
+                        vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eClear,
+                        vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eDepthStencilAttachmentOptimal
+                }
+        };
+        std::array<vk::AttachmentReference, 1> attachmentRefs{
+                vk::AttachmentReference{
+                        0, vk::ImageLayout::eColorAttachmentOptimal
+                }
+        };
+        vk::AttachmentReference depthAttacheRefs{
+                1, vk::ImageLayout::eDepthStencilAttachmentOptimal
+        };
+        std::array<vk::SubpassDescription, 1> subpassDescs{
+                vk::SubpassDescription{
+                        vk::SubpassDescriptionFlags(),
+                        vk::PipelineBindPoint::eGraphics,
+                        0, nullptr,
+                        attachmentRefs.size(), attachmentRefs.data(),
+                        nullptr,
+                        &depthAttacheRefs,
+                }
+        };
+        std::array<vk::SubpassDependency, 2> subpassDeps{
+                vk::SubpassDependency{
+                        VK_SUBPASS_EXTERNAL, 0,
+                        vk::PipelineStageFlagBits::eBottomOfPipe,
+                        vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                        vk::AccessFlagBits::eMemoryRead,
+                        vk::AccessFlagBits::eColorAttachmentRead |
+                        vk::AccessFlagBits::eColorAttachmentWrite,
+                        vk::DependencyFlagBits::eByRegion
+                },
+                vk::SubpassDependency{
+                        0, VK_SUBPASS_EXTERNAL,
+                        vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                        vk::PipelineStageFlagBits::eBottomOfPipe,
+                        vk::AccessFlagBits::eColorAttachmentRead |
+                        vk::AccessFlagBits::eColorAttachmentWrite,
+                        vk::AccessFlagBits::eMemoryRead,
+                        vk::DependencyFlagBits::eByRegion
+                }
+        };
+        renderPass = device->createRenderPassUnique(vk::RenderPassCreateInfo{
+                vk::RenderPassCreateFlags(),
+                attachDescs.size(), attachDescs.data(),
+                subpassDescs.size(), subpassDescs.data(),
+                subpassDeps.size(), subpassDeps.data()
+        });
     }
 }

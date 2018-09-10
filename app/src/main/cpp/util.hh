@@ -6,6 +6,7 @@
 #define STBOX_UTIL_H
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+
 #include "glm/glm.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -18,23 +19,41 @@
 #include <condition_variable>
 #include <android_native_app_glue.h>
 #include <iostream>
+#include <memory>
 
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);
 
 #define SWAPCHAIN_NUM 2
+
 namespace tt {
-    class Device : public vk::Device {
-        vk::PhysicalDevice &physicalDevice;
+    class Swapchain;
+
+    class Device : public vk::UniqueDevice {
+    public:
+        using ImageViewMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueDeviceMemory>;
+        using BufferViewMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>;
+        using BufferViewMemoryPtr = std::unique_ptr<void, std::function<void(void *)> >;
+
+    private:
+        vk::PhysicalDevice physicalDevice;
         uint32_t queueFamilyIndex;
         vk::UniqueCommandPool commandPool;
         std::vector<vk::UniqueCommandBuffer> commandBuffers;
-        vk::UniqueSwapchainKHR swapchainKHR;
-        vk::Extent2D swapchainExtent;
-        vk::Format depthFormat = vk::Format::eD24UnormS8Uint;
-        std::vector<std::tuple<vk::Image, vk::UniqueImageView, vk::UniqueFramebuffer, vk::UniqueFence>> vkSwapChainBuffers;
-        vk::UniqueImage depthImage;
-        vk::UniqueImageView depthImageView;
-        vk::UniqueDeviceMemory depthImageMemory;
+
+        vk::UniqueDescriptorPool descriptorPoll;// = ttcreateDescriptorPoolUnique();
+        std::vector<vk::UniqueDescriptorSet> descriptorSets;//{ttcreateDescriptorSets()};
+        vk::UniquePipelineCache pipelineCache;// = createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
+        vk::UniquePipeline graphicsPipeline;
+        //std::vector<vk::UniqueFence> commandBufferFences;
+        struct {
+            // Swap chain image presentation
+            vk::Semaphore presentComplete;
+            // Command buffer submission and execution
+            vk::Semaphore renderComplete;
+            // UI overlay submission and execution
+            vk::Semaphore overlayComplete;
+        } semaphores;
+/*
         std::array<vk::UniqueBuffer, SWAPCHAIN_NUM> mvpBuffer{
                 createBufferUnique(
                         vk::BufferCreateInfo{
@@ -47,8 +66,8 @@ namespace tt {
                                 sizeof(glm::mat4),
                                 vk::BufferUsageFlagBits::eUniformBuffer})};
         std::array<vk::MemoryRequirements, SWAPCHAIN_NUM> mvpBufferMemoryRqs{
-                getBufferMemoryRequirements(mvpBuffer[0].get()),
-                getBufferMemoryRequirements(mvpBuffer[1].get())
+                get().getBufferMemoryRequirements(mvpBuffer[0].get()),
+                get().getBufferMemoryRequirements(mvpBuffer[1].get())
 
         };
         std::array<vk::UniqueDeviceMemory, SWAPCHAIN_NUM> mvpMemorys{
@@ -69,7 +88,7 @@ namespace tt {
                                      }
                 )
         };
-
+*/
 
         vk::UniqueDescriptorSetLayout ttcreateDescriptorSetLayoutUnique() {
             std::array<vk::DescriptorSetLayoutBinding, 2> descriptSlBs{
@@ -86,50 +105,49 @@ namespace tt {
                             vk::ShaderStageFlagBits::eFragment
                     }
             };
-            return createDescriptorSetLayoutUnique(
+            return get().createDescriptorSetLayoutUnique(
                     vk::DescriptorSetLayoutCreateInfo{
                             vk::DescriptorSetLayoutCreateFlags(), descriptSlBs.size(),
                             descriptSlBs.data()
                     });
         }
 
-        vk::UniqueDescriptorSetLayout descriptorSetLayout{ttcreateDescriptorSetLayoutUnique()};
+        //
 
-        vk::UniquePipelineLayout pipelineLayout = createPipelineLayoutUnique(
-                vk::PipelineLayoutCreateInfo{
-                        vk::PipelineLayoutCreateFlags(), 1, &descriptorSetLayout.get(), 0, nullptr
-                });
+        vk::UniquePipelineLayout  buildPipelineLayout() {
+            vk::UniqueDescriptorSetLayout descriptorSetLayout{ttcreateDescriptorSetLayoutUnique()};
+            return get().createPipelineLayoutUnique(
+                    vk::PipelineLayoutCreateInfo{
+                            vk::PipelineLayoutCreateFlags(), 1, &descriptorSetLayout.get(), 0,
+                            nullptr
+                    });
+        }
 
         vk::UniqueDescriptorPool ttcreateDescriptorPoolUnique() {
             std::array<vk::DescriptorPoolSize, 2> poolSize{
                     vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 2},
                     vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 2}};
-            return createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo{
+            return get().createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo{
                     vk::DescriptorPoolCreateFlags(), 2, poolSize.size(), poolSize.data()});
         }
 
-        vk::UniqueDescriptorPool descriptorPoll = ttcreateDescriptorPoolUnique();
 
         std::vector<vk::UniqueDescriptorSet> ttcreateDescriptorSets() {
-            std::array<vk::DescriptorSetLayout, 2> descriptorSetLayouts{descriptorSetLayout.get(),
-                                                                        descriptorSetLayout.get()};
-            return allocateDescriptorSetsUnique(
+            auto descriptorSetLayout = ttcreateDescriptorSetLayoutUnique();
+            std::array<vk::DescriptorSetLayout, 1> descriptorSetLayouts{descriptorSetLayout.get()};
+            return get().allocateDescriptorSetsUnique(
                     vk::DescriptorSetAllocateInfo{
                             descriptorPoll.get(), descriptorSetLayouts.size(),
                             descriptorSetLayouts.data()});
         }
 
-        std::vector<vk::UniqueDescriptorSet> descriptorSets{ttcreateDescriptorSets()};
-        vk::UniqueRenderPass renderPass;
-        vk::UniquePipelineCache vkPipelineCache = createPipelineCacheUnique(
-                vk::PipelineCacheCreateInfo{});
-        vk::UniquePipeline graphicsPipeline;
 
-        std::unique_ptr<std::thread> submitThread;
-        std::queue<uint32_t> frameSubmitIndex;
-        bool submitExitFlag = false;
-        std::mutex mutexDraw;
-        std::condition_variable cvDraw;
+
+        //std::unique_ptr<std::thread> submitThread;
+        //std::queue<uint32_t> frameSubmitIndex;
+        //bool submitExitFlag = false;
+        //std::mutex mutexDraw;
+        //std::condition_variable cvDraw;
 
         uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
@@ -137,64 +155,68 @@ namespace tt {
                                                   android_app *androidAppCtx);
 
     public:
-        Device(vk::Device dev, vk::PhysicalDevice &phy, uint32_t qidx) :
-                vk::Device{dev}, physicalDevice{phy}, queueFamilyIndex{qidx},
-                commandPool{createCommandPoolUnique(
-                        vk::CommandPoolCreateInfo{
-                                vk::CommandPoolCreateFlagBits::eResetCommandBuffer, qidx})
-                }, commandBuffers{allocateCommandBuffersUnique(vk::CommandBufferAllocateInfo{commandPool.get(),
-                                                                           vk::CommandBufferLevel::ePrimary, 2})} {
-            auto mvpBufferInfo0 = vk::DescriptorBufferInfo{mvpBuffer[0].get(), 0,
-                                                           sizeof(glm::mat4)};
-            bindBufferMemory(mvpBuffer[0].get(), mvpMemorys[0].get(), 0);
-            auto mvpBufferInfo1 = vk::DescriptorBufferInfo{mvpBuffer[1].get(), 0,
-                                                           sizeof(glm::mat4)};
-            bindBufferMemory(mvpBuffer[1].get(), mvpMemorys[1].get(), 0);
+        Device(){
 
-            assert(descriptorSets.size() == 2);
-            std::cout << "descriptorSets.size()" << descriptorSets.size() << std::endl;
-            updateDescriptorSets(
-                    std::vector<vk::WriteDescriptorSet>{
-                            vk::WriteDescriptorSet{descriptorSets[0].get(), 0, 0, 1,
-                                                   vk::DescriptorType::eUniformBuffer,
-                                                   nullptr, &mvpBufferInfo0},
-                            vk::WriteDescriptorSet{descriptorSets[1].get(), 0, 0, 1,
-                                                   vk::DescriptorType::eUniformBuffer,
-                                                   nullptr, &mvpBufferInfo1}},
+        }
 
-                    nullptr);    //todo use_texture
+        Device & operator=(Device && odevice)
+        {
+
+            vk::UniqueDevice::operator=(std::move(odevice));
+            return *this;
         }
 
         Device(Device &&odevice) : physicalDevice{odevice.physicalDevice},
                                    queueFamilyIndex{odevice.queueFamilyIndex},
                                    commandPool{std::move(odevice.commandPool)},
                                    commandBuffers{std::move(odevice.commandBuffers)},
-                                   swapchainKHR{std::move(odevice.swapchainKHR)},
-                                   swapchainExtent{std::move(odevice.swapchainExtent)},
-                                   depthFormat{odevice.depthFormat},
-                                   vkSwapChainBuffers{std::move(odevice.vkSwapChainBuffers)},
-                                   depthImage{std::move(odevice.depthImage)},
-                                   depthImageView{std::move(odevice.depthImageView)},
-                                   depthImageMemory{std::move(odevice.depthImageMemory)},
-                                   mvpBuffer{std::move(odevice.mvpBuffer)},
-                                   mvpMemorys{std::move(odevice.mvpMemorys)},
-                                   descriptorSetLayout{std::move(odevice.descriptorSetLayout)},
-                                   pipelineLayout{std::move(odevice.pipelineLayout)},
+                                   //mvpBuffer{std::move(odevice.mvpBuffer)},
+                                   //mvpMemorys{std::move(odevice.mvpMemorys)},
+                                   //descriptorSetLayout{std::move(odevice.descriptorSetLayout)},
+                                   //pipelineLayout{std::move(odevice.pipelineLayout)},
                                    descriptorPoll{std::move(odevice.descriptorPoll)},
                                    descriptorSets{std::move(odevice.descriptorSets)},
-                                   renderPass{std::move(odevice.renderPass)},
-                                   vkPipelineCache{std::move(odevice.vkPipelineCache)},
+                                   pipelineCache{std::move(odevice.pipelineCache)},
                                    graphicsPipeline{std::move(odevice.graphicsPipeline)} {}
 
-        Device() = delete;
+        Device(vk::UniqueDevice &&dev, vk::PhysicalDevice &phy, uint32_t qidx) :
+                vk::UniqueDevice{std::move(dev)}, physicalDevice{phy}, queueFamilyIndex{qidx},
+                commandPool{get().createCommandPoolUnique(
+                        vk::CommandPoolCreateInfo{
+                                vk::CommandPoolCreateFlagBits::eResetCommandBuffer, qidx})
+                } {
+            descriptorPoll = ttcreateDescriptorPoolUnique();
+            descriptorSets = ttcreateDescriptorSets();
+            pipelineCache = get().createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
 
-        ~Device() {
-            waitIdle();
-            destroy();
+            //auto mvpBufferInfo0 = vk::DescriptorBufferInfo{mvpBuffer[0].get(), 0,
+            //                                               sizeof(glm::mat4)};
+            //bindBufferMemory(mvpBuffer[0].get(), mvpMemorys[0].get(), 0);
+            //auto mvpBufferInfo1 = vk::DescriptorBufferInfo{mvpBuffer[1].get(), 0,
+            //                                               sizeof(glm::mat4)};
+            //bindBufferMemory(mvpBuffer[1].get(), mvpMemorys[1].get(), 0);
+
+            //assert(descriptorSets.size() == 2);
+            //std::cout << "descriptorSets.size()" << descriptorSets.size() << std::endl;
+            //updateDescriptorSets(
+            //        std::vector<vk::WriteDescriptorSet>{
+            //                vk::WriteDescriptorSet{descriptorSets[0].get(), 0, 0, 1,
+            //                                       vk::DescriptorType::eUniformBuffer,
+            //                                       nullptr, &mvpBufferInfo0},
+            //                vk::WriteDescriptorSet{descriptorSets[1].get(), 0, 0, 1,
+            //                                       vk::DescriptorType::eUniformBuffer,
+            //                                       nullptr, &mvpBufferInfo1}},
+
+            //        nullptr);    //todo use_texture
         }
 
-        vk::Extent2D getSwapchainExtent() {
-            return swapchainExtent;
+
+        ~Device() {
+            get().waitIdle();
+        }
+
+        auto phyDevice() {
+            return physicalDevice;
         }
 
         std::vector<vk::UniqueCommandBuffer> &defaultPoolAllocBuffer() {
@@ -203,128 +225,193 @@ namespace tt {
 
         vk::SurfaceFormatKHR getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR);
 
+/*
         vk::UniqueDeviceMemory allocBindImageMemory(vk::Image image, vk::MemoryPropertyFlags flags);
 
         vk::UniqueDeviceMemory allocMemoryAndWrite(vk::Buffer &buffer, void *pData, size_t dataSize,
                                                    vk::MemoryPropertyFlags memoryPropertyFlags);
+*/
+        ImageViewMemory createImageAndMemory(vk::Format format, vk::Extent3D extent3D,
+                                             vk::ImageUsageFlags imageUsageFlags =
+                                             vk::ImageUsageFlagBits::eDepthStencilAttachment |
+                                             vk::ImageUsageFlagBits::eTransientAttachment,
+                                             vk::ComponentMapping componentMapping = vk::ComponentMapping{},
+                                             vk::ImageSubresourceRange imageSubresourceRange = vk::ImageSubresourceRange{
+                                                     vk::ImageAspectFlagBits::eDepth |
+                                                     vk::ImageAspectFlagBits::eStencil,
+                                                     0, 1, 0, 1});
 
-        void buildSwapchainViewBuffers(vk::SurfaceKHR &surfaceKHR);
+        BufferViewMemory
+        createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
+                              vk::MemoryPropertyFlags memoryPropertyFlags);
 
-        //void buildMVPBufferAndWrite(glm::mat4 MVP);
+        BufferViewMemoryPtr
+        mapBufferAndMemory(BufferViewMemory &bufferViewMemory, size_t offset = 0);
+
 
         void updateMVPBuffer(glm::mat4 MVP);
 
-        void buildRenderpass(vk::SurfaceKHR &surfaceKHR);
+        //void buildRenderpass(vk::SurfaceKHR &surfaceKHR);
 
-        void buildPipeline(uint32_t dataStepSize, android_app *app);
+        void buildPipeline(uint32_t dataStepSize, android_app *app, Swapchain &swapchain,vk::PipelineLayout pipelineLayout);
 
-        //void renderPassReset() {
-        //    vkSwapChainBuffers.clear();
-        //    renderPass.reset();
-        //}
 
         uint32_t
-        drawCmdBuffer(glm::mat4 MVP, vk::Buffer vertexBuffer);
+        buildCmdBuffers(vk::Buffer vertexBuffer,tt::Swapchain& swapchain,vk::PipelineLayout pipelineLayout);
 
-        void buildSubmitThread(vk::SurfaceKHR &surfaceKHR);
+        uint32_t
+        submitCmdBuffer(vk::SwapchainKHR swapchain);
 
-        void stopSubmitThread();
+    };
 
-        void resetDraw() {
-            while (!frameSubmitIndex.empty()) {
-                swapchainPresent();
-            }
+    class Swapchain : public vk::UniqueSwapchainKHR {
+        vk::UniqueSurfaceKHR surface;
+        vk::Extent2D swapchainExtent;
+        vk::Format depthFormat = vk::Format::eD24UnormS8Uint;
+        std::vector<vk::UniqueImageView> imageViews;
+        Device::ImageViewMemory depth;
+        std::vector<vk::UniqueFramebuffer> frameBuffers;
+        //vk::UniqueImage depthImage;
+        //vk::UniqueImageView depthImageView;
+        //vk::UniqueDeviceMemory depthImageMemory;
+        vk::UniqueRenderPass renderPass;
+
+        //std::vector<std::tuple<vk::Image, vk::UniqueImageView, vk::UniqueFramebuffer, vk::UniqueFence>> vkSwapChainBuffers;
+        void createRenderpass(Device &device);
+
+    public:
+        Swapchain(){
+
         }
 
-        void swapchainPresent();
-        void swapchainPresentSync();
+        Swapchain & operator=(Swapchain && swapchina)
+        {
+            swapchainExtent=std::move(swapchina.swapchainExtent);
+            depthFormat=swapchina.depthFormat;
+            imageViews=std::move(swapchina.imageViews);
+            depth=std::move(swapchina.depth);
+            frameBuffers=std::move(swapchina.frameBuffers);
+            renderPass=std::move(swapchina.renderPass);
+            vk::UniqueSwapchainKHR::operator=(std::move(swapchina));
+            return *this;
+        }
+
+        Swapchain(Swapchain &&swapchina) : vk::UniqueSwapchainKHR{std::move(swapchina)},
+                                           swapchainExtent{std::move(swapchina.swapchainExtent)},
+                                           depthFormat{swapchina.depthFormat},
+                                           imageViews{std::move(swapchina.imageViews)},
+                //vkSwapChainBuffers{std::move(swapchain.vkSwapChainBuffers)},
+                //depthImage{std::move(swapchain.depthImage)},
+                //depthImageView{std::move(swapchain.depthImageView)},
+                //depthImageMemory{std::move(swapchain.depthImageMemory)},
+                                           depth{std::move(swapchina.depth)},
+                                           frameBuffers{std::move(swapchina.frameBuffers)},
+                                           renderPass{std::move(swapchina.renderPass)} {
+
+        }
+
+        Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device);
+
+        ~Swapchain() {
+
+        }
+
+        vk::Extent2D getSwapchainExtent() {
+            return swapchainExtent;
+        }
+
+        auto getRenderPass() {
+            return renderPass.get();
+        }
+
+        auto getSwapchainImageNum() {
+            return imageViews.size();
+        }
+
+        auto getFrameBufferNum() {
+            return frameBuffers.size();
+        }
+
+        auto& getFrameBuffer() {
+            return frameBuffers;
+        }
+
+        auto acquireNextImage(Device &device,vk::Semaphore presentCompleteSemaphore){
+            return device->acquireNextImageKHR(get(),UINT64_MAX,presentCompleteSemaphore,vk::Fence{});
+        }
+
+        auto queuePresent(vk::Queue& queue,uint32_t imageIndex,vk::Semaphore waitSemaphore = vk::Semaphore{}){
+            vk::PresentInfoKHR presentInfo{
+                    0, nullptr,1,&get(),&imageIndex,
+
+            };
+            if(waitSemaphore) {
+                presentInfo.pWaitSemaphores = &waitSemaphore;
+                presentInfo.waitSemaphoreCount = 1;
+            }
+            return queue.presentKHR(presentInfo);
+        }
 
     };
 
     class Instance : public vk::Instance {
-        std::vector<vk::PhysicalDevice> vkPhysicalDevices = enumeratePhysicalDevices();
-        std::unique_ptr<tt::Device> upDevice;
-        vk::UniqueSurfaceKHR surfaceKHR;
-        bool focus = false;
+        //std::vector<vk::PhysicalDevice> vkPhysicalDevices = enumeratePhysicalDevices();
+        //std::unique_ptr<tt::Device> upDevice;
+        //vk::UniqueSurfaceKHR surfaceKHR;
+        //bool focus = false;
     public:
+        Instance(){
+
+        }
+
         Instance(vk::Instance &&ins) : vk::Instance{std::move(ins)} {
 
         }
 
-        Instance(Instance &&i) : vk::Instance{std::move(i)},
+        Instance(Instance &&i) : vk::Instance{std::move(i)}/*,
                                  vkPhysicalDevices{std::move(i.vkPhysicalDevices)},
                                  surfaceKHR{std::move(i.surfaceKHR)},
-                                 upDevice{std::move(i.upDevice)} {
+                                 upDevice{std::move(i.upDevice)}*/ {
 
         }
 
-        vk::PhysicalDevice &defaultPhyDevice() {
-            return vkPhysicalDevices[0];
+        Instance & operator=(Instance && instance)
+        {
+            vk::Instance::operator=(instance);
+            return *this;
         }
 
-        tt::Device &defaultDevice() {
-            return *upDevice;
+        vk::PhysicalDevice defaultPhyDevice() {
+            return enumeratePhysicalDevices()[0];
         }
 
-        vk::SurfaceKHR &defaultSurface() {
-            return surfaceKHR.get();
-        }
 
-        uint32_t queueFamilyPropertiesFindFlags(vk::QueueFlags);
-
-        void connectWSI(ANativeWindow *window) {
-            surfaceKHR = createAndroidSurfaceKHRUnique(
+        auto connectToWSI(ANativeWindow *window) {
+            return createAndroidSurfaceKHRUnique(
                     vk::AndroidSurfaceCreateInfoKHR{vk::AndroidSurfaceCreateFlagsKHR(),
                                                     window});
         }
 
-        void disconnectWSI() {
-            upDevice->resetDraw();
-            surfaceKHR.reset();
-        }
-
-        tt::Device connectToDevice();
-
-        bool connectedDevice() {
-            return upDevice.operator bool();
-        }
-
-        void connectDevice();
-
-        void disconnectDevice() {
-            upDevice.reset();
-        }
-
-        void setFocus() {
-            focus = true;
-        }
-
-        void unsetFocus() {
-            focus = false;
-        }
-
-        bool isFocus() {
-            return focus;
-        }
 
         ~Instance() {
             destroy();
         }
 
+        tt::Device connectToDevice(vk::SurfaceKHR surface);
     };
 
-    Instance createInstance();
+    tt::Instance createInstance();
 
-}
+};
 
-class Camera
-{
+uint32_t queueFamilyPropertiesFindFlags(vk::QueueFlags, vk::SurfaceKHR surface);
+
+class Camera {
 private:
     float fov;
     float znear, zfar;
 
-    void updateViewMatrix()
-    {
+    void updateViewMatrix() {
         glm::mat4 rotM = glm::mat4(1.0f);
         glm::mat4 transM;
 
@@ -334,19 +421,18 @@ private:
 
         transM = glm::translate(glm::mat4(1.0f), position);
 
-        if (type == CameraType::firstperson)
-        {
+        if (type == CameraType::firstperson) {
             matrices.view = rotM * transM;
-        }
-        else
-        {
+        } else {
             matrices.view = transM * rotM;
         }
 
         updated = true;
     };
 public:
-    enum CameraType { lookat, firstperson };
+    enum CameraType {
+        lookat, firstperson
+    };
     CameraType type = CameraType::lookat;
 
     glm::vec3 rotation = glm::vec3();
@@ -357,22 +443,19 @@ public:
 
     bool updated = false;
 
-    struct
-    {
+    struct {
         glm::mat4 perspective;
         glm::mat4 view;
     } matrices;
 
-    struct
-    {
+    struct {
         bool left = false;
         bool right = false;
         bool up = false;
         bool down = false;
     } keys;
 
-    bool moving()
-    {
+    bool moving() {
         return keys.left || keys.right || keys.up || keys.down;
     }
 
@@ -384,56 +467,46 @@ public:
         return zfar;
     }
 
-    void setPerspective(float fov, float aspect, float znear, float zfar)
-    {
+    void setPerspective(float fov, float aspect, float znear, float zfar) {
         this->fov = fov;
         this->znear = znear;
         this->zfar = zfar;
         matrices.perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
     };
 
-    void updateAspectRatio(float aspect)
-    {
+    void updateAspectRatio(float aspect) {
         matrices.perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
     }
 
-    void setPosition(glm::vec3 position)
-    {
+    void setPosition(glm::vec3 position) {
         this->position = position;
         updateViewMatrix();
     }
 
-    void setRotation(glm::vec3 rotation)
-    {
+    void setRotation(glm::vec3 rotation) {
         this->rotation = rotation;
         updateViewMatrix();
     };
 
-    void rotate(glm::vec3 delta)
-    {
+    void rotate(glm::vec3 delta) {
         this->rotation += delta;
         updateViewMatrix();
     }
 
-    void setTranslation(glm::vec3 translation)
-    {
+    void setTranslation(glm::vec3 translation) {
         this->position = translation;
         updateViewMatrix();
     };
 
-    void translate(glm::vec3 delta)
-    {
+    void translate(glm::vec3 delta) {
         this->position += delta;
         updateViewMatrix();
     }
 
-    void update(float deltaTime)
-    {
+    void update(float deltaTime) {
         updated = false;
-        if (type == CameraType::firstperson)
-        {
-            if (moving())
-            {
+        if (type == CameraType::firstperson) {
+            if (moving()) {
                 glm::vec3 camFront;
                 camFront.x = -cos(glm::radians(rotation.x)) * sin(glm::radians(rotation.y));
                 camFront.y = sin(glm::radians(rotation.x));
@@ -447,9 +520,11 @@ public:
                 if (keys.down)
                     position -= camFront * moveSpeed;
                 if (keys.left)
-                    position -= glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
+                    position -= glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) *
+                                moveSpeed;
                 if (keys.right)
-                    position += glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
+                    position += glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) *
+                                moveSpeed;
 
                 updateViewMatrix();
             }
@@ -458,12 +533,10 @@ public:
 
     // Update camera passing separate axis data (gamepad)
     // Returns true if view or position has been changed
-    bool updatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime)
-    {
+    bool updatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime) {
         bool retVal = false;
 
-        if (type == CameraType::firstperson)
-        {
+        if (type == CameraType::firstperson) {
             // Use the common console thumbstick layout
             // Left = view, right = move
 
@@ -480,40 +553,35 @@ public:
             float rotSpeed = deltaTime * rotationSpeed * 50.0f;
 
             // Move
-            if (fabsf(axisLeft.y) > deadZone)
-            {
+            if (fabsf(axisLeft.y) > deadZone) {
                 float pos = (fabsf(axisLeft.y) - deadZone) / range;
                 position -= camFront * pos * ((axisLeft.y < 0.0f) ? -1.0f : 1.0f) * moveSpeed;
                 retVal = true;
             }
-            if (fabsf(axisLeft.x) > deadZone)
-            {
+            if (fabsf(axisLeft.x) > deadZone) {
                 float pos = (fabsf(axisLeft.x) - deadZone) / range;
-                position += glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * pos * ((axisLeft.x < 0.0f) ? -1.0f : 1.0f) * moveSpeed;
+                position +=
+                        glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * pos *
+                        ((axisLeft.x < 0.0f) ? -1.0f : 1.0f) * moveSpeed;
                 retVal = true;
             }
 
             // Rotate
-            if (fabsf(axisRight.x) > deadZone)
-            {
+            if (fabsf(axisRight.x) > deadZone) {
                 float pos = (fabsf(axisRight.x) - deadZone) / range;
                 rotation.y += pos * ((axisRight.x < 0.0f) ? -1.0f : 1.0f) * rotSpeed;
                 retVal = true;
             }
-            if (fabsf(axisRight.y) > deadZone)
-            {
+            if (fabsf(axisRight.y) > deadZone) {
                 float pos = (fabsf(axisRight.y) - deadZone) / range;
                 rotation.x -= pos * ((axisRight.y < 0.0f) ? -1.0f : 1.0f) * rotSpeed;
                 retVal = true;
             }
-        }
-        else
-        {
+        } else {
             // todo: move code from example base class for look-at
         }
 
-        if (retVal)
-        {
+        if (retVal) {
             updateViewMatrix();
         }
 
@@ -521,4 +589,5 @@ public:
     }
 
 };
+
 #endif //STBOX_UTIL_H

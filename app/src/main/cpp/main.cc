@@ -71,7 +71,7 @@ private:
     char buffer_[kBufferSize];
 };
 
-
+/*
 void choreographerCallback(long frameTimeNanos, void* data) {
     assert(data);
     tt::Instance &ttInstance = *reinterpret_cast<tt::Instance *>(data);
@@ -88,30 +88,47 @@ void choreographerCallback(long frameTimeNanos, void* data) {
                                          &ttInstance);
     }
 }
-
+*/
 void Android_handle_cmd(android_app *app, int32_t cmd) {
-    tt::Instance &ttInstance = *reinterpret_cast<tt::Instance *>(app->userData);
+    static tt::Instance instance;
+    //static tt::Device device;
+    //static tt::Swapchain swapchain;
+    static stboxvk appbox;
     try {
         switch (cmd) {
-            case APP_CMD_START:
-                if(!ttInstance.connectedDevice())
-                    ttInstance.connectDevice();
+            case APP_CMD_INPUT_CHANGED:
                 break;
-            case APP_CMD_INIT_WINDOW:
-                // The window is being shown, get it ready.
-                assert(app->window);
+            case APP_CMD_START:
+                instance = tt::createInstance();
+                break;
+            case APP_CMD_STOP:
 
+                break;
+            case APP_CMD_INIT_WINDOW: {
+                // The window is being shown, get it ready.
+                appbox.init(app,instance);
+            }
+                break;
+            case APP_CMD_TERM_WINDOW:
+                appbox.term();
+                break;
+/*
                 ttInstance.connectWSI(app->window);
                 ttInstance.defaultDevice().buildRenderpass(ttInstance.defaultSurface());
                 ttInstance.defaultDevice().buildSwapchainViewBuffers(ttInstance.defaultSurface());
                 ttInstance.defaultDevice().buildPipeline(sizeof(g_vb_solid_face_colors_Data[0]),app);
                 //ttInstance.defaultDevice().buildSubmitThread(ttInstance.defaultSurface());
+
+                break;
+            case APP_CMD_WINDOW_REDRAW_NEEDED:
                 draw_run(ttInstance.defaultDevice(),ttInstance.defaultSurface());
+                sleep(1);
                 ttInstance.defaultDevice().swapchainPresent();
                 break;
             case APP_CMD_TERM_WINDOW:
                 // The window is being hidden or closed, clean it up.
-                ttInstance.defaultDevice().stopSubmitThread();
+                //ttInstance.defaultDevice().stopSubmitThread();
+                break;
 
                 ttInstance.unsetFocus();
                 //ttInstance.defaultDevice().renderPassReset();
@@ -119,11 +136,13 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 //ttInstance.disconnectDevice();
                 break;
             case APP_CMD_DESTROY:
+                break;
+
                 ttInstance.unsetFocus();
                 //ttInstance.defaultDevice().renderPassReset();
                 ttInstance.disconnectDevice();
                 break;
-            case APP_CMD_STOP:
+
             case APP_CMD_PAUSE:
                 ttInstance.unsetFocus();
                 break;
@@ -137,14 +156,14 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 ttInstance.setFocus();
                 std::cout << "got APP_CMD_INIT_WINDOW:" << gettid()<<std::endl;
                 //AChoreographer_postFrameCallbackDelayed(AChoreographer_getInstance(),choreographerCallback,&ttInstance,40);
-                if (ttInstance.isFocus()) {
-                    std::cout << app->userData << "fksend choreographerCallback: getid:" << gettid()
-                              << std::endl;
-                }
+                //if (ttInstance.isFocus()) {
+                //    std::cout << app->userData << "fksend choreographerCallback: getid:" << gettid()
+                //              << std::endl;
+                //}
                 break;
             case APP_CMD_LOST_FOCUS:
                 ttInstance.unsetFocus();
-                break;
+                break;*/
             default:
                 std::cout << "event not handled:" << cmd << std::endl;
         }
@@ -207,12 +226,12 @@ void Android_process(struct android_app *app) {
 
     do {
         int ident;
-        int minTimeout = 0;
+        int minTimeout = -1;
         while ((ident = ALooper_pollAll(minTimeout, NULL, &events, (void **) &source)) >= 0) {
             // Process each polled events
             if (source != NULL) source->process(app, source);
         }
-        switch (ident){
+        switch (ident) {
             case ALOOPER_POLL_WAKE:
             case ALOOPER_POLL_TIMEOUT:
                 std::cout << "ALOOPER_POLL:\t" << ident << std::endl;
@@ -225,7 +244,7 @@ void Android_process(struct android_app *app) {
                 std::cout << "ALOOPER_ERROR:\t" << ident << std::endl;
         };
 
-    }while(app->destroyRequested == 0);
+    } while (app->destroyRequested == 0);
     ANativeActivity_finish(app->activity);
     return;
 }
@@ -239,9 +258,7 @@ void android_main(struct android_app *app) {
 
     app->onAppCmd = Android_handle_cmd;
     app->onInputEvent = Android_handle_input;
-    auto ttInstance = tt::createInstance();
 
-    app->userData = &ttInstance;
 
     // Forward cout/cerr to logcat.
     std::cout.rdbuf(new AndroidBuffer(ANDROID_LOG_INFO));
