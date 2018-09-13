@@ -12,19 +12,8 @@ class stboxvk{
     tt::Device device;
     tt::Swapchain swapchain;
 public:
-    void init(android_app *app,tt::Instance &instance){
-        assert(instance);
-        auto surface = instance.connectToWSI(app->window);
-        device = instance.connectToDevice(surface.get());
-        swapchain = tt::Swapchain{std::move(surface),device};
-        //swapchain.reset(new tt::Swapchain{std::move(surface),*device});
-
-        device.buildCmdBuffers(vk::Buffer{},swapchain);
-    }
-    void term(){
-        swapchain.reset();
-        device.reset();
-    }
+    void init(android_app *app,tt::Instance &instance);
+    void term();
     explicit operator bool () const{
         return device && swapchain;
     }

@@ -15,6 +15,50 @@
 #include "util.hh"
 #include "cube_data.hh"
 
+
+void stboxvk::init(android_app *app,tt::Instance &instance){
+    assert(instance);
+    auto surface = instance.connectToWSI(app->window);
+    device = instance.connectToDevice(surface.get());
+    swapchain = tt::Swapchain{std::move(surface),device};
+
+    auto descriptorSetLayout = device.createDescriptorSetLayoutUnique(
+            std::vector<vk::DescriptorSetLayoutBinding>{
+                    vk::DescriptorSetLayoutBinding{
+                            0,
+                            vk::DescriptorType::eUniformBuffer,
+                            1,
+                            vk::ShaderStageFlagBits::eVertex
+                    },
+                    vk::DescriptorSetLayoutBinding{
+                            1,
+                            vk::DescriptorType::eCombinedImageSampler,
+                            1,
+                            vk::ShaderStageFlagBits::eFragment
+                    }
+            }
+    );
+    device.buildDescriptorSets(descriptorSetLayout);
+    auto pipelineLayout = device.createPipelineLayout(descriptorSetLayout);
+    device.buildPipeline(sizeof(Vertex),app,swapchain,pipelineLayout.get());
+
+    auto mvpBuffer = device.createBufferAndMemory(sizeof(glm::mat4),
+                                                  vk::BufferUsageFlagBits::eUniformBuffer,
+                                                  vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+
+
+    auto vertexBuffer = device.createBufferAndMemory(sizeof(Vertex)*16,
+                                                     vk::BufferUsageFlagBits::eVertexBuffer,
+                                                     vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+
+    device.buildCmdBuffers(vk::Buffer{},swapchain,pipelineLayout.get());
+
+}
+
+void stboxvk::term(){
+    swapchain.reset();
+    device.reset();
+}
 #if 0
 
 uint32_t draw_run(tt::Device &ttDevice, vk::SurfaceKHR &surfaceKHR) {

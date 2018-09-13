@@ -141,39 +141,6 @@ namespace tt {
         exit(-1);//todo throw
     }
 
-/*
-    vk::UniqueDeviceMemory
-    Device::allocBindImageMemory(vk::Image image, vk::MemoryPropertyFlags flags) {
-        auto imageMemoryRq = getImageMemoryRequirements(image);
-        auto typeIndex = findMemoryTypeIndex(imageMemoryRq.memoryTypeBits, flags);
-        auto imageMemory = allocateMemoryUnique(vk::MemoryAllocateInfo{
-                imageMemoryRq.size, findMemoryTypeIndex(imageMemoryRq.memoryTypeBits, flags)
-        });
-        std::cout << "ImageMemory:alloc index:" << typeIndex << std::endl;
-        bindImageMemory(image, imageMemory.get(), 0);
-        return imageMemory;
-    }
-
-    vk::UniqueDeviceMemory
-    Device::allocMemoryAndWrite(vk::Buffer &buffer, void *pData, size_t dataSize,
-                                vk::MemoryPropertyFlags memoryPropertyFlags) {
-        auto memoryRequirements = getBufferMemoryRequirements(buffer);
-        auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits,
-                                             memoryPropertyFlags);
-        std::cout << "vertex_memory:alloc index:" << typeIndex << std::endl;
-        auto memoryUnique = allocateMemoryUnique(vk::MemoryAllocateInfo{
-                memoryRequirements.size, typeIndex
-        });
-        auto pMemory = mapMemory(memoryUnique.get(), 0, memoryRequirements.size,
-                                 vk::MemoryMapFlagBits());
-        memcpy(pMemory, pData, dataSize);
-        unmapMemory(memoryUnique.get());
-        bindBufferMemory(buffer, memoryUnique.get(), 0);
-        return memoryUnique;
-    }
-
-*/
-
 
     vk::UniqueShaderModule Device::loadShaderFromFile(const char *filePath,
                                                       android_app *androidAppCtx) {
@@ -296,12 +263,7 @@ namespace tt {
         commandBuffers = get().allocateCommandBuffersUnique(
                 vk::CommandBufferAllocateInfo{commandPool.get(),
                                               vk::CommandBufferLevel::ePrimary, swapchain.getFrameBufferNum()});
-        //commandBufferFences.resize(swapchain.getFrameBufferNum());
-        //for (auto &commandBufferFence:commandBufferFences)
-        //    commandBufferFence = createFenceUnique(
-        //            vk::FenceCreateInfo{vk::FenceCreateFlagBits::eSignaled});
 
-        //auto &cmdBuffer = commandBuffers[frameIndex % SWAPCHAIN_NUM].get();
         std::array<vk::ClearValue, 2> clearValues{
                 vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
                 vk::ClearDepthStencilValue{1.0f, 0},

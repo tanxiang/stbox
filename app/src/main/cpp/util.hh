@@ -37,13 +37,14 @@ namespace tt {
     private:
         vk::PhysicalDevice physicalDevice;
         uint32_t queueFamilyIndex;
+
+        vk::UniqueDescriptorPool descriptorPoll;// = ttcreateDescriptorPoolUnique();
+        std::vector<vk::UniqueDescriptorSet> descriptorSets;//{buildDescriptorSets()};
+        vk::UniquePipelineCache pipelineCache;// = createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
+        vk::UniquePipeline graphicsPipeline;
         vk::UniqueCommandPool commandPool;
         std::vector<vk::UniqueCommandBuffer> commandBuffers;
 
-        vk::UniqueDescriptorPool descriptorPoll;// = ttcreateDescriptorPoolUnique();
-        std::vector<vk::UniqueDescriptorSet> descriptorSets;//{ttcreateDescriptorSets()};
-        vk::UniquePipelineCache pipelineCache;// = createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
-        vk::UniquePipeline graphicsPipeline;
         //std::vector<vk::UniqueFence> commandBufferFences;
         struct {
             // Swap chain image presentation
@@ -53,101 +54,19 @@ namespace tt {
             // UI overlay submission and execution
             vk::Semaphore overlayComplete;
         } semaphores;
-/*
-        std::array<vk::UniqueBuffer, SWAPCHAIN_NUM> mvpBuffer{
-                createBufferUnique(
-                        vk::BufferCreateInfo{
-                                vk::BufferCreateFlags(),
-                                sizeof(glm::mat4),
-                                vk::BufferUsageFlagBits::eUniformBuffer}),
-                createBufferUnique(
-                        vk::BufferCreateInfo{
-                                vk::BufferCreateFlags(),
-                                sizeof(glm::mat4),
-                                vk::BufferUsageFlagBits::eUniformBuffer})};
-        std::array<vk::MemoryRequirements, SWAPCHAIN_NUM> mvpBufferMemoryRqs{
-                get().getBufferMemoryRequirements(mvpBuffer[0].get()),
-                get().getBufferMemoryRequirements(mvpBuffer[1].get())
 
-        };
-        std::array<vk::UniqueDeviceMemory, SWAPCHAIN_NUM> mvpMemorys{
-                allocateMemoryUnique(vk::MemoryAllocateInfo{
-                                             mvpBufferMemoryRqs[0].size,
-                                             findMemoryTypeIndex(mvpBufferMemoryRqs[0].memoryTypeBits,
-                                                                 vk::MemoryPropertyFlags() |
-                                                                 vk::MemoryPropertyFlagBits::eHostVisible |
-                                                                 vk::MemoryPropertyFlagBits::eHostCoherent)
-                                     }
-                ),
-                allocateMemoryUnique(vk::MemoryAllocateInfo{
-                                             mvpBufferMemoryRqs[1].size,
-                                             findMemoryTypeIndex(mvpBufferMemoryRqs[1].memoryTypeBits,
-                                                                 vk::MemoryPropertyFlags() |
-                                                                 vk::MemoryPropertyFlagBits::eHostVisible |
-                                                                 vk::MemoryPropertyFlagBits::eHostCoherent)
-                                     }
-                )
-        };
-*/
 
-        vk::UniqueDescriptorSetLayout ttcreateDescriptorSetLayoutUnique() {
-            std::array<vk::DescriptorSetLayoutBinding, 2> descriptSlBs{
-                    vk::DescriptorSetLayoutBinding{
-                            0,
-                            vk::DescriptorType::eUniformBuffer,
-                            1,
-                            vk::ShaderStageFlagBits::eVertex
-                    },
-                    vk::DescriptorSetLayoutBinding{
-                            1,
-                            vk::DescriptorType::eCombinedImageSampler,
-                            1,
-                            vk::ShaderStageFlagBits::eFragment
-                    }
-            };
-            return get().createDescriptorSetLayoutUnique(
-                    vk::DescriptorSetLayoutCreateInfo{
-                            vk::DescriptorSetLayoutCreateFlags(), descriptSlBs.size(),
-                            descriptSlBs.data()
-                    });
-        }
 
-        //
-
-        vk::UniquePipelineLayout  buildPipelineLayout() {
-            vk::UniqueDescriptorSetLayout descriptorSetLayout{ttcreateDescriptorSetLayoutUnique()};
-            return get().createPipelineLayoutUnique(
-                    vk::PipelineLayoutCreateInfo{
-                            vk::PipelineLayoutCreateFlags(), 1, &descriptorSetLayout.get(), 0,
-                            nullptr
-                    });
-        }
 
         vk::UniqueDescriptorPool ttcreateDescriptorPoolUnique() {
-            std::array<vk::DescriptorPoolSize, 2> poolSize{
+            std::array<vk::DescriptorPoolSize,3> poolSize{
                     vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 2},
-                    vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 2}};
+                    vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 2},
+                    vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 2}
+            };
             return get().createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo{
-                    vk::DescriptorPoolCreateFlags(), 2, poolSize.size(), poolSize.data()});
+                    vk::DescriptorPoolCreateFlags(), 3, poolSize.size(), poolSize.data()});
         }
-
-
-        std::vector<vk::UniqueDescriptorSet> ttcreateDescriptorSets() {
-            auto descriptorSetLayout = ttcreateDescriptorSetLayoutUnique();
-            std::array<vk::DescriptorSetLayout, 1> descriptorSetLayouts{descriptorSetLayout.get()};
-            return get().allocateDescriptorSetsUnique(
-                    vk::DescriptorSetAllocateInfo{
-                            descriptorPoll.get(), descriptorSetLayouts.size(),
-                            descriptorSetLayouts.data()});
-        }
-
-
-
-        //std::unique_ptr<std::thread> submitThread;
-        //std::queue<uint32_t> frameSubmitIndex;
-        //bool submitExitFlag = false;
-        //std::mutex mutexDraw;
-        //std::condition_variable cvDraw;
 
         uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
@@ -168,16 +87,12 @@ namespace tt {
 
         Device(Device &&odevice) : physicalDevice{odevice.physicalDevice},
                                    queueFamilyIndex{odevice.queueFamilyIndex},
-                                   commandPool{std::move(odevice.commandPool)},
-                                   commandBuffers{std::move(odevice.commandBuffers)},
-                                   //mvpBuffer{std::move(odevice.mvpBuffer)},
-                                   //mvpMemorys{std::move(odevice.mvpMemorys)},
-                                   //descriptorSetLayout{std::move(odevice.descriptorSetLayout)},
-                                   //pipelineLayout{std::move(odevice.pipelineLayout)},
                                    descriptorPoll{std::move(odevice.descriptorPoll)},
                                    descriptorSets{std::move(odevice.descriptorSets)},
                                    pipelineCache{std::move(odevice.pipelineCache)},
-                                   graphicsPipeline{std::move(odevice.graphicsPipeline)} {}
+                                   graphicsPipeline{std::move(odevice.graphicsPipeline)},
+                                   commandPool{std::move(odevice.commandPool)},
+                                   commandBuffers{std::move(odevice.commandBuffers)} {}
 
         Device(vk::UniqueDevice &&dev, vk::PhysicalDevice &phy, uint32_t qidx) :
                 vk::UniqueDevice{std::move(dev)}, physicalDevice{phy}, queueFamilyIndex{qidx},
@@ -186,28 +101,8 @@ namespace tt {
                                 vk::CommandPoolCreateFlagBits::eResetCommandBuffer, qidx})
                 } {
             descriptorPoll = ttcreateDescriptorPoolUnique();
-            descriptorSets = ttcreateDescriptorSets();
+            //descriptorSets = buildDescriptorSets();
             pipelineCache = get().createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
-
-            //auto mvpBufferInfo0 = vk::DescriptorBufferInfo{mvpBuffer[0].get(), 0,
-            //                                               sizeof(glm::mat4)};
-            //bindBufferMemory(mvpBuffer[0].get(), mvpMemorys[0].get(), 0);
-            //auto mvpBufferInfo1 = vk::DescriptorBufferInfo{mvpBuffer[1].get(), 0,
-            //                                               sizeof(glm::mat4)};
-            //bindBufferMemory(mvpBuffer[1].get(), mvpMemorys[1].get(), 0);
-
-            //assert(descriptorSets.size() == 2);
-            //std::cout << "descriptorSets.size()" << descriptorSets.size() << std::endl;
-            //updateDescriptorSets(
-            //        std::vector<vk::WriteDescriptorSet>{
-            //                vk::WriteDescriptorSet{descriptorSets[0].get(), 0, 0, 1,
-            //                                       vk::DescriptorType::eUniformBuffer,
-            //                                       nullptr, &mvpBufferInfo0},
-            //                vk::WriteDescriptorSet{descriptorSets[1].get(), 0, 0, 1,
-            //                                       vk::DescriptorType::eUniformBuffer,
-            //                                       nullptr, &mvpBufferInfo1}},
-
-            //        nullptr);    //todo use_texture
         }
 
 
@@ -219,18 +114,38 @@ namespace tt {
             return physicalDevice;
         }
 
+        vk::UniqueDescriptorSetLayout createDescriptorSetLayoutUnique(std::vector<vk::DescriptorSetLayoutBinding> descriptSlBs) {
+            return get().createDescriptorSetLayoutUnique(
+                    vk::DescriptorSetLayoutCreateInfo{
+                            vk::DescriptorSetLayoutCreateFlags(), descriptSlBs.size(),
+                            descriptSlBs.data()
+                    });
+        }
+
+        //
+
+        vk::UniquePipelineLayout  createPipelineLayout(vk::UniqueDescriptorSetLayout &descriptorSetLayout) {
+            return get().createPipelineLayoutUnique(
+                    vk::PipelineLayoutCreateInfo{
+                            vk::PipelineLayoutCreateFlags(), 1, &descriptorSetLayout.get(), 0,
+                            nullptr
+                    });
+        }
+
+        void buildDescriptorSets(vk::UniqueDescriptorSetLayout &descriptorSetLayout) {
+            std::array<vk::DescriptorSetLayout, 1> descriptorSetLayouts{descriptorSetLayout.get()};
+            descriptorSets = get().allocateDescriptorSetsUnique(
+                    vk::DescriptorSetAllocateInfo{
+                            descriptorPoll.get(), descriptorSetLayouts.size(),
+                            descriptorSetLayouts.data()});
+        }
+
         std::vector<vk::UniqueCommandBuffer> &defaultPoolAllocBuffer() {
             return commandBuffers;
         }
 
         vk::SurfaceFormatKHR getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR);
 
-/*
-        vk::UniqueDeviceMemory allocBindImageMemory(vk::Image image, vk::MemoryPropertyFlags flags);
-
-        vk::UniqueDeviceMemory allocMemoryAndWrite(vk::Buffer &buffer, void *pData, size_t dataSize,
-                                                   vk::MemoryPropertyFlags memoryPropertyFlags);
-*/
         ImageViewMemory createImageAndMemory(vk::Format format, vk::Extent3D extent3D,
                                              vk::ImageUsageFlags imageUsageFlags =
                                              vk::ImageUsageFlagBits::eDepthStencilAttachment |
@@ -251,10 +166,8 @@ namespace tt {
 
         void updateMVPBuffer(glm::mat4 MVP);
 
-        //void buildRenderpass(vk::SurfaceKHR &surfaceKHR);
 
         void buildPipeline(uint32_t dataStepSize, android_app *app, Swapchain &swapchain,vk::PipelineLayout pipelineLayout);
-
 
         uint32_t
         buildCmdBuffers(vk::Buffer vertexBuffer,tt::Swapchain& swapchain,vk::PipelineLayout pipelineLayout);
@@ -271,12 +184,8 @@ namespace tt {
         std::vector<vk::UniqueImageView> imageViews;
         Device::ImageViewMemory depth;
         std::vector<vk::UniqueFramebuffer> frameBuffers;
-        //vk::UniqueImage depthImage;
-        //vk::UniqueImageView depthImageView;
-        //vk::UniqueDeviceMemory depthImageMemory;
         vk::UniqueRenderPass renderPass;
 
-        //std::vector<std::tuple<vk::Image, vk::UniqueImageView, vk::UniqueFramebuffer, vk::UniqueFence>> vkSwapChainBuffers;
         void createRenderpass(Device &device);
 
     public:
@@ -300,10 +209,6 @@ namespace tt {
                                            swapchainExtent{std::move(swapchina.swapchainExtent)},
                                            depthFormat{swapchina.depthFormat},
                                            imageViews{std::move(swapchina.imageViews)},
-                //vkSwapChainBuffers{std::move(swapchain.vkSwapChainBuffers)},
-                //depthImage{std::move(swapchain.depthImage)},
-                //depthImageView{std::move(swapchain.depthImageView)},
-                //depthImageMemory{std::move(swapchain.depthImageMemory)},
                                            depth{std::move(swapchina.depth)},
                                            frameBuffers{std::move(swapchina.frameBuffers)},
                                            renderPass{std::move(swapchina.renderPass)} {
@@ -355,10 +260,6 @@ namespace tt {
     };
 
     class Instance : public vk::Instance {
-        //std::vector<vk::PhysicalDevice> vkPhysicalDevices = enumeratePhysicalDevices();
-        //std::unique_ptr<tt::Device> upDevice;
-        //vk::UniqueSurfaceKHR surfaceKHR;
-        //bool focus = false;
     public:
         Instance(){
 
@@ -368,10 +269,7 @@ namespace tt {
 
         }
 
-        Instance(Instance &&i) : vk::Instance{std::move(i)}/*,
-                                 vkPhysicalDevices{std::move(i.vkPhysicalDevices)},
-                                 surfaceKHR{std::move(i.surfaceKHR)},
-                                 upDevice{std::move(i.upDevice)}*/ {
+        Instance(Instance &&i) : vk::Instance{std::move(i)} {
 
         }
 

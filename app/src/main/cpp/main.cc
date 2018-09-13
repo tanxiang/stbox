@@ -107,8 +107,8 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
             case APP_CMD_INIT_WINDOW: {
                 // The window is being shown, get it ready.
                 appbox.init(app,instance);
-            }
                 break;
+            }
             case APP_CMD_TERM_WINDOW:
                 appbox.term();
                 break;
