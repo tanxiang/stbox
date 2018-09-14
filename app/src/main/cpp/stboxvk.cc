@@ -51,7 +51,7 @@ void stboxvk::init(android_app *app,tt::Instance &instance){
                                                      vk::BufferUsageFlagBits::eVertexBuffer,
                                                      vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
-    device.buildCmdBuffers(vk::Buffer{},swapchain,pipelineLayout.get());
+    device.buildCmdBuffers(std::get<vk::UniqueBuffer>(vertexBuffer).get(),swapchain,pipelineLayout.get());
 
 }
 
