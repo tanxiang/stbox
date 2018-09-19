@@ -10,7 +10,7 @@ __kernel void TEMPLATE(eltwise_max_forward,Dtype)(
     Dtype maxval = -FLT_MAX;
     int_tp maxidx = -1;
     if (bottom_data_a[index] > bottom_data_b[index]) {
-      // only update for very first bottom_data blob (blob_idx == 0)
+      // only update for very first bottom_data Blob (blob_idx == 0)
       if (blob_idx == 0) {
         maxval = bottom_data_a[index];
         top_data[index] = maxval;

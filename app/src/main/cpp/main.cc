@@ -19,7 +19,7 @@
 //#include "shaderc/shaderc.hpp"
 #include "main.hh"
 #include "stboxvk.hh"
-#include "cube_data.hh"
+#include "vertexdata.hh"
 
 static android_app *Android_application = nullptr;
 

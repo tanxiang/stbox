@@ -17,7 +17,7 @@
 #include "stboxvk.hh"
 #include <map>
 
-#include "cube_data.hh"
+#include "vertexdata.hh"
 #include <algorithm>
 
 

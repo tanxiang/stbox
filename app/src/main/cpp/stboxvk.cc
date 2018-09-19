@@ -13,7 +13,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "util.hh"
-#include "cube_data.hh"
+#include "vertexdata.hh"
 
 
 void stboxvk::init(android_app *app,tt::Instance &instance){
@@ -21,7 +21,6 @@ void stboxvk::init(android_app *app,tt::Instance &instance){
     auto surface = instance.connectToWSI(app->window);
     device = instance.connectToDevice(surface.get());
     swapchain = tt::Swapchain{std::move(surface),device};
-
     auto descriptorSetLayout = device.createDescriptorSetLayoutUnique(
             std::vector<vk::DescriptorSetLayoutBinding>{
                     vk::DescriptorSetLayoutBinding{
@@ -42,14 +41,41 @@ void stboxvk::init(android_app *app,tt::Instance &instance){
     auto pipelineLayout = device.createPipelineLayout(descriptorSetLayout);
     device.buildPipeline(sizeof(Vertex),app,swapchain,pipelineLayout.get());
 
-    auto mvpBuffer = device.createBufferAndMemory(sizeof(glm::mat4),
+
+    static auto View = glm::lookAt(
+            glm::vec3(-5, 3, -10),  // Camera is at (-5,3,-10), in World Space
+            glm::vec3(0, 0, 0),     // and looks at the origin
+            glm::vec3(0, -1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
+    );
+    glm::rotate(View, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    mvpBuffer = device.createBufferAndMemory(sizeof(glm::mat4),
                                                   vk::BufferUsageFlagBits::eUniformBuffer,
                                                   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+    auto mvpBuffer_ptr = device.mapBufferAndMemory(mvpBuffer);
+    std::vector<VertexUV> vertices{
+            { {  1.0f,  1.0f, 0.0f ,1.0f}, { 1.0f, 1.0f } },
+            { { -1.0f,  1.0f, 0.0f ,1.0f}, { 0.0f, 1.0f } },
+            { { -1.0f, -1.0f, 0.0f ,1.0f}, { 0.0f, 0.0f } },
+            { {  1.0f, -1.0f, 0.0f ,1.0f}, { 1.0f, 0.0f } }
+    };
 
-
-    auto vertexBuffer = device.createBufferAndMemory(sizeof(Vertex)*16,
+    vertexBuffer = device.createBufferAndMemory(sizeof(decltype(vertices)::value_type) * vertices.size(),
                                                      vk::BufferUsageFlagBits::eVertexBuffer,
                                                      vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+
+    auto vertexBuffer_ptr = device.mapBufferAndMemory(vertexBuffer);
+
+    memcpy(vertexBuffer_ptr.get(),vertices.data(),std::get<size_t>(vertexBuffer));
+
+    std::vector<uint32_t> indices = { 0,1,2, 2,3,0 };
+
+    indexBuffer = device.createBufferAndMemory(sizeof(decltype(indices)::value_type) * indices.size(),
+                                                     vk::BufferUsageFlagBits::eVertexBuffer,
+                                                     vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+    auto indexBuffer_ptr = device.mapBufferAndMemory(indexBuffer);
+
+    memcpy(indexBuffer_ptr.get(),indices.data(),std::get<size_t>(indexBuffer));
+
 
     device.buildCmdBuffers(std::get<vk::UniqueBuffer>(vertexBuffer).get(),swapchain,pipelineLayout.get());
 
