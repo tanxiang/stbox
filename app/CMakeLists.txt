@@ -29,6 +29,7 @@ add_library( # Sets the name of the library.
              src/main/cpp/Activation.cc )
 
 target_include_directories(stbox PRIVATE
+               src/main/include
                ${ANDROID_NDK}/sources/android/native_app_glue
                #${ANDROID_NDK}/sources/third_party/vulkan/src/include
                #${ANDROID_NDK}/sources/third_party/vulkan/src/libs
