@@ -54,10 +54,10 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
 */
 namespace tt {
     tt::Instance createInstance() {
-        auto instance_layer_props = vk::enumerateInstanceLayerProperties();
-        std::cout << "enumerateInstanceLayerProperties:" << instance_layer_props.size()
+        auto instanceLayerProperties = vk::enumerateInstanceLayerProperties();
+        std::cout << "enumerateInstanceLayerProperties:" << instanceLayerProperties.size()
                   << std::endl;
-        for (auto &prop:instance_layer_props)
+        for (auto &prop:instanceLayerProperties)
             std::cout << prop.layerName << std::endl;
         vk::ApplicationInfo vkAppInfo{"stbox", VK_VERSION_1_0, "stbox",
                                       VK_VERSION_1_0, VK_API_VERSION_1_0};
@@ -67,7 +67,7 @@ namespace tt {
                                               0, nullptr,
                                               instanceEtensionNames.size(),
                                               instanceEtensionNames.data()};
-        return tt::Instance{vk::createInstance(instanceInfo)};
+        return tt::Instance{vk::createInstanceUnique(instanceInfo)};
     }
 
     uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
@@ -90,7 +90,8 @@ namespace tt {
 
 
     tt::Device Instance::connectToDevice(vk::SurfaceKHR surface) {
-        auto phyDevice = defaultPhyDevice();
+        auto phyDevices = get().enumeratePhysicalDevices();
+        auto phyDevice = phyDevices[0];
         auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevice,
                                                                  vk::QueueFlagBits::eGraphics,
                                                                  surface);
@@ -141,30 +142,42 @@ namespace tt {
         exit(-1);//todo throw
     }
 
-
-    vk::UniqueShaderModule Device::loadShaderFromFile(const char *filePath,
-                                                      android_app *androidAppCtx) {
+    std::vector<char>&& loadDataFromAssets(const char *filePath,
+                                                        android_app *androidAppCtx) {
         // Read the file
         assert(androidAppCtx);
-        AAsset *file = AAssetManager_open(androidAppCtx->activity->assetManager,
-                                          filePath, AASSET_MODE_BUFFER);
-        size_t fileLength = AAsset_getLength(file);
+        std::unique_ptr<AAsset,std::function<void(AAsset *)> > file{
+                AAssetManager_open(androidAppCtx->activity->assetManager, filePath, AASSET_MODE_STREAMING),
+                [](AAsset *AAsset) {
+                    AAsset_close(AAsset);
+                }
+        };
+        size_t fileLength = AAsset_getLength(file.get());
+        std::vector<char> fileContent{fileLength};
+        //auto fileContent = std::make_unique<char[]>(fileLength);
+        AAsset_read(file.get(), reinterpret_cast<void *>(fileContent.data()), fileContent.size());
 
-        auto fileContent = std::make_unique<char[]>(fileLength);
+        return std::move(fileContent);
+    }
 
-        AAsset_read(file, reinterpret_cast<void *>(fileContent.get()), fileLength);
+    vk::UniqueShaderModule Device::loadShaderFromAssets(const char *filePath,
+                                                        android_app *androidAppCtx) {
+        // Read the file
+        auto fileContent = loadDataFromAssets(filePath,androidAppCtx);
 
         return get().createShaderModuleUnique(vk::ShaderModuleCreateInfo{
-                vk::ShaderModuleCreateFlags(), fileLength,
-                reinterpret_cast<const uint32_t *>(fileContent.get())});
+                vk::ShaderModuleCreateFlags(), fileContent.size(),
+                reinterpret_cast<const uint32_t *>(fileContent.data())});
 
     }
+
+
 
     void Device::buildPipeline(uint32_t dataStepSize, android_app *app,Swapchain& swapchain,vk::PipelineLayout pipelineLayout) {
         if (graphicsPipeline)
             return;
-        auto vertShaderModule = loadShaderFromFile("shaders/mvp.vert.spv", app);
-        auto fargShaderModule = loadShaderFromFile("shaders/copy.frag.spv", app);
+        auto vertShaderModule = loadShaderFromAssets("shaders/mvp.vert.spv", app);
+        auto fargShaderModule = loadShaderFromAssets("shaders/copy.frag.spv", app);
         std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStageCreateInfos{
                 vk::PipelineShaderStageCreateInfo{
                         vk::PipelineShaderStageCreateFlags(),

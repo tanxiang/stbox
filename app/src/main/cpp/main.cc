@@ -99,71 +99,46 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
             case APP_CMD_INPUT_CHANGED:
                 break;
             case APP_CMD_START:
+                std::cout << "APP_CMD_START:" << cmd << std::endl;
                 instance = tt::createInstance();
+
                 break;
             case APP_CMD_STOP:
+                instance.reset();
+                std::cout << "APP_CMD_STOP:" << cmd << std::endl;
 
                 break;
-            case APP_CMD_INIT_WINDOW: {
+            case APP_CMD_INIT_WINDOW:
                 // The window is being shown, get it ready.
+                std::cout << "APP_CMD_INIT_WINDOW:" << cmd << std::endl;
                 appbox.init(app,instance);
                 break;
-            }
+
             case APP_CMD_TERM_WINDOW:
+                std::cout << "APP_CMD_TERM_WINDOW:" << cmd << std::endl;
                 appbox.term();
                 break;
-/*
-                ttInstance.connectWSI(app->window);
-                ttInstance.defaultDevice().buildRenderpass(ttInstance.defaultSurface());
-                ttInstance.defaultDevice().buildSwapchainViewBuffers(ttInstance.defaultSurface());
-                ttInstance.defaultDevice().buildPipeline(sizeof(g_vb_solid_face_colors_Data[0]),app);
-                //ttInstance.defaultDevice().buildSubmitThread(ttInstance.defaultSurface());
-
-                break;
-            case APP_CMD_WINDOW_REDRAW_NEEDED:
-                draw_run(ttInstance.defaultDevice(),ttInstance.defaultSurface());
-                sleep(1);
-                ttInstance.defaultDevice().swapchainPresent();
-                break;
-            case APP_CMD_TERM_WINDOW:
-                // The window is being hidden or closed, clean it up.
-                //ttInstance.defaultDevice().stopSubmitThread();
-                break;
-
-                ttInstance.unsetFocus();
-                //ttInstance.defaultDevice().renderPassReset();
-                ttInstance.disconnectWSI();
-                //ttInstance.disconnectDevice();
-                break;
-            case APP_CMD_DESTROY:
-                break;
-
-                ttInstance.unsetFocus();
-                //ttInstance.defaultDevice().renderPassReset();
-                ttInstance.disconnectDevice();
-                break;
-
-            case APP_CMD_PAUSE:
-                ttInstance.unsetFocus();
-                break;
-
-            case APP_CMD_RESUME:
-                ttInstance.setFocus();
-                break;
-            case APP_CMD_SAVE_STATE:
-                break;
             case APP_CMD_GAINED_FOCUS:
-                ttInstance.setFocus();
-                std::cout << "got APP_CMD_INIT_WINDOW:" << gettid()<<std::endl;
-                //AChoreographer_postFrameCallbackDelayed(AChoreographer_getInstance(),choreographerCallback,&ttInstance,40);
-                //if (ttInstance.isFocus()) {
-                //    std::cout << app->userData << "fksend choreographerCallback: getid:" << gettid()
-                //              << std::endl;
-                //}
+                std::cout << "APP_CMD_GAINED_FOCUS:" << cmd << std::endl;
                 break;
             case APP_CMD_LOST_FOCUS:
-                ttInstance.unsetFocus();
-                break;*/
+                std::cout << "APP_CMD_LOST_FOCUS:" << cmd << std::endl;
+                break;
+            case APP_CMD_SAVE_STATE:
+                std::cout << "APP_CMD_SAVE_STATE:" << cmd << std::endl;
+                break;
+            case APP_CMD_LOW_MEMORY:
+                std::cout << "APP_CMD_LOW_MEMORY:" << cmd << std::endl;
+                break;
+            case APP_CMD_DESTROY:
+                std::cout << "APP_CMD_DESTROY:" << cmd << std::endl;
+                break;
+            case APP_CMD_PAUSE:
+                std::cout << "APP_CMD_PAUSE:" << cmd << std::endl;
+                break;
+            case APP_CMD_RESUME:
+                std::cout << "APP_CMD_RESUME:" << cmd << std::endl;
+                break;
             default:
                 std::cout << "event not handled:" << cmd << std::endl;
         }

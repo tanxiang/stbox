@@ -7,12 +7,12 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
-#include "glm/glm.hpp"
-#include "glm/gtc/quaternion.hpp"
-#include "glm/gtc/matrix_transform.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <unistd.h>
 #include <android/log.h>
-#include "vulkan.hpp"
+#include <vulkan.hpp>
 #include "main.hh"
 #include <thread>
 #include <queue>
@@ -27,6 +27,7 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
 
 namespace tt {
     class Swapchain;
+    std::vector<char>&& loadDataFromAssets(const char *filePath,android_app *androidAppCtx);
 
     class Device : public vk::UniqueDevice {
     public:
@@ -37,7 +38,6 @@ namespace tt {
     private:
         vk::PhysicalDevice physicalDevice;
         uint32_t queueFamilyIndex;
-
         vk::UniqueDescriptorPool descriptorPoll;// = ttcreateDescriptorPoolUnique();
         std::vector<vk::UniqueDescriptorSet> descriptorSets;//{buildDescriptorSets()};
         vk::UniquePipelineCache pipelineCache;// = createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
@@ -70,22 +70,30 @@ namespace tt {
 
         uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
-        vk::UniqueShaderModule loadShaderFromFile(const char *filePath,
-                                                  android_app *androidAppCtx);
+        vk::UniqueShaderModule loadShaderFromAssets(const char *filePath,
+                                                    android_app *androidAppCtx);
 
     public:
         Device(){
 
         }
 
-        Device & operator=(Device && odevice)
+        Device & operator=(Device &&odevice)
         {
-
             vk::UniqueDevice::operator=(std::move(odevice));
+            physicalDevice = odevice.physicalDevice;
+            queueFamilyIndex = odevice.queueFamilyIndex;
+            descriptorPoll = std::move(odevice.descriptorPoll);
+            descriptorSets = std::move(odevice.descriptorSets);
+            pipelineCache = std::move(odevice.pipelineCache);
+            graphicsPipeline = std::move(odevice.graphicsPipeline);
+            commandPool = std::move(odevice.commandPool);
+            commandBuffers = std::move(odevice.commandBuffers);
             return *this;
         }
 
-        Device(Device &&odevice) : physicalDevice{odevice.physicalDevice},
+        Device(Device &&odevice) : vk::UniqueDevice {std::move(odevice)},
+                                   physicalDevice{odevice.physicalDevice},
                                    queueFamilyIndex{odevice.queueFamilyIndex},
                                    descriptorPoll{std::move(odevice.descriptorPoll)},
                                    descriptorSets{std::move(odevice.descriptorSets)},
@@ -107,7 +115,7 @@ namespace tt {
 
 
         ~Device() {
-            get().waitIdle();
+            //get().waitIdle();
         }
 
         auto phyDevice() {
@@ -259,40 +267,30 @@ namespace tt {
 
     };
 
-    class Instance : public vk::Instance {
+    class Instance : public vk::UniqueInstance {
     public:
         Instance(){
 
         }
 
-        Instance(vk::Instance &&ins) : vk::Instance{std::move(ins)} {
+        Instance(vk::UniqueInstance &&ins) : vk::UniqueInstance{std::move(ins)} {
 
         }
 
-        Instance(Instance &&i) : vk::Instance{std::move(i)} {
+        Instance(Instance &&i) : vk::UniqueInstance{std::move(i)} {
 
         }
 
         Instance & operator=(Instance && instance)
         {
-            vk::Instance::operator=(instance);
+            vk::UniqueInstance::operator=(std::move(instance));
             return *this;
         }
 
-        vk::PhysicalDevice defaultPhyDevice() {
-            return enumeratePhysicalDevices()[0];
-        }
-
-
         auto connectToWSI(ANativeWindow *window) {
-            return createAndroidSurfaceKHRUnique(
+            return get().createAndroidSurfaceKHRUnique(
                     vk::AndroidSurfaceCreateInfoKHR{vk::AndroidSurfaceCreateFlagsKHR(),
                                                     window});
-        }
-
-
-        ~Instance() {
-            destroy();
         }
 
         tt::Device connectToDevice(vk::SurfaceKHR surface);

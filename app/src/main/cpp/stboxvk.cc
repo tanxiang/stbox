@@ -9,9 +9,12 @@
 #include "main.hh"
 
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
-#include "glm/glm.hpp"
-#include "glm/gtc/matrix_transform.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <gli/gli.hpp>
+
 #include "util.hh"
 #include "vertexdata.hh"
 
@@ -19,8 +22,15 @@
 void stboxvk::init(android_app *app,tt::Instance &instance){
     assert(instance);
     auto surface = instance.connectToWSI(app->window);
+    std::cout<<"instance.connectToWSI"<<std::endl;
+    //auto phyDevs = instance->enumeratePhysicalDevices();
+    //std::cout<<"instance.connectToDevice"<<std::endl;
     device = instance.connectToDevice(surface.get());
+    std::cout<<"instance.connectToDevice"<<std::endl;
+
     swapchain = tt::Swapchain{std::move(surface),device};
+    std::cout<<"Swapchain"<<std::endl;
+
     auto descriptorSetLayout = device.createDescriptorSetLayoutUnique(
             std::vector<vk::DescriptorSetLayoutBinding>{
                     vk::DescriptorSetLayoutBinding{
@@ -41,6 +51,13 @@ void stboxvk::init(android_app *app,tt::Instance &instance){
     auto pipelineLayout = device.createPipelineLayout(descriptorSetLayout);
     device.buildPipeline(sizeof(Vertex),app,swapchain,pipelineLayout.get());
 
+    auto textuerContent = tt::loadDataFromAssets("textures/vulkan_11_rgba.ktx",app);
+    gli::texture2d tex2D{gli::load(textuerContent.data(),textuerContent.size())};
+    //auto texture = device.createImageAndMemory();
+    assert(!tex2D.empty());
+
+
+
 
     static auto View = glm::lookAt(
             glm::vec3(-5, 3, -10),  // Camera is at (-5,3,-10), in World Space
@@ -52,6 +69,7 @@ void stboxvk::init(android_app *app,tt::Instance &instance){
                                                   vk::BufferUsageFlagBits::eUniformBuffer,
                                                   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
     auto mvpBuffer_ptr = device.mapBufferAndMemory(mvpBuffer);
+    //todo copy to buffer
     std::vector<VertexUV> vertices{
             { {  1.0f,  1.0f, 0.0f ,1.0f}, { 1.0f, 1.0f } },
             { { -1.0f,  1.0f, 0.0f ,1.0f}, { 0.0f, 1.0f } },
@@ -86,7 +104,6 @@ void stboxvk::term(){
     device.reset();
 }
 #if 0
-
 uint32_t draw_run(tt::Device &ttDevice, vk::SurfaceKHR &surfaceKHR) {
     //std::cout << "draw_run" << std::endl;
 
