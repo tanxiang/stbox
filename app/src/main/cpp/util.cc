@@ -142,7 +142,7 @@ namespace tt {
         exit(-1);//todo throw
     }
 
-    std::vector<char>&& loadDataFromAssets(const char *filePath,
+    std::vector<char> loadDataFromAssets(const char *filePath,
                                                         android_app *androidAppCtx) {
         // Read the file
         assert(androidAppCtx);
@@ -152,26 +152,24 @@ namespace tt {
                     AAsset_close(AAsset);
                 }
         };
-        size_t fileLength = AAsset_getLength(file.get());
-        std::vector<char> fileContent{fileLength};
-        //auto fileContent = std::make_unique<char[]>(fileLength);
-        AAsset_read(file.get(), reinterpret_cast<void *>(fileContent.data()), fileContent.size());
+        std::vector<char> fileContent;
+        fileContent.resize(AAsset_getLength(file.get()));
 
-        return std::move(fileContent);
+        AAsset_read(file.get(), reinterpret_cast<void *>(fileContent.data()), fileContent.size());
+        return fileContent;
     }
 
     vk::UniqueShaderModule Device::loadShaderFromAssets(const char *filePath,
                                                         android_app *androidAppCtx) {
         // Read the file
         auto fileContent = loadDataFromAssets(filePath,androidAppCtx);
+        std::cout<<filePath<<":file length:" <<fileContent.size() <<std::endl;
 
         return get().createShaderModuleUnique(vk::ShaderModuleCreateInfo{
                 vk::ShaderModuleCreateFlags(), fileContent.size(),
                 reinterpret_cast<const uint32_t *>(fileContent.data())});
 
     }
-
-
 
     void Device::buildPipeline(uint32_t dataStepSize, android_app *app,Swapchain& swapchain,vk::PipelineLayout pipelineLayout) {
         if (graphicsPipeline)
@@ -688,7 +686,6 @@ namespace tt {
                                                        true};
 
         reset(device->createSwapchainKHR(swapChainCreateInfo));
-
 
         auto vkSwapChainImages = device->getSwapchainImagesKHR(get());
         std::cout << "vkSwapChainImages size : " << vkSwapChainImages.size() << std::endl;

@@ -27,7 +27,7 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
 
 namespace tt {
     class Swapchain;
-    std::vector<char>&& loadDataFromAssets(const char *filePath,android_app *androidAppCtx);
+    std::vector<char> loadDataFromAssets(const char *filePath,android_app *androidAppCtx);
 
     class Device : public vk::UniqueDevice {
     public:
@@ -77,10 +77,9 @@ namespace tt {
         Device(){
 
         }
-
+/*
         Device & operator=(Device &&odevice)
         {
-            vk::UniqueDevice::operator=(std::move(odevice));
             physicalDevice = odevice.physicalDevice;
             queueFamilyIndex = odevice.queueFamilyIndex;
             descriptorPoll = std::move(odevice.descriptorPoll);
@@ -89,6 +88,7 @@ namespace tt {
             graphicsPipeline = std::move(odevice.graphicsPipeline);
             commandPool = std::move(odevice.commandPool);
             commandBuffers = std::move(odevice.commandBuffers);
+            vk::UniqueDevice::operator=(std::move(odevice));
             return *this;
         }
 
@@ -101,7 +101,7 @@ namespace tt {
                                    graphicsPipeline{std::move(odevice.graphicsPipeline)},
                                    commandPool{std::move(odevice.commandPool)},
                                    commandBuffers{std::move(odevice.commandBuffers)} {}
-
+*/
         Device(vk::UniqueDevice &&dev, vk::PhysicalDevice &phy, uint32_t qidx) :
                 vk::UniqueDevice{std::move(dev)}, physicalDevice{phy}, queueFamilyIndex{qidx},
                 commandPool{get().createCommandPoolUnique(
@@ -111,11 +111,6 @@ namespace tt {
             descriptorPoll = ttcreateDescriptorPoolUnique();
             //descriptorSets = buildDescriptorSets();
             pipelineCache = get().createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
-        }
-
-
-        ~Device() {
-            //get().waitIdle();
         }
 
         auto phyDevice() {
@@ -200,20 +195,28 @@ namespace tt {
         Swapchain(){
 
         }
-
+        //Swapchain & operator=(Swapchain && swapchina) = default;
+        //Swapchain(Swapchain &&swapchina) = default;
+        /*
         Swapchain & operator=(Swapchain && swapchina)
         {
+            std::cout<<__func__<<std::endl;
+            surface = std::move(swapchina.surface);
             swapchainExtent=std::move(swapchina.swapchainExtent);
             depthFormat=swapchina.depthFormat;
             imageViews=std::move(swapchina.imageViews);
             depth=std::move(swapchina.depth);
             frameBuffers=std::move(swapchina.frameBuffers);
             renderPass=std::move(swapchina.renderPass);
+            std::cout<<__func__<<static_cast<VkSwapchainKHR>(get())<<"vk::UniqueSwapchainKHR::operator="<< static_cast<VkSwapchainKHR>(swapchina.get())<<std::endl;
             vk::UniqueSwapchainKHR::operator=(std::move(swapchina));
+            std::cout<<__func__<<"vk::UniqueSwapchainKHR::operator=done"<<std::endl;
+
             return *this;
         }
 
         Swapchain(Swapchain &&swapchina) : vk::UniqueSwapchainKHR{std::move(swapchina)},
+                                           surface{std::move(swapchina.surface)},
                                            swapchainExtent{std::move(swapchina.swapchainExtent)},
                                            depthFormat{swapchina.depthFormat},
                                            imageViews{std::move(swapchina.imageViews)},
@@ -222,12 +225,8 @@ namespace tt {
                                            renderPass{std::move(swapchina.renderPass)} {
 
         }
-
+*/
         Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device);
-
-        ~Swapchain() {
-
-        }
 
         vk::Extent2D getSwapchainExtent() {
             return swapchainExtent;
@@ -276,7 +275,7 @@ namespace tt {
         Instance(vk::UniqueInstance &&ins) : vk::UniqueInstance{std::move(ins)} {
 
         }
-
+/*
         Instance(Instance &&i) : vk::UniqueInstance{std::move(i)} {
 
         }
@@ -286,7 +285,7 @@ namespace tt {
             vk::UniqueInstance::operator=(std::move(instance));
             return *this;
         }
-
+*/
         auto connectToWSI(ANativeWindow *window) {
             return get().createAndroidSurfaceKHRUnique(
                     vk::AndroidSurfaceCreateInfoKHR{vk::AndroidSurfaceCreateFlagsKHR(),

@@ -96,6 +96,16 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
     static stboxvk appbox;
     try {
         switch (cmd) {
+            case APP_CMD_INIT_WINDOW:
+                // The window is being shown, get it ready.
+                std::cout << "APP_CMD_INIT_WINDOW:" << cmd << std::endl;
+                appbox.init(app,instance);
+                break;
+
+            case APP_CMD_TERM_WINDOW:
+                std::cout << "APP_CMD_TERM_WINDOW:" << cmd << std::endl;
+                appbox.term();
+                break;
             case APP_CMD_INPUT_CHANGED:
                 break;
             case APP_CMD_START:
@@ -108,16 +118,7 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 std::cout << "APP_CMD_STOP:" << cmd << std::endl;
 
                 break;
-            case APP_CMD_INIT_WINDOW:
-                // The window is being shown, get it ready.
-                std::cout << "APP_CMD_INIT_WINDOW:" << cmd << std::endl;
-                appbox.init(app,instance);
-                break;
 
-            case APP_CMD_TERM_WINDOW:
-                std::cout << "APP_CMD_TERM_WINDOW:" << cmd << std::endl;
-                appbox.term();
-                break;
             case APP_CMD_GAINED_FOCUS:
                 std::cout << "APP_CMD_GAINED_FOCUS:" << cmd << std::endl;
                 break;

@@ -29,7 +29,7 @@ void stboxvk::init(android_app *app,tt::Instance &instance){
     std::cout<<"instance.connectToDevice"<<std::endl;
 
     swapchain = tt::Swapchain{std::move(surface),device};
-    std::cout<<"Swapchain"<<std::endl;
+    std::cout<<"create Swapchain"<<std::endl;
 
     auto descriptorSetLayout = device.createDescriptorSetLayoutUnique(
             std::vector<vk::DescriptorSetLayoutBinding>{
@@ -96,12 +96,13 @@ void stboxvk::init(android_app *app,tt::Instance &instance){
 
 
     device.buildCmdBuffers(std::get<vk::UniqueBuffer>(vertexBuffer).get(),swapchain,pipelineLayout.get());
-
+    std::cout<<"return init release"<<std::endl;
 }
 
 void stboxvk::term(){
-    swapchain.reset();
-    device.reset();
+    std::cout<<__func__<<std::endl;
+    swapchain = tt::Swapchain{};
+    device = tt::Device{};
 }
 #if 0
 uint32_t draw_run(tt::Device &ttDevice, vk::SurfaceKHR &surfaceKHR) {
