@@ -114,7 +114,6 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
 
                 break;
             case APP_CMD_STOP:
-                instance.reset();
                 std::cout << "APP_CMD_STOP:" << cmd << std::endl;
 
                 break;
@@ -131,14 +130,15 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
             case APP_CMD_LOW_MEMORY:
                 std::cout << "APP_CMD_LOW_MEMORY:" << cmd << std::endl;
                 break;
-            case APP_CMD_DESTROY:
-                std::cout << "APP_CMD_DESTROY:" << cmd << std::endl;
-                break;
             case APP_CMD_PAUSE:
                 std::cout << "APP_CMD_PAUSE:" << cmd << std::endl;
                 break;
             case APP_CMD_RESUME:
                 std::cout << "APP_CMD_RESUME:" << cmd << std::endl;
+                break;
+            case APP_CMD_DESTROY:
+                instance.reset();
+                std::cout << "APP_CMD_DESTROY:" << cmd << std::endl;
                 break;
             default:
                 std::cout << "event not handled:" << cmd << std::endl;

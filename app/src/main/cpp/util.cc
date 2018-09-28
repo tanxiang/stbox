@@ -610,7 +610,7 @@ namespace tt {
 #endif
 
     Swapchain::Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device)
-            : vk::UniqueSwapchainKHR{}, surface{std::move(sf)} {
+            : surface{std::move(sf)} {
         auto physicalDevice = device.phyDevice();
         auto surfaceCapabilitiesKHR = physicalDevice.getSurfaceCapabilitiesKHR(surface.get());
         std::tie(swapchainExtent.width, swapchainExtent.height) = AndroidGetWindowSize();
@@ -685,7 +685,8 @@ namespace tt {
                                                        vk::PresentModeKHR::eMailbox,
                                                        true};
 
-        reset(device->createSwapchainKHR(swapChainCreateInfo));
+        //swap(device->createSwapchainKHRUnique(swapChainCreateInfo));
+        vk::UniqueSwapchainKHR::operator=(device->createSwapchainKHRUnique(swapChainCreateInfo));
 
         auto vkSwapChainImages = device->getSwapchainImagesKHR(get());
         std::cout << "vkSwapChainImages size : " << vkSwapChainImages.size() << std::endl;
