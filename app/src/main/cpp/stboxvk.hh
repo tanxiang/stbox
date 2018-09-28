@@ -14,7 +14,7 @@ class stboxvk{
     tt::Device::BufferViewMemory mvpBuffer,vertexBuffer,indexBuffer;
 public:
     void init(android_app *app,tt::Instance &instance);
-    void term();
+    void clean();
     explicit operator bool () const{
         return device && swapchain;
     }

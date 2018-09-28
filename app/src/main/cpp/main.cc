@@ -99,25 +99,22 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
             case APP_CMD_INIT_WINDOW:
                 // The window is being shown, get it ready.
                 std::cout << "APP_CMD_INIT_WINDOW:" << cmd << std::endl;
+                instance = tt::createInstance();
                 appbox.init(app,instance);
                 break;
 
             case APP_CMD_TERM_WINDOW:
                 std::cout << "APP_CMD_TERM_WINDOW:" << cmd << std::endl;
-                appbox.term();
+                appbox.clean();
                 break;
             case APP_CMD_INPUT_CHANGED:
                 break;
             case APP_CMD_START:
                 std::cout << "APP_CMD_START:" << cmd << std::endl;
-                instance = tt::createInstance();
-
                 break;
             case APP_CMD_STOP:
                 std::cout << "APP_CMD_STOP:" << cmd << std::endl;
-
                 break;
-
             case APP_CMD_GAINED_FOCUS:
                 std::cout << "APP_CMD_GAINED_FOCUS:" << cmd << std::endl;
                 break;
@@ -154,7 +151,6 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
 }
 
 int Android_handle_input(struct android_app *app, AInputEvent *event) {
-    tt::Instance &ttInstance = *reinterpret_cast<tt::Instance *>(app->userData);
 
     //todo check window instance device state
     if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
@@ -198,15 +194,15 @@ void Android_process(struct android_app *app) {
     int events;
     android_poll_source *source;
     // Poll all pending events.
-    tt::Instance &ttInstance = *reinterpret_cast<tt::Instance *>(app->userData);
-
     do {
         int ident;
         int minTimeout = -1;
-        while ((ident = ALooper_pollAll(minTimeout, NULL, &events, (void **) &source)) >= 0) {
+        while (!app->destroyRequested && (ident = ALooper_pollAll(minTimeout, NULL, &events, (void **) &source)) >= 0) {
             // Process each polled events
             if (source != NULL) source->process(app, source);
         }
+        if(app->destroyRequested)
+            break;
         switch (ident) {
             case ALOOPER_POLL_WAKE:
             case ALOOPER_POLL_TIMEOUT:
@@ -220,9 +216,9 @@ void Android_process(struct android_app *app) {
                 std::cout << "ALOOPER_ERROR:\t" << ident << std::endl;
         };
 
-    } while (app->destroyRequested == 0);
-    ANativeActivity_finish(app->activity);
-    return;
+    } while (true);
+    std::cout << "ALOOPER_EXIT:\t ANativeActivity_finish" << std::endl;
+    return ANativeActivity_finish(app->activity);
 }
 
 

@@ -103,9 +103,9 @@ namespace tt {
                 }
         };
         auto deviceExtensionProperties = phyDevice.enumerateDeviceExtensionProperties();
-        for (auto &deviceExtensionPropertie:deviceExtensionProperties)
-            std::cout << "PhyDeviceExtensionPropertie : " << deviceExtensionPropertie.extensionName
-                      << std::endl;
+        //for (auto &deviceExtensionPropertie:deviceExtensionProperties)
+        //    std::cout << "PhyDeviceExtensionPropertie : " << deviceExtensionPropertie.extensionName
+        //              << std::endl;
         std::array<const char *, 1> device_extension_names{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
         return Device{phyDevice.createDeviceUnique(
                 vk::DeviceCreateInfo {vk::DeviceCreateFlags(),
@@ -121,7 +121,7 @@ namespace tt {
         auto defaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surfaceKHR);
 
         for (auto &format:defaultDeviceFormats) {
-            std::cout << "\t\tSurfaceFormatsKHR have " << vk::to_string(format.format) << std::endl;
+            //std::cout << "\t\tSurfaceFormatsKHR have " << vk::to_string(format.format) << std::endl;
         }
         return defaultDeviceFormats[0];
     }
@@ -389,6 +389,7 @@ namespace tt {
     Device::BufferViewMemory
     Device::createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
                                   vk::MemoryPropertyFlags memoryPropertyFlags) {
+
         BufferViewMemory BVM{};
         std::get<vk::UniqueBuffer>(BVM) = get().createBufferUnique(
                 vk::BufferCreateInfo{

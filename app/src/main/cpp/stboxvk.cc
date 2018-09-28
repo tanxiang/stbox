@@ -22,11 +22,11 @@
 void stboxvk::init(android_app *app,tt::Instance &instance){
     assert(instance);
     auto surface = instance.connectToWSI(app->window);
-    std::cout<<"instance.connectToWSI"<<std::endl;
+    //std::cout<<"instance.connectToWSI"<<std::endl;
     //auto phyDevs = instance->enumeratePhysicalDevices();
     //std::cout<<"instance.connectToDevice"<<std::endl;
     device = instance.connectToDevice(surface.get());
-    std::cout<<"instance.connectToDevice"<<std::endl;
+    //std::cout<<"instance.connectToDevice"<<std::endl;
 
     swapchain = tt::Swapchain{std::move(surface),device};
     //std::cout<<"create Swapchain"<<std::endl;
@@ -57,17 +57,20 @@ void stboxvk::init(android_app *app,tt::Instance &instance){
     assert(!tex2D.empty());
 
 
-
-
     static auto View = glm::lookAt(
             glm::vec3(-5, 3, -10),  // Camera is at (-5,3,-10), in World Space
             glm::vec3(0, 0, 0),     // and looks at the origin
             glm::vec3(0, -1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
     );
     glm::rotate(View, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    //std::cout<<__func__<< static_cast<VkBuffer>(std::get<vk::UniqueBuffer>(mvpBuffer).get())<<std::endl;
+
     mvpBuffer = device.createBufferAndMemory(sizeof(glm::mat4),
                                                   vk::BufferUsageFlagBits::eUniformBuffer,
                                                   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+    //std::cout<<__func__<< static_cast<VkBuffer>(std::get<vk::UniqueBuffer>(mvpBuffer).get())<<std::endl;
+
+
     auto mvpBuffer_ptr = device.mapBufferAndMemory(mvpBuffer);
     //todo copy to buffer
     std::vector<VertexUV> vertices{
@@ -99,10 +102,9 @@ void stboxvk::init(android_app *app,tt::Instance &instance){
     //std::cout<<"return init release"<<std::endl;
 }
 
-void stboxvk::term(){
+void stboxvk::clean(){
     std::cout<<__func__<<std::endl;
-    swapchain = tt::Swapchain{};
-    device = tt::Device{};
+    operator=(stboxvk{});
 }
 #if 0
 uint32_t draw_run(tt::Device &ttDevice, vk::SurfaceKHR &surfaceKHR) {
