@@ -269,11 +269,14 @@ namespace tt {
         graphicsPipeline = get().createGraphicsPipelineUnique(pipelineCache.get(), pipelineCreateInfo);
     }
 
-    uint32_t
-    Device::buildCmdBuffers(vk::Buffer vertexBuffer,tt::Swapchain& swapchain,vk::PipelineLayout pipelineLayout) {
-        commandBuffers = get().allocateCommandBuffersUnique(
+    std::vector<vk::UniqueCommandBuffer>
+    Device::createCmdBuffers(vk::Buffer vertexBuffer, tt::Swapchain &swapchain,
+                             vk::PipelineLayout pipelineLayout) {
+        std::cout<<__func__<<"allocateCommandBuffersUnique:"<<swapchain.getFrameBufferNum()<<std::endl;
+        std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
                 vk::CommandBufferAllocateInfo{commandPool.get(),
                                               vk::CommandBufferLevel::ePrimary, swapchain.getFrameBufferNum()});
+        return commandBuffers;
 
         std::array<vk::ClearValue, 2> clearValues{
                 vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
@@ -281,7 +284,7 @@ namespace tt {
         };
         uint32_t frameIndex = 0;
         for(auto &cmdBuffer : commandBuffers){
-            cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+            //cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
             cmdBuffer->begin(vk::CommandBufferBeginInfo{});
 
             cmdBuffer->beginRenderPass(
@@ -307,7 +310,7 @@ namespace tt {
             cmdBuffer->end();
             ++frameIndex;
         }
-        return commandBuffers.size();
+        return commandBuffers;
 
         //auto mvpBufferMemoryRq = getBufferMemoryRequirements(
         //       mvpBuffer[frameIndex % SWAPCHAIN_NUM].get());
@@ -330,21 +333,15 @@ namespace tt {
                                                       imageAcquiredSemaphore.get(),
                                                       vk::Fence{});
         vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-        std::array<vk::SubmitInfo, 1> submitInfos{
-                vk::SubmitInfo{
-                        1, &imageAcquiredSemaphore.get(), &pipelineStageFlags,
-                        1, &commandBuffers[currentBufferIndex.value].get()
-                }
-        };
+        //std::array<vk::SubmitInfo, 1> submitInfos{
+        //        vk::SubmitInfo{
+        //                1, &imageAcquiredSemaphore.get(), &pipelineStageFlags,
+        //                1, &commandBuffers[currentBufferIndex.value].get()
+        //        }
+        //};
         //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
-        get().getQueue(queueFamilyIndex, 0).submit(submitInfos, vk::Fence{});
-        //currentBufferIndex.value;
+        //get().getQueue(queueFamilyIndex, 0).submit(submitInfos, vk::Fence{});
         //std::cout << "push index:" << currentBufferIndex.value << std::endl;
-
-        {
-            //std::lock_guard<std::mutex> lock{mutexDraw};
-            //frameSubmitIndex.push(currentBufferIndex.value);
-        }
         return 0;
     }
 

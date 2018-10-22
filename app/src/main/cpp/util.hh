@@ -43,7 +43,7 @@ namespace tt {
         vk::UniquePipelineCache pipelineCache;// = createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
         vk::UniquePipeline graphicsPipeline;
         vk::UniqueCommandPool commandPool;
-        std::vector<vk::UniqueCommandBuffer> commandBuffers;
+        //std::vector<vk::UniqueCommandBuffer> commandBuffers;
 
         //std::vector<vk::UniqueFence> commandBufferFences;
         struct {
@@ -77,31 +77,7 @@ namespace tt {
         Device(){
 
         }
-/*
-        Device & operator=(Device &&odevice)
-        {
-            physicalDevice = odevice.physicalDevice;
-            queueFamilyIndex = odevice.queueFamilyIndex;
-            descriptorPoll = std::move(odevice.descriptorPoll);
-            descriptorSets = std::move(odevice.descriptorSets);
-            pipelineCache = std::move(odevice.pipelineCache);
-            graphicsPipeline = std::move(odevice.graphicsPipeline);
-            commandPool = std::move(odevice.commandPool);
-            commandBuffers = std::move(odevice.commandBuffers);
-            vk::UniqueDevice::operator=(std::move(odevice));
-            return *this;
-        }
 
-        Device(Device &&odevice) : vk::UniqueDevice {std::move(odevice)},
-                                   physicalDevice{odevice.physicalDevice},
-                                   queueFamilyIndex{odevice.queueFamilyIndex},
-                                   descriptorPoll{std::move(odevice.descriptorPoll)},
-                                   descriptorSets{std::move(odevice.descriptorSets)},
-                                   pipelineCache{std::move(odevice.pipelineCache)},
-                                   graphicsPipeline{std::move(odevice.graphicsPipeline)},
-                                   commandPool{std::move(odevice.commandPool)},
-                                   commandBuffers{std::move(odevice.commandBuffers)} {}
-*/
         Device(vk::UniqueDevice &&dev, vk::PhysicalDevice &phy, uint32_t qidx) :
                 vk::UniqueDevice{std::move(dev)}, physicalDevice{phy}, queueFamilyIndex{qidx},
                 commandPool{get().createCommandPoolUnique(
@@ -143,9 +119,7 @@ namespace tt {
                             descriptorSetLayouts.data()});
         }
 
-        std::vector<vk::UniqueCommandBuffer> &defaultPoolAllocBuffer() {
-            return commandBuffers;
-        }
+
 
         vk::SurfaceFormatKHR getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR);
 
@@ -167,13 +141,11 @@ namespace tt {
         mapBufferAndMemory(BufferViewMemory &bufferViewMemory, size_t offset = 0);
 
 
-        void updateMVPBuffer(glm::mat4 MVP);
-
-
         void buildPipeline(uint32_t dataStepSize, android_app *app, Swapchain &swapchain,vk::PipelineLayout pipelineLayout);
 
-        uint32_t
-        buildCmdBuffers(vk::Buffer vertexBuffer,tt::Swapchain& swapchain,vk::PipelineLayout pipelineLayout);
+        std::vector<vk::UniqueCommandBuffer>
+        createCmdBuffers(vk::Buffer vertexBuffer, tt::Swapchain &swapchain,
+                         vk::PipelineLayout pipelineLayout);
 
         uint32_t
         submitCmdBuffer(vk::SwapchainKHR swapchain);
@@ -195,37 +167,7 @@ namespace tt {
         Swapchain(){
 
         }
-        //Swapchain & operator=(Swapchain && swapchina) = default;
-        //Swapchain(Swapchain &&swapchina) = default;
-        /*
-        Swapchain & operator=(Swapchain && swapchina)
-        {
-            std::cout<<__func__<<std::endl;
-            surface = std::move(swapchina.surface);
-            swapchainExtent=std::move(swapchina.swapchainExtent);
-            depthFormat=swapchina.depthFormat;
-            imageViews=std::move(swapchina.imageViews);
-            depth=std::move(swapchina.depth);
-            frameBuffers=std::move(swapchina.frameBuffers);
-            renderPass=std::move(swapchina.renderPass);
-            std::cout<<__func__<<static_cast<VkSwapchainKHR>(get())<<"vk::UniqueSwapchainKHR::operator="<< static_cast<VkSwapchainKHR>(swapchina.get())<<std::endl;
-            vk::UniqueSwapchainKHR::operator=(std::move(swapchina));
-            std::cout<<__func__<<"vk::UniqueSwapchainKHR::operator=done"<<std::endl;
 
-            return *this;
-        }
-
-        Swapchain(Swapchain &&swapchina) : vk::UniqueSwapchainKHR{std::move(swapchina)},
-                                           surface{std::move(swapchina.surface)},
-                                           swapchainExtent{std::move(swapchina.swapchainExtent)},
-                                           depthFormat{swapchina.depthFormat},
-                                           imageViews{std::move(swapchina.imageViews)},
-                                           depth{std::move(swapchina.depth)},
-                                           frameBuffers{std::move(swapchina.frameBuffers)},
-                                           renderPass{std::move(swapchina.renderPass)} {
-
-        }
-*/
         Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device);
 
         vk::Extent2D getSwapchainExtent() {

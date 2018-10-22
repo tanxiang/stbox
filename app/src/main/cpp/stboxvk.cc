@@ -73,6 +73,8 @@ void stboxvk::init(android_app *app,tt::Instance &instance){
 
     auto mvpBuffer_ptr = device.mapBufferAndMemory(mvpBuffer);
     //todo copy to buffer
+    memcpy(mvpBuffer_ptr.get(),&View,std::get<size_t>(mvpBuffer));
+
     std::vector<VertexUV> vertices{
             { {  1.0f,  1.0f, 0.0f ,1.0f}, { 1.0f, 1.0f } },
             { { -1.0f,  1.0f, 0.0f ,1.0f}, { 0.0f, 1.0f } },
@@ -97,8 +99,9 @@ void stboxvk::init(android_app *app,tt::Instance &instance){
 
     memcpy(indexBuffer_ptr.get(),indices.data(),std::get<size_t>(indexBuffer));
 
-
-    //device.buildCmdBuffers(std::get<vk::UniqueBuffer>(vertexBuffer).get(),swapchain,pipelineLayout.get());
+    mianBuffers = device.createCmdBuffers(std::get<vk::UniqueBuffer>(vertexBuffer).get(), swapchain,
+                            pipelineLayout.get());
+    //mianBuffers.clear();
     //std::cout<<"return init release"<<std::endl;
 }
 

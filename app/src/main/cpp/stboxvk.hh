@@ -12,6 +12,7 @@ class stboxvk{
     tt::Device device;
     tt::Swapchain swapchain;
     tt::Device::BufferViewMemory mvpBuffer,vertexBuffer,indexBuffer;
+    std::vector<vk::UniqueCommandBuffer> mianBuffers;
 public:
     void init(android_app *app,tt::Instance &instance);
     void clean();
