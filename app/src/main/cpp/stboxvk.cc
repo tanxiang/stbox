@@ -116,8 +116,6 @@ namespace tt {
         std::cout << __func__ << std::endl;
         swapchainPtr.reset();
         devicePtr.reset();
-        //this->stboxvk();
-        //operator=(stboxvk{});
     }
 
 }
