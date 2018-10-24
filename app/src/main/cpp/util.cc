@@ -89,7 +89,7 @@ namespace tt {
     }
 
 
-    tt::Device Instance::connectToDevice(vk::SurfaceKHR surface) {
+    std::unique_ptr<tt::Device> Instance::connectToDevice(vk::SurfaceKHR surface) {
         auto phyDevices = get().enumeratePhysicalDevices();
         auto phyDevice = phyDevices[0];
         auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevice,
@@ -107,22 +107,22 @@ namespace tt {
         //    std::cout << "PhyDeviceExtensionPropertie : " << deviceExtensionPropertie.extensionName
         //              << std::endl;
         std::array<const char *, 1> device_extension_names{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-        return Device{phyDevice.createDeviceUnique(
+        return std::make_unique<Device>(phyDevice.createDeviceUnique(
                 vk::DeviceCreateInfo {vk::DeviceCreateFlags(),
                                       device_queue_create_infos.size(),
                                       device_queue_create_infos.data(),
                                       0, nullptr, device_extension_names.size(),
                                       device_extension_names.data()}),
                                                phyDevice,
-                                               graphicsQueueIndex};
+                                               graphicsQueueIndex);
     }
 
     vk::SurfaceFormatKHR Device::getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR) {
         auto defaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surfaceKHR);
 
-        for (auto &format:defaultDeviceFormats) {
+        //for (auto &format:defaultDeviceFormats) {
             //std::cout << "\t\tSurfaceFormatsKHR have " << vk::to_string(format.format) << std::endl;
-        }
+        //}
         return defaultDeviceFormats[0];
     }
 
@@ -272,7 +272,7 @@ namespace tt {
     std::vector<vk::UniqueCommandBuffer>
     Device::createCmdBuffers(vk::Buffer vertexBuffer, tt::Swapchain &swapchain,
                              vk::PipelineLayout pipelineLayout) {
-        std::cout<<__func__<<"allocateCommandBuffersUnique:"<<swapchain.getFrameBufferNum()<<std::endl;
+        std::cout<<__func__<<":allocateCommandBuffersUnique:"<<swapchain.getFrameBufferNum()<<std::endl;
         std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
                 vk::CommandBufferAllocateInfo{commandPool.get(),
                                               vk::CommandBufferLevel::ePrimary, swapchain.getFrameBufferNum()});
@@ -642,7 +642,7 @@ namespace tt {
             std::cout << "\t\tsurfacePresentMods have " << vk::to_string(surfacePresentMod)
                       << std::endl;
         }
-        uint32_t desiredNumberOfSwapchainImages = surfaceCapabilitiesKHR.minImageCount + 1;
+        uint32_t desiredNumberOfSwapchainImages = surfaceCapabilitiesKHR.minImageCount;
         auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
         vk::SurfaceTransformFlagBitsKHR preTransform{};
         if (surfaceCapabilitiesKHR.supportedTransforms &

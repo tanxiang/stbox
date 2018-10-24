@@ -28,12 +28,15 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
 namespace tt {
     class Swapchain;
     std::vector<char> loadDataFromAssets(const char *filePath,android_app *androidAppCtx);
+    uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
+                                            vk::SurfaceKHR surface);
 
     class Device : public vk::UniqueDevice {
     public:
         using ImageViewMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueDeviceMemory>;
         using BufferViewMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>;
         using BufferViewMemoryPtr = std::unique_ptr<void, std::function<void(void *)> >;
+        BufferViewMemory mvpBuffer, vertexBuffer, indexBuffer;
 
     private:
         vk::PhysicalDevice physicalDevice;
@@ -43,6 +46,10 @@ namespace tt {
         vk::UniquePipelineCache pipelineCache;// = createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
         vk::UniquePipeline graphicsPipeline;
         vk::UniqueCommandPool commandPool;
+
+    public:
+        std::vector<vk::UniqueCommandBuffer> mianBuffers;
+    private:
         //std::vector<vk::UniqueCommandBuffer> commandBuffers;
 
         //std::vector<vk::UniqueFence> commandBufferFences;
@@ -119,7 +126,14 @@ namespace tt {
                             descriptorSetLayouts.data()});
         }
 
-
+        bool checkSurfaceSupport(vk::SurfaceKHR &surface){
+            auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(physicalDevice,
+                                                                     vk::QueueFlagBits::eGraphics,
+                                                                     surface);
+            if(graphicsQueueIndex == queueFamilyIndex)
+                return true;
+            return false;
+        }
 
         vk::SurfaceFormatKHR getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR);
 
@@ -234,14 +248,13 @@ namespace tt {
                                                     window});
         }
 
-        tt::Device connectToDevice(vk::SurfaceKHR surface);
+        std::unique_ptr<tt::Device> connectToDevice(vk::SurfaceKHR surface);
     };
 
     tt::Instance createInstance();
 
 };
 
-uint32_t queueFamilyPropertiesFindFlags(vk::QueueFlags, vk::SurfaceKHR surface);
 
 class Camera {
 private:

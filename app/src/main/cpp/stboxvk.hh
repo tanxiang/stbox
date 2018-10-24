@@ -8,16 +8,20 @@
 #include "util.hh"
 
 //uint32_t draw_run(tt::Device &ttInstance,vk::SurfaceKHR &surfaceKHR);
-class stboxvk{
-    tt::Device device;
-    tt::Swapchain swapchain;
-    tt::Device::BufferViewMemory mvpBuffer,vertexBuffer,indexBuffer;
-    std::vector<vk::UniqueCommandBuffer> mianBuffers;
-public:
-    void init(android_app *app,tt::Instance &instance);
-    void clean();
-    explicit operator bool () const{
-        return device && swapchain;
-    }
-};
+namespace tt {
+    class stboxvk {
+        std::unique_ptr<tt::Device> devicePtr;
+        std::unique_ptr<tt::Swapchain> swapchainPtr;
+
+
+    public:
+        void initWindow(android_app *app, tt::Instance &instance);
+
+        void cleanWindow();
+
+        explicit operator bool() const {
+            return devicePtr && swapchainPtr;
+        }
+    };
+}
 #endif //STBOX_STBOXVK_HH

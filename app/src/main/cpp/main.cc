@@ -91,21 +91,19 @@ void choreographerCallback(long frameTimeNanos, void* data) {
 */
 void Android_handle_cmd(android_app *app, int32_t cmd) {
     static tt::Instance instance;
-    //static tt::Device device;
-    //static tt::Swapchain swapchain;
-    static stboxvk appbox;
+    static tt::stboxvk appbox;
     try {
         switch (cmd) {
             case APP_CMD_INIT_WINDOW:
                 // The window is being shown, get it ready.
                 std::cout << "APP_CMD_INIT_WINDOW:" << cmd << std::endl;
                 instance = tt::createInstance();
-                appbox.init(app,instance);
+                appbox.initWindow(app, instance);
                 break;
 
             case APP_CMD_TERM_WINDOW:
                 std::cout << "APP_CMD_TERM_WINDOW:" << cmd << std::endl;
-                appbox.clean();
+                appbox.cleanWindow();
                 break;
             case APP_CMD_INPUT_CHANGED:
                 break;
