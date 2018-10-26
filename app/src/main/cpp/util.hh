@@ -34,7 +34,11 @@ namespace tt {
     class Device : public vk::UniqueDevice {
     public:
         using ImageViewMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueDeviceMemory>;
-        using BufferViewMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>;
+        struct BufferViewMemory : public std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>{
+            auto getDescriptorBufferInfo(vk::DeviceSize size = VK_WHOLE_SIZE,vk::DeviceSize offset = 0){
+                return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(*this).get(),offset,size};
+            }
+        };
         using BufferViewMemoryPtr = std::unique_ptr<void, std::function<void(void *)> >;
         BufferViewMemory mvpBuffer, vertexBuffer, indexBuffer;
 

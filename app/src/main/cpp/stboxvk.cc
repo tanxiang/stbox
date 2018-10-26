@@ -108,7 +108,6 @@ namespace tt {
         devicePtr->mianBuffers = devicePtr->createCmdBuffers(std::get<vk::UniqueBuffer>(devicePtr->vertexBuffer).get(),
                                               *swapchainPtr,
                                               pipelineLayout.get());
-        //mianBuffers.clear();
         //std::cout<<"return initWindow release"<<std::endl;
     }
 

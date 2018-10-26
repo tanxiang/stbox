@@ -276,7 +276,6 @@ namespace tt {
         std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
                 vk::CommandBufferAllocateInfo{commandPool.get(),
                                               vk::CommandBufferLevel::ePrimary, swapchain.getFrameBufferNum()});
-        return commandBuffers;
 
         std::array<vk::ClearValue, 2> clearValues{
                 vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
@@ -299,7 +298,7 @@ namespace tt {
                     }, vk::SubpassContents::eInline);
             cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.get());
             std::array<vk::DescriptorSet, 1> tmpDescriptorSets{
-                    this->descriptorSets[frameIndex % 2].get()
+                    descriptorSets[0].get()
             };
             cmdBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0,
                                          tmpDescriptorSets, std::vector<uint32_t>{});
