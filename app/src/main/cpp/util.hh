@@ -30,6 +30,17 @@ namespace tt {
     std::vector<char> loadDataFromAssets(const char *filePath,android_app *androidAppCtx);
     uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
                                             vk::SurfaceKHR surface);
+    struct commandBufferBeginHandle: public vk::CommandBuffer {
+
+        commandBufferBeginHandle(vk::UniqueCommandBuffer &uniqueCommandBuffer):vk::CommandBuffer{uniqueCommandBuffer.get()}{
+            begin(vk::CommandBufferBeginInfo{});
+        }
+        ~commandBufferBeginHandle(){
+            end();
+        }
+        commandBufferBeginHandle( const commandBufferBeginHandle& ) = delete; // non construction-copyable
+        commandBufferBeginHandle& operator=( const commandBufferBeginHandle& ) = delete; // non copyable
+    };
 
     class Device : public vk::UniqueDevice {
     public:
@@ -39,7 +50,10 @@ namespace tt {
                 return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(*this).get(),offset,size};
             }
         };
+
         using BufferViewMemoryPtr = std::unique_ptr<void, std::function<void(void *)> >;
+
+
         BufferViewMemory mvpBuffer, vertexBuffer, indexBuffer;
 
     private:
@@ -104,6 +118,14 @@ namespace tt {
             return physicalDevice;
         }
 
+        auto getCommandPool(){
+            return commandPool.get();
+        }
+
+        auto graphsQueue(){
+            return get().getQueue(queueFamilyIndex, 0);
+        }
+
         vk::UniqueDescriptorSetLayout createDescriptorSetLayoutUnique(std::vector<vk::DescriptorSetLayoutBinding> descriptSlBs) {
             return get().createDescriptorSetLayoutUnique(
                     vk::DescriptorSetLayoutCreateInfo{
@@ -121,6 +143,7 @@ namespace tt {
                             nullptr
                     });
         }
+
 
         void buildDescriptorSets(vk::UniqueDescriptorSetLayout &descriptorSetLayout) {
             std::array<vk::DescriptorSetLayout, 1> descriptorSetLayouts{descriptorSetLayout.get()};
@@ -145,6 +168,7 @@ namespace tt {
                                              vk::ImageUsageFlags imageUsageFlags =
                                              vk::ImageUsageFlagBits::eDepthStencilAttachment |
                                              vk::ImageUsageFlagBits::eTransientAttachment,
+                                             uint32_t mipLevels = 1,
                                              vk::ComponentMapping componentMapping = vk::ComponentMapping{},
                                              vk::ImageSubresourceRange imageSubresourceRange = vk::ImageSubresourceRange{
                                                      vk::ImageAspectFlagBits::eDepth |

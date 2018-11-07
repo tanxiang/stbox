@@ -53,12 +53,6 @@ namespace tt {
         auto pipelineLayout = devicePtr->createPipelineLayout(descriptorSetLayout);
         devicePtr->buildPipeline(sizeof(Vertex), app, *swapchainPtr, pipelineLayout.get());
 
-        auto textuerContent = tt::loadDataFromAssets("textures/vulkan_11_rgba.ktx", app);
-        gli::texture2d tex2D{gli::load(textuerContent.data(), textuerContent.size())};
-        //auto texture = device.createImageAndMemory();
-        assert(!tex2D.empty());
-
-
         static auto View = glm::lookAt(
                 glm::vec3(-5, 3, -10),  // Camera is at (-5,3,-10), in World Space
                 glm::vec3(0, 0, 0),     // and looks at the origin
@@ -108,7 +102,73 @@ namespace tt {
         devicePtr->mianBuffers = devicePtr->createCmdBuffers(std::get<vk::UniqueBuffer>(devicePtr->vertexBuffer).get(),
                                               *swapchainPtr,
                                               pipelineLayout.get());
+
+        auto fileContent = loadDataFromAssets("textures/vulkan_11_rgba.ktx",app);
+        gli::texture2d tex2d{gli::load(fileContent.data(),fileContent.size())};
+        auto sampleBuffer = devicePtr->createBufferAndMemory(
+                tex2d.size(),
+                vk::BufferUsageFlagBits::eTransferSrc,
+                vk::MemoryPropertyFlagBits::eHostVisible |
+                vk::MemoryPropertyFlagBits::eHostCoherent);
+        {
+            auto sampleBufferPtr = devicePtr->mapBufferAndMemory(sampleBuffer);
+            memcpy(sampleBufferPtr.get(), tex2d.data(), tex2d.size());
+        }
+        auto sampleImage =devicePtr->createImageAndMemory(vk::Format::eR8G8B8A8Unorm,vk::Extent3D{static_cast<uint32_t>(tex2d[0].extent().x),static_cast<uint32_t>(tex2d[0].extent().y),1},
+                                                          vk::ImageUsageFlagBits::eSampled|vk::ImageUsageFlagBits::eTransferDst|vk::ImageUsageFlagBits::eStorage,
+                                                          tex2d.levels(),
+                                                          vk::ComponentMapping{ vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA},
+                                                          vk::ImageSubresourceRange{ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
+
+        auto copyCmd = (*devicePtr)->allocateCommandBuffersUnique(vk::CommandBufferAllocateInfo{devicePtr->getCommandPool(),vk::CommandBufferLevel::ePrimary,1});;
+
         //std::cout<<"return initWindow release"<<std::endl;
+        //auto copyCmd = (*devicePtr)->allocateCommandBuffersUnique();
+         {
+             commandBufferBeginHandle copyCmdHandle{copyCmd[0]};
+             vk::ImageSubresourceRange imageSubresourceRange{
+                 vk::ImageAspectFlagBits::eColor,
+                 0,tex2d.levels(),0,1
+             };
+             vk::ImageMemoryBarrier imageMemoryBarrierToDest{
+                 vk::AccessFlags{},vk::AccessFlagBits::eTransferWrite,
+                 vk::ImageLayout::eUndefined,vk::ImageLayout::eTransferDstOptimal,0,0,std::get<vk::UniqueImage>(sampleImage).get(),
+                 imageSubresourceRange
+             };
+             copyCmdHandle.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,vk::PipelineStageFlagBits::eAllCommands,
+                                           vk::DependencyFlags{},
+                                           0,nullptr,
+                                           0,nullptr,
+                                           1,&imageMemoryBarrierToDest);
+             std::vector<vk::BufferImageCopy> bufferCopyRegion;
+             for(int i = 0 ,offset = 0 ;i < tex2d.levels(); ++i){
+                 bufferCopyRegion.emplace_back(offset,0,0,
+                                               vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor,i,0,1},
+                                               vk::Offset3D{},
+                                               vk::Extent3D{tex2d[i].extent().x,tex2d[i].extent().y,1});
+                 offset += tex2d[i].size();
+             }
+             copyCmdHandle.copyBufferToImage(std::get<vk::UniqueBuffer>(sampleBuffer).get(),std::get<vk::UniqueImage>(sampleImage).get(),vk::ImageLayout::eTransferDstOptimal,bufferCopyRegion);
+             vk::ImageMemoryBarrier imageMemoryBarrierToGeneral{
+                     vk::AccessFlagBits::eTransferWrite,vk::AccessFlags{},
+                     vk::ImageLayout::eTransferDstOptimal,vk::ImageLayout::eGeneral,0,0,std::get<vk::UniqueImage>(sampleImage).get(),
+                     imageSubresourceRange
+             };
+             copyCmdHandle.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,vk::PipelineStageFlagBits::eAllCommands,
+                                           vk::DependencyFlags{},
+                                           0,nullptr,
+                                           0,nullptr,
+                                           1,&imageMemoryBarrierToGeneral);
+         }
+
+        auto fence = (*devicePtr)->createFenceUnique(vk::FenceCreateInfo{});
+        std::array<vk::SubmitInfo, 1> submitInfos{
+                vk::SubmitInfo{
+                        0, nullptr, nullptr,
+                        1, &copyCmd[0].get()
+                }
+        };
+        devicePtr->graphsQueue().submit(submitInfos, vk::Fence{});
     }
 
     void stboxvk::cleanWindow() {

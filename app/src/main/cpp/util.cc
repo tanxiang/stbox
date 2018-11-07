@@ -346,6 +346,7 @@ namespace tt {
 
     Device::ImageViewMemory Device::createImageAndMemory(vk::Format format, vk::Extent3D extent3D,
                                                          vk::ImageUsageFlags imageUsageFlags,
+                                                         uint32_t mipLevels,
                                                          vk::ComponentMapping componentMapping,
                                                          vk::ImageSubresourceRange imageSubresourceRange) {
         ImageViewMemory IVM{};
@@ -354,7 +355,7 @@ namespace tt {
                                     vk::ImageType::e2D,
                                     format,
                                     extent3D,
-                                    1,
+                                    mipLevels,
                                     1,
                                     vk::SampleCountFlagBits::e1,
                                     vk::ImageTiling::eOptimal,
@@ -707,7 +708,7 @@ namespace tt {
 
 
         auto defaultDevFormatProps = physicalDevice.getFormatProperties(depthFormat);
-
+/*
         vk::ImageTiling tiling;
         if (defaultDevFormatProps.linearTilingFeatures &
             vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
@@ -719,6 +720,7 @@ namespace tt {
             std::cout << "vk::ImageTiling no match exit!" << std::endl;
             exit(-1);//todo throw
         }
+        */
         depth = device.createImageAndMemory(depthFormat, vk::Extent3D{swapchainExtent.width,
                                                                       swapchainExtent.height, 1});
 /*
