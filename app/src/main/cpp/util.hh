@@ -179,8 +179,19 @@ namespace tt {
         createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
                               vk::MemoryPropertyFlags memoryPropertyFlags);
 
+        template<typename Tuple>
         BufferViewMemoryPtr
-        mapBufferAndMemory(BufferViewMemory &bufferViewMemory, size_t offset = 0);
+        mapMemoryAndSize(Tuple &tupleMemoryAndSize, size_t offset = 0){
+            return BufferViewMemoryPtr{
+                    get().mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
+                                    offset,
+                                    std::get<size_t>(tupleMemoryAndSize),
+                                    vk::MemoryMapFlagBits()),
+                    [this, &tupleMemoryAndSize](void *pVoid) {
+                        get().unmapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get());
+                    }
+            };
+        }
 
 
         void buildPipeline(uint32_t dataStepSize, android_app *app, Swapchain &swapchain,vk::PipelineLayout pipelineLayout);

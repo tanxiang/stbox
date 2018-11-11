@@ -65,12 +65,11 @@ namespace tt {
                                                  vk::MemoryPropertyFlagBits::eHostVisible |
                                                  vk::MemoryPropertyFlagBits::eHostCoherent);
         //std::cout<<__func__<< static_cast<VkBuffer>(std::get<vk::UniqueBuffer>(mvpBuffer).get())<<std::endl;
-
-
-        auto mvpBuffer_ptr = devicePtr->mapBufferAndMemory(devicePtr->mvpBuffer);
-        //todo copy to buffer
-        memcpy(mvpBuffer_ptr.get(), &View, std::get<size_t>(devicePtr->mvpBuffer));
-
+        {
+            auto mvpBuffer_ptr = devicePtr->mapMemoryAndSize(devicePtr->mvpBuffer);
+            //todo copy to buffer
+            memcpy(mvpBuffer_ptr.get(), &View, std::get<size_t>(devicePtr->mvpBuffer));
+        }
         std::vector<VertexUV> vertices{
                 {{1.0f,  1.0f,  0.0f, 1.0f}, {1.0f, 1.0f}},
                 {{-1.0f, 1.0f,  0.0f, 1.0f}, {0.0f, 1.0f}},
@@ -83,11 +82,10 @@ namespace tt {
                 vk::BufferUsageFlagBits::eVertexBuffer,
                 vk::MemoryPropertyFlagBits::eHostVisible |
                 vk::MemoryPropertyFlagBits::eHostCoherent);
-
-        auto vertexBuffer_ptr = devicePtr->mapBufferAndMemory(devicePtr->vertexBuffer);
-
-        memcpy(vertexBuffer_ptr.get(), vertices.data(), std::get<size_t>(devicePtr->vertexBuffer));
-
+        {
+            auto vertexBuffer_ptr = devicePtr->mapMemoryAndSize(devicePtr->vertexBuffer);
+            memcpy(vertexBuffer_ptr.get(),vertices.data(),std::get<size_t>(devicePtr->vertexBuffer));
+        }
         std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
 
         devicePtr->indexBuffer = devicePtr->createBufferAndMemory(
@@ -95,24 +93,18 @@ namespace tt {
                 vk::BufferUsageFlagBits::eVertexBuffer,
                 vk::MemoryPropertyFlagBits::eHostVisible |
                 vk::MemoryPropertyFlagBits::eHostCoherent);
-        auto indexBuffer_ptr = devicePtr->mapBufferAndMemory(devicePtr->indexBuffer);
-
-        memcpy(indexBuffer_ptr.get(), indices.data(), std::get<size_t>(devicePtr->indexBuffer));
-
+        {
+            auto indexBuffer_ptr = devicePtr->mapMemoryAndSize(devicePtr->indexBuffer);
+            memcpy(indexBuffer_ptr.get(), indices.data(), std::get<size_t>(devicePtr->indexBuffer));
+        }
         devicePtr->mianBuffers = devicePtr->createCmdBuffers(std::get<vk::UniqueBuffer>(devicePtr->vertexBuffer).get(),
                                               *swapchainPtr,
                                               pipelineLayout.get());
 
-        auto fileContent = loadDataFromAssets("textures/vulkan_11_rgba.ktx",app);
-        gli::texture2d tex2d{gli::load(fileContent.data(),fileContent.size())};
-        auto sampleBuffer = devicePtr->createBufferAndMemory(
-                tex2d.size(),
-                vk::BufferUsageFlagBits::eTransferSrc,
-                vk::MemoryPropertyFlagBits::eHostVisible |
-                vk::MemoryPropertyFlagBits::eHostCoherent);
+        gli::texture2d tex2d;
         {
-            auto sampleBufferPtr = devicePtr->mapBufferAndMemory(sampleBuffer);
-            memcpy(sampleBufferPtr.get(), tex2d.data(), tex2d.size());
+            auto fileContent = loadDataFromAssets("textures/vulkan_11_rgba.ktx", app);
+            tex2d = gli::texture2d{gli::load(fileContent.data(), fileContent.size())};
         }
         auto sampleImage =devicePtr->createImageAndMemory(vk::Format::eR8G8B8A8Unorm,vk::Extent3D{static_cast<uint32_t>(tex2d[0].extent().x),static_cast<uint32_t>(tex2d[0].extent().y),1},
                                                           vk::ImageUsageFlagBits::eSampled|vk::ImageUsageFlagBits::eTransferDst|vk::ImageUsageFlagBits::eStorage,
@@ -148,6 +140,15 @@ namespace tt {
                                                vk::Extent3D{tex2d[i].extent().x,tex2d[i].extent().y,1});
                  offset += tex2d[i].size();
              }
+             auto sampleBuffer = devicePtr->createBufferAndMemory(
+                     tex2d.size(),
+                     vk::BufferUsageFlagBits::eTransferSrc,
+                     vk::MemoryPropertyFlagBits::eHostVisible |
+                     vk::MemoryPropertyFlagBits::eHostCoherent);
+             {
+                 auto sampleBufferPtr = devicePtr->mapMemoryAndSize(sampleBuffer);
+                 memcpy(sampleBufferPtr.get(), tex2d.data(), tex2d.size());
+             }
              copyCmdHandle.copyBufferToImage(std::get<vk::UniqueBuffer>(sampleBuffer).get(),std::get<vk::UniqueImage>(sampleImage).get(),vk::ImageLayout::eTransferDstOptimal,bufferCopyRegion);
              vk::ImageMemoryBarrier imageMemoryBarrierToGeneral{
                      vk::AccessFlagBits::eTransferWrite,vk::AccessFlags{},
@@ -169,6 +170,20 @@ namespace tt {
                 }
         };
         devicePtr->graphsQueue().submit(submitInfos, vk::Fence{});
+        (*devicePtr)->waitForFences(1,&fence.get(),1,100000000000);
+
+        vk::SamplerCreateInfo samplerCreateInfo{vk::SamplerCreateFlags(),
+                                                vk::Filter::eLinear,vk::Filter::eLinear,
+                                                vk::SamplerMipmapMode::eLinear,
+                                                vk::SamplerAddressMode::eRepeat,
+                                                vk::SamplerAddressMode::eRepeat,
+                                                vk::SamplerAddressMode::eRepeat,
+                                                0,
+                                                devicePtr->phyDevice().getFeatures().samplerAnisotropy,
+                                                devicePtr->phyDevice().getProperties().limits.maxSamplerAnisotropy,
+                                                0,vk::CompareOp::eNever,0,tex2d.levels(),vk::BorderColor::eFloatOpaqueWhite,0
+        };
+        auto sampler = (*devicePtr)->createSamplerUnique(samplerCreateInfo);
     }
 
     void stboxvk::cleanWindow() {

@@ -325,19 +325,19 @@ namespace tt {
     uint32_t
     Device::submitCmdBuffer(vk::SwapchainKHR swapchain) {
         auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-        //auto acquireNextImageFence = createFenceUnique(vk::FenceCreateInfo{});
+        auto acquireNextImageFence = get().createFenceUnique(vk::FenceCreateInfo{});
         //std::cout << "acquireNextImageKHR:" << std::endl;
 
         auto currentBufferIndex = get().acquireNextImageKHR(swapchain, UINT64_MAX,
                                                       imageAcquiredSemaphore.get(),
-                                                      vk::Fence{});
+                                                      acquireNextImageFence.get());
         vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-        //std::array<vk::SubmitInfo, 1> submitInfos{
+        std::array<vk::SubmitInfo, 1> submitInfos{
         //        vk::SubmitInfo{
         //                1, &imageAcquiredSemaphore.get(), &pipelineStageFlags,
         //                1, &commandBuffers[currentBufferIndex.value].get()
         //        }
-        //};
+        };
         //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
         //get().getQueue(queueFamilyIndex, 0).submit(submitInfos, vk::Fence{});
         //std::cout << "push index:" << currentBufferIndex.value << std::endl;
@@ -406,18 +406,6 @@ namespace tt {
         return BVM;
     }
 
-    Device::BufferViewMemoryPtr
-    Device::mapBufferAndMemory(Device::BufferViewMemory &bufferViewMemory, size_t offset) {
-        return BufferViewMemoryPtr{
-                get().mapMemory(std::get<vk::UniqueDeviceMemory>(bufferViewMemory).get(),
-                          offset,
-                          std::get<size_t>(bufferViewMemory),
-                          vk::MemoryMapFlagBits()),
-                [this, &bufferViewMemory](void *pVoid) {
-                    get().unmapMemory(std::get<vk::UniqueDeviceMemory>(bufferViewMemory).get());
-                }
-        };
-    }
 
 #if 0
 
