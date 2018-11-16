@@ -30,16 +30,29 @@ namespace tt {
     std::vector<char> loadDataFromAssets(const char *filePath,android_app *androidAppCtx);
     uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
                                             vk::SurfaceKHR surface);
-    struct commandBufferBeginHandle: public vk::CommandBuffer {
 
-        commandBufferBeginHandle(vk::UniqueCommandBuffer &uniqueCommandBuffer):vk::CommandBuffer{uniqueCommandBuffer.get()}{
+    struct RenderpassBeginHandle: public vk::CommandBuffer{
+        RenderpassBeginHandle(vk::CommandBuffer commandBuffer,vk::RenderPassBeginInfo renderPassBeginInfo)
+                :vk::CommandBuffer{commandBuffer}{
+            beginRenderPass(renderPassBeginInfo,vk::SubpassContents::eInline);
+        }
+        ~RenderpassBeginHandle(){
+            endRenderPass();
+        }
+        RenderpassBeginHandle( const RenderpassBeginHandle& ) = delete; // non construction-copyable
+        RenderpassBeginHandle& operator=( const RenderpassBeginHandle& ) = delete; // non copyable
+    };
+
+    struct CommandBufferBeginHandle: public vk::CommandBuffer {
+        CommandBufferBeginHandle(vk::UniqueCommandBuffer &uniqueCommandBuffer):vk::CommandBuffer{uniqueCommandBuffer.get()}{
             begin(vk::CommandBufferBeginInfo{});
         }
-        ~commandBufferBeginHandle(){
+        ~CommandBufferBeginHandle(){
             end();
         }
-        commandBufferBeginHandle( const commandBufferBeginHandle& ) = delete; // non construction-copyable
-        commandBufferBeginHandle& operator=( const commandBufferBeginHandle& ) = delete; // non copyable
+
+        CommandBufferBeginHandle( const CommandBufferBeginHandle& ) = delete; // non construction-copyable
+        CommandBufferBeginHandle& operator=( const CommandBufferBeginHandle& ) = delete; // non copyable
     };
 
     class Device : public vk::UniqueDevice {
@@ -60,13 +73,14 @@ namespace tt {
         vk::PhysicalDevice physicalDevice;
         uint32_t queueFamilyIndex;
         vk::UniqueDescriptorPool descriptorPoll;// = ttcreateDescriptorPoolUnique();
-        std::vector<vk::UniqueDescriptorSet> descriptorSets;//{buildDescriptorSets()};
         vk::UniquePipelineCache pipelineCache;// = createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
         vk::UniquePipeline graphicsPipeline;
         vk::UniqueCommandPool commandPool;
 
     public:
         std::vector<vk::UniqueCommandBuffer> mianBuffers;
+        std::vector<vk::UniqueDescriptorSet> descriptorSets;//{buildDescriptorSets()};
+
     private:
         //std::vector<vk::UniqueCommandBuffer> commandBuffers;
 
@@ -76,8 +90,6 @@ namespace tt {
             vk::Semaphore presentComplete;
             // Command buffer submission and execution
             vk::Semaphore renderComplete;
-            // UI overlay submission and execution
-            vk::Semaphore overlayComplete;
         } semaphores;
 
 
@@ -145,9 +157,9 @@ namespace tt {
         }
 
 
-        void buildDescriptorSets(vk::UniqueDescriptorSetLayout &descriptorSetLayout) {
+        auto buildDescriptorSets(vk::UniqueDescriptorSetLayout &descriptorSetLayout) {
             std::array<vk::DescriptorSetLayout, 1> descriptorSetLayouts{descriptorSetLayout.get()};
-            descriptorSets = get().allocateDescriptorSetsUnique(
+            return get().allocateDescriptorSetsUnique(
                     vk::DescriptorSetAllocateInfo{
                             descriptorPoll.get(), descriptorSetLayouts.size(),
                             descriptorSetLayouts.data()});
@@ -197,11 +209,18 @@ namespace tt {
         void buildPipeline(uint32_t dataStepSize, android_app *app, Swapchain &swapchain,vk::PipelineLayout pipelineLayout);
 
         std::vector<vk::UniqueCommandBuffer>
-        createCmdBuffers(vk::Buffer vertexBuffer, tt::Swapchain &swapchain,
+        createCmdBuffers(vk::Buffer inputVertexBuffer,vk::Buffer inputIndexBuffer,
+                         uint32_t indexCount,
+                         tt::Swapchain &swapchain,
                          vk::PipelineLayout pipelineLayout);
 
+        std::vector<vk::UniqueCommandBuffer>
+        createCmdBuffers(tt::Swapchain &swapchain,
+                         std::function<void(CommandBufferBeginHandle&)>,
+                         std::function<void(RenderpassBeginHandle&)>);
+
         uint32_t
-        submitCmdBuffer(vk::SwapchainKHR swapchain);
+        submitCmdBuffer(Swapchain &swapchain,std::vector<vk::UniqueCommandBuffer>& drawcommandBuffers);
 
     };
 

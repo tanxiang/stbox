@@ -57,16 +57,22 @@ namespace tt {
         auto instanceLayerProperties = vk::enumerateInstanceLayerProperties();
         std::cout << "enumerateInstanceLayerProperties:" << instanceLayerProperties.size()
                   << std::endl;
-        for (auto &prop:instanceLayerProperties)
+        std::vector<const char *> instanceLayerPropertiesName;
+
+        for (auto &prop:instanceLayerProperties){
             std::cout << prop.layerName << std::endl;
+            //instanceLayerPropertiesName.emplace_back(prop.layerName);
+        }
         vk::ApplicationInfo vkAppInfo{"stbox", VK_VERSION_1_0, "stbox",
                                       VK_VERSION_1_0, VK_API_VERSION_1_0};
         std::array<const char *, 2> instanceEtensionNames{VK_KHR_SURFACE_EXTENSION_NAME,
                                                           VK_KHR_ANDROID_SURFACE_EXTENSION_NAME};
+
         vk::InstanceCreateInfo instanceInfo{vk::InstanceCreateFlags(), &vkAppInfo,
-                                              0, nullptr,
-                                              instanceEtensionNames.size(),
-                                              instanceEtensionNames.data()};
+                                            instanceLayerPropertiesName.size(),
+                                            instanceLayerPropertiesName.data(),
+                                            instanceEtensionNames.size(),
+                                            instanceEtensionNames.data()};
         return tt::Instance{vk::createInstanceUnique(instanceInfo)};
     }
 
@@ -102,16 +108,27 @@ namespace tt {
                                           queue_priorities.size(), queue_priorities.data()
                 }
         };
+
+        auto deviceLayerProperties = phyDevice.enumerateDeviceLayerProperties();
+        std::cout << "phyDeviceDeviceLayerProperties : " << deviceLayerProperties.size() <<std::endl;
+        std::vector<const char *> deviceLayerPropertiesName;
+        for(auto deviceLayerPropertie :deviceLayerProperties) {
+            std::cout << "phyDeviceDeviceLayerPropertie : " << deviceLayerPropertie.layerName
+                      << std::endl;
+            deviceLayerPropertiesName.emplace_back(deviceLayerPropertie.layerName);
+        }
         auto deviceExtensionProperties = phyDevice.enumerateDeviceExtensionProperties();
-        //for (auto &deviceExtensionPropertie:deviceExtensionProperties)
-        //    std::cout << "PhyDeviceExtensionPropertie : " << deviceExtensionPropertie.extensionName
-        //              << std::endl;
+        for (auto &deviceExtensionPropertie:deviceExtensionProperties)
+            std::cout << "PhyDeviceExtensionPropertie : " << deviceExtensionPropertie.extensionName
+                      << std::endl;
         std::array<const char *, 1> device_extension_names{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
         return std::make_unique<Device>(phyDevice.createDeviceUnique(
                 vk::DeviceCreateInfo {vk::DeviceCreateFlags(),
                                       device_queue_create_infos.size(),
                                       device_queue_create_infos.data(),
-                                      0, nullptr, device_extension_names.size(),
+                                      deviceLayerPropertiesName.size(),
+                                      deviceLayerPropertiesName.data(),
+                                      device_extension_names.size(),
                                       device_extension_names.data()}),
                                                phyDevice,
                                                graphicsQueueIndex);
@@ -270,7 +287,9 @@ namespace tt {
     }
 
     std::vector<vk::UniqueCommandBuffer>
-    Device::createCmdBuffers(vk::Buffer vertexBuffer, tt::Swapchain &swapchain,
+    Device::createCmdBuffers(vk::Buffer inputVertexBuffer,vk::Buffer inputIndexBuffer,
+                             uint32_t indexCount,
+                             tt::Swapchain &swapchain,
                              vk::PipelineLayout pipelineLayout) {
         std::cout<<__func__<<":allocateCommandBuffersUnique:"<<swapchain.getFrameBufferNum()<<std::endl;
         std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
@@ -282,31 +301,96 @@ namespace tt {
                 vk::ClearDepthStencilValue{1.0f, 0},
         };
         uint32_t frameIndex = 0;
-        for(auto &cmdBuffer : commandBuffers){
+        auto swapchainExtent = swapchain.getSwapchainExtent();
+        for(auto&cmdBuffer : commandBuffers){
             //cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
-            cmdBuffer->begin(vk::CommandBufferBeginInfo{});
-
-            cmdBuffer->beginRenderPass(
-                    vk::RenderPassBeginInfo{
+            //cmdBuffer->begin(vk::CommandBufferBeginInfo{});
+            {
+                CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
+                {
+                    RenderpassBeginHandle cmdHandleRenderpassBegin{
+                        cmdBeginHandle,
+                        vk::RenderPassBeginInfo{
                             swapchain.getRenderPass(),
                             swapchain.getFrameBuffer()[frameIndex].get(),
                             vk::Rect2D{
-                                    vk::Offset2D{},
+                                vk::Offset2D{},
                                     swapchain.getSwapchainExtent()
                             },
-                            clearValues.size(), clearValues.data()
-                    }, vk::SubpassContents::eInline);
-            cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.get());
-            std::array<vk::DescriptorSet, 1> tmpDescriptorSets{
-                    descriptorSets[0].get()
-            };
-            cmdBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0,
-                                         tmpDescriptorSets, std::vector<uint32_t>{});
-            vk::DeviceSize offsets[1] = {0};
-            cmdBuffer->bindVertexBuffers(0, 1, &vertexBuffer, offsets);
-            cmdBuffer->draw(12 * 3, 1, 0, 0);
-            cmdBuffer->endRenderPass();
-            cmdBuffer->end();
+                            clearValues.size(),clearValues.data()
+                        }
+                    };
+                    vk::Viewport viewport{
+                            0, 0, swapchainExtent.width, swapchainExtent.height, 0.0f, 1.0f
+                    };
+                    cmdHandleRenderpassBegin.setViewport(0,1,&viewport);
+                    vk::Rect2D scissors{vk::Offset2D{}, swapchainExtent};
+                    cmdHandleRenderpassBegin.setScissor(0,1,&scissors);
+
+                    cmdHandleRenderpassBegin.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.get());
+                    std::array<vk::DescriptorSet, 1> tmpDescriptorSets{
+                            descriptorSets[0].get()
+                    };
+                    cmdHandleRenderpassBegin.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0,
+                                                 tmpDescriptorSets, std::vector<uint32_t>{});
+                    vk::DeviceSize offsets[1] = {0};
+                    cmdHandleRenderpassBegin.bindVertexBuffers(0, 1, &inputVertexBuffer, offsets);
+                    cmdHandleRenderpassBegin.bindIndexBuffer(inputIndexBuffer,0,vk::IndexType::eUint32);
+                    cmdHandleRenderpassBegin.drawIndexed(indexCount,1,0,0,0);
+                }
+
+            }
+            ++frameIndex;
+        }
+        return commandBuffers;
+
+        //auto mvpBufferMemoryRq = getBufferMemoryRequirements(
+        //       mvpBuffer[frameIndex % SWAPCHAIN_NUM].get());
+        //memcpy(mapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get(), 0,
+        //                 mvpBufferMemoryRq.size,
+        //                 vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
+
+
+        //unmapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get());
+
+    }
+
+    std::vector<vk::UniqueCommandBuffer>
+    Device::createCmdBuffers(tt::Swapchain &swapchain,
+                             std::function<void(CommandBufferBeginHandle&)> functionBegin,
+                             std::function<void(RenderpassBeginHandle&)> functionRenderpassBegin) {
+        std::cout<<__func__<<":allocateCommandBuffersUnique:"<<swapchain.getFrameBufferNum()<<std::endl;
+        std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
+                vk::CommandBufferAllocateInfo{commandPool.get(),
+                                              vk::CommandBufferLevel::ePrimary, swapchain.getFrameBufferNum()});
+
+        std::array<vk::ClearValue, 2> clearValues{
+                vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
+                vk::ClearDepthStencilValue{1.0f, 0},
+        };
+        uint32_t frameIndex = 0;
+        for(auto&cmdBuffer : commandBuffers){
+            //cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+            {
+                CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
+                functionBegin(cmdBeginHandle);
+                {
+                    RenderpassBeginHandle cmdHandleRenderpassBegin{
+                            cmdBeginHandle,
+                            vk::RenderPassBeginInfo{
+                                    swapchain.getRenderPass(),
+                                    swapchain.getFrameBuffer()[frameIndex].get(),
+                                    vk::Rect2D{
+                                            vk::Offset2D{},
+                                            swapchain.getSwapchainExtent()
+                                    },
+                                    clearValues.size(),clearValues.data()
+                            }
+                    };
+                    functionRenderpassBegin(cmdHandleRenderpassBegin);
+                }
+
+            }
             ++frameIndex;
         }
         return commandBuffers;
@@ -323,24 +407,31 @@ namespace tt {
     }
 
     uint32_t
-    Device::submitCmdBuffer(vk::SwapchainKHR swapchain) {
+    Device::submitCmdBuffer(Swapchain &swapchain,std::vector<vk::UniqueCommandBuffer>& drawcommandBuffers) {
         auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-        auto acquireNextImageFence = get().createFenceUnique(vk::FenceCreateInfo{});
+        //auto acquireNextImageFence = get().createFenceUnique(vk::FenceCreateInfo{});
         //std::cout << "acquireNextImageKHR:" << std::endl;
 
-        auto currentBufferIndex = get().acquireNextImageKHR(swapchain, UINT64_MAX,
-                                                      imageAcquiredSemaphore.get(),
-                                                      acquireNextImageFence.get());
+        auto currentBufferIndex = get().acquireNextImageKHR(swapchain.get(), UINT64_MAX,
+                imageAcquiredSemaphore.get(), nullptr);
+
+        auto renderSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+
         vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
         std::array<vk::SubmitInfo, 1> submitInfos{
-        //        vk::SubmitInfo{
-        //                1, &imageAcquiredSemaphore.get(), &pipelineStageFlags,
-        //                1, &commandBuffers[currentBufferIndex.value].get()
-        //        }
+                vk::SubmitInfo{
+                        1, &imageAcquiredSemaphore.get(), &pipelineStageFlags,
+                        1, &drawcommandBuffers[currentBufferIndex.value].get(),
+                        1, &renderSemaphore.get()
+                }
         };
         //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
-        //get().getQueue(queueFamilyIndex, 0).submit(submitInfos, vk::Fence{});
-        //std::cout << "push index:" << currentBufferIndex.value << std::endl;
+        get().getQueue(queueFamilyIndex, 0).submit(submitInfos, vk::Fence{});
+
+        auto presentRet = get().getQueue(queueFamilyIndex, 0).presentKHR(vk::PresentInfoKHR{
+                1, &renderSemaphore.get(), 1, &swapchain.get(),&currentBufferIndex.value});
+        std::cout << "index:" << currentBufferIndex.value<<"\tpresentRet:"<<vk::to_string(presentRet)<< std::endl;
+
         return 0;
     }
 

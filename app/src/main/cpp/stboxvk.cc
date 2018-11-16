@@ -49,16 +49,26 @@ namespace tt {
                         }
                 }
         );
-        devicePtr->buildDescriptorSets(descriptorSetLayout);
-        auto pipelineLayout = devicePtr->createPipelineLayout(descriptorSetLayout);
-        devicePtr->buildPipeline(sizeof(Vertex), app, *swapchainPtr, pipelineLayout.get());
+        devicePtr->descriptorSets = devicePtr->buildDescriptorSets(descriptorSetLayout);
+
+        static auto Model = glm::mat4{1.0f};
+
+
+        auto swapchainExtent = swapchainPtr->getSwapchainExtent();
+
+        static auto Projection =glm::perspective(glm::radians(60.0f), static_cast<float>(swapchainExtent.width) / static_cast<float>(swapchainExtent.height), 0.1f, 256.0f);
 
         static auto View = glm::lookAt(
-                glm::vec3(-5, 3, -10),  // Camera is at (-5,3,-10), in World Space
+                glm::vec3(1, 1, 0),  // Camera is at (-5,3,-10), in World Space
                 glm::vec3(0, 0, 0),     // and looks at the origin
                 glm::vec3(0, -1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
         );
-        glm::rotate(View, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+        //glm::rotate(View, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        static auto Clip = glm::mat4{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f,
+                                     0.0f,
+                                     0.0f, 0.0f, 0.5f, 1.0f};
+        static auto mvpMat4 = Model * View * Projection;
         //std::cout<<__func__<< static_cast<VkBuffer>(std::get<vk::UniqueBuffer>(mvpBuffer).get())<<std::endl;
         devicePtr->mvpBuffer = devicePtr->createBufferAndMemory(sizeof(glm::mat4),
                                                  vk::BufferUsageFlagBits::eUniformBuffer,
@@ -68,8 +78,12 @@ namespace tt {
         {
             auto mvpBuffer_ptr = devicePtr->mapMemoryAndSize(devicePtr->mvpBuffer);
             //todo copy to buffer
-            memcpy(mvpBuffer_ptr.get(), &View, std::get<size_t>(devicePtr->mvpBuffer));
+            memcpy(mvpBuffer_ptr.get(), &mvpMat4, std::get<size_t>(devicePtr->mvpBuffer));
         }
+
+        auto pipelineLayout = devicePtr->createPipelineLayout(descriptorSetLayout);
+        devicePtr->buildPipeline(sizeof(Vertex), app, *swapchainPtr, pipelineLayout.get());
+
         std::vector<VertexUV> vertices{
                 {{1.0f,  1.0f,  0.0f, 1.0f}, {1.0f, 1.0f}},
                 {{-1.0f, 1.0f,  0.0f, 1.0f}, {0.0f, 1.0f}},
@@ -77,14 +91,21 @@ namespace tt {
                 {{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
         };
 
+        std::vector<Vertex> vertices2{
+                {1.0f,  1.0f,  0.0f, 1.0f, 0.0f, 1.0f,1.0f,1.0f},
+                {-1.0f, 1.0f,  0.0f, 1.0f, 0.0f, 1.0f,1.0f,1.0f},
+                {-1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f,1.0f,1.0f},
+                {1.0f,  -1.0f, 0.0f, 1.0f, 0.0f, 1.0f,1.0f,1.0f}
+        };
+
         devicePtr->vertexBuffer = devicePtr->createBufferAndMemory(
-                sizeof(decltype(vertices)::value_type) * vertices.size(),
+                sizeof(decltype(vertices2)::value_type) * vertices2.size(),
                 vk::BufferUsageFlagBits::eVertexBuffer,
                 vk::MemoryPropertyFlagBits::eHostVisible |
                 vk::MemoryPropertyFlagBits::eHostCoherent);
         {
             auto vertexBuffer_ptr = devicePtr->mapMemoryAndSize(devicePtr->vertexBuffer);
-            memcpy(vertexBuffer_ptr.get(),vertices.data(),std::get<size_t>(devicePtr->vertexBuffer));
+            memcpy(vertexBuffer_ptr.get(),vertices2.data(),std::get<size_t>(devicePtr->vertexBuffer));
         }
         std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
 
@@ -97,10 +118,8 @@ namespace tt {
             auto indexBuffer_ptr = devicePtr->mapMemoryAndSize(devicePtr->indexBuffer);
             memcpy(indexBuffer_ptr.get(), indices.data(), std::get<size_t>(devicePtr->indexBuffer));
         }
-        devicePtr->mianBuffers = devicePtr->createCmdBuffers(std::get<vk::UniqueBuffer>(devicePtr->vertexBuffer).get(),
-                                              *swapchainPtr,
-                                              pipelineLayout.get());
 
+#if 0
         gli::texture2d tex2d;
         {
             auto fileContent = loadDataFromAssets("textures/vulkan_11_rgba.ktx", app);
@@ -117,7 +136,7 @@ namespace tt {
         //std::cout<<"return initWindow release"<<std::endl;
         //auto copyCmd = (*devicePtr)->allocateCommandBuffersUnique();
          {
-             commandBufferBeginHandle copyCmdHandle{copyCmd[0]};
+             CommandBufferBeginHandle copyCmdHandle{copyCmd[0]};
              vk::ImageSubresourceRange imageSubresourceRange{
                  vk::ImageAspectFlagBits::eColor,
                  0,tex2d.levels(),0,1
@@ -184,6 +203,30 @@ namespace tt {
                                                 0,vk::CompareOp::eNever,0,tex2d.levels(),vk::BorderColor::eFloatOpaqueWhite,0
         };
         auto sampler = (*devicePtr)->createSamplerUnique(samplerCreateInfo);
+        vk::DescriptorImageInfo descriptorImageInfo{
+            sampler.get(),std::get<vk::UniqueImageView >(sampleImage).get(),vk::ImageLayout::eGeneral
+        };
+#endif
+        auto descriptorBufferInfo = devicePtr->mvpBuffer.getDescriptorBufferInfo();
+
+        std::array<vk::WriteDescriptorSet,1> writeDes{
+                vk::WriteDescriptorSet{
+                    devicePtr->descriptorSets[0].get(),0,0,1,vk::DescriptorType::eUniformBuffer,
+                    nullptr,&descriptorBufferInfo
+                },
+                //vk::WriteDescriptorSet{
+                //    devicePtr->descriptorSets[0].get(),1,0,1,vk::DescriptorType::eCombinedImageSampler,
+                //    &descriptorImageInfo
+                //}
+        };
+        (*devicePtr)->updateDescriptorSets(writeDes, nullptr);
+        //(*devicePtr)->updateDescriptorSetWithTemplate();
+        devicePtr->mianBuffers = devicePtr->createCmdBuffers(std::get<vk::UniqueBuffer>(devicePtr->vertexBuffer).get(),
+                                                             std::get<vk::UniqueBuffer>(devicePtr->indexBuffer).get(),
+                                                             indices.size(),
+                                                             *swapchainPtr,
+                                                             pipelineLayout.get());
+        devicePtr->submitCmdBuffer(*swapchainPtr,devicePtr->mianBuffers);
     }
 
     void stboxvk::cleanWindow() {
