@@ -217,8 +217,8 @@ namespace tt {
                         0, 0, vk::Format::eR32G32B32A32Sfloat, 0
                 },
                 vk::VertexInputAttributeDescription{
-                        1, 0, vk::Format::eR32G32B32A32Sfloat, 16
-                }
+                        1, 0, vk::Format::eR32G32Sfloat, 16
+                }//VK_FORMAT_R32G32_SFLOAT
         };
         vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
                 vk::PipelineVertexInputStateCreateFlags(),
