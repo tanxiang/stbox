@@ -72,14 +72,15 @@ namespace tt {
     private:
         vk::PhysicalDevice physicalDevice;
         uint32_t queueFamilyIndex;
-        vk::UniqueDescriptorPool descriptorPoll;// = ttcreateDescriptorPoolUnique();
-        vk::UniquePipelineCache pipelineCache;// = createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
-        vk::UniquePipeline graphicsPipeline;
+        vk::UniqueDescriptorPool descriptorPoll = ttcreateDescriptorPoolUnique();
+        vk::UniquePipelineCache pipelineCache = get().createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
         vk::UniqueCommandPool commandPool;
 
     public:
+
+        vk::UniquePipeline graphicsPipeline;
         std::vector<vk::UniqueCommandBuffer> mianBuffers;
-        std::vector<vk::UniqueDescriptorSet> descriptorSets;//{buildDescriptorSets()};
+        std::vector<vk::UniqueDescriptorSet> descriptorSets;//{createDescriptorSets()};
 
     private:
         //std::vector<vk::UniqueCommandBuffer> commandBuffers;
@@ -111,20 +112,14 @@ namespace tt {
                                                     android_app *androidAppCtx);
 
     public:
-        Device(){
-
-        }
+        //Device(){}
 
         Device(vk::UniqueDevice &&dev, vk::PhysicalDevice &phy, uint32_t qidx) :
                 vk::UniqueDevice{std::move(dev)}, physicalDevice{phy}, queueFamilyIndex{qidx},
                 commandPool{get().createCommandPoolUnique(
                         vk::CommandPoolCreateInfo{
                                 vk::CommandPoolCreateFlagBits::eResetCommandBuffer, qidx})
-                } {
-            descriptorPoll = ttcreateDescriptorPoolUnique();
-            //descriptorSets = buildDescriptorSets();
-            pipelineCache = get().createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
-        }
+                } {}
 
         auto phyDevice() {
             return physicalDevice;
@@ -157,7 +152,7 @@ namespace tt {
         }
 
 
-        auto buildDescriptorSets(vk::UniqueDescriptorSetLayout &descriptorSetLayout) {
+        auto createDescriptorSets(vk::UniqueDescriptorSetLayout &descriptorSetLayout) {
             std::array<vk::DescriptorSetLayout, 1> descriptorSetLayouts{descriptorSetLayout.get()};
             return get().allocateDescriptorSetsUnique(
                     vk::DescriptorSetAllocateInfo{
@@ -206,18 +201,19 @@ namespace tt {
         }
 
 
-        void buildPipeline(uint32_t dataStepSize, android_app *app, Swapchain &swapchain,vk::PipelineLayout pipelineLayout);
+        vk::UniquePipeline createPipeline(uint32_t dataStepSize, android_app *app, Swapchain &swapchain,
+                            vk::PipelineLayout pipelineLayout);
+
 
         std::vector<vk::UniqueCommandBuffer>
-        createCmdBuffers(vk::Buffer inputVertexBuffer,vk::Buffer inputIndexBuffer,
-                         uint32_t indexCount,
-                         tt::Swapchain &swapchain,
-                         vk::PipelineLayout pipelineLayout);
+        createCmdBuffers(size_t cmdNum,
+                         std::function<void(CommandBufferBeginHandle&)> = [](CommandBufferBeginHandle&){});
 
         std::vector<vk::UniqueCommandBuffer>
         createCmdBuffers(tt::Swapchain &swapchain,
-                         std::function<void(CommandBufferBeginHandle&)>,
-                         std::function<void(RenderpassBeginHandle&)>);
+                         std::function<void(RenderpassBeginHandle&)> =[](RenderpassBeginHandle&){},
+                         std::function<void(CommandBufferBeginHandle&)> = [](CommandBufferBeginHandle&){});
+
 
         uint32_t
         submitCmdBuffer(Swapchain &swapchain,std::vector<vk::UniqueCommandBuffer>& drawcommandBuffers);
@@ -236,9 +232,7 @@ namespace tt {
         void createRenderpass(Device &device);
 
     public:
-        Swapchain(){
-
-        }
+        //Swapchain(){}
 
         Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device);
 

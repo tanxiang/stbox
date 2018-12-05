@@ -79,7 +79,7 @@ namespace tt {
     uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
                                             vk::SurfaceKHR surface) {
         auto queueFamilyProperties = PhyDevice.getQueueFamilyProperties();
-        std::cout << "ttInstance.defaultPhyDevice() getQueueFamilyProperties : "
+        std::cout << "getQueueFamilyProperties size : "
                   << queueFamilyProperties.size() << std::endl;
         for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {
             std::cout << "QueueFamilyProperties : " << i << "\tflags:"
@@ -150,6 +150,7 @@ namespace tt {
             if ((memoryTypeBits & 1) == 1) {
                 // Type is available, does it match user properties?
                 if ((memoryProperties.memoryTypes[i].propertyFlags & flags) == flags) {
+                    std::cout<<vk::to_string(memoryProperties.memoryTypes[i].propertyFlags)<<" march " << vk::to_string(flags) <<" return "<< i<< std::endl;
                     return i;
                 }
             }
@@ -188,9 +189,8 @@ namespace tt {
 
     }
 
-    void Device::buildPipeline(uint32_t dataStepSize, android_app *app,Swapchain& swapchain,vk::PipelineLayout pipelineLayout) {
-        if (graphicsPipeline)
-            return;
+    vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize, android_app *app, Swapchain &swapchain,
+                                vk::PipelineLayout pipelineLayout) {
         auto vertShaderModule = loadShaderFromAssets("shaders/mvp.vert.spv", app);
         auto fargShaderModule = loadShaderFromAssets("shaders/copy.frag.spv", app);
         std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStageCreateInfos{
@@ -242,16 +242,15 @@ namespace tt {
         };
         vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo{
                 vk::PipelineRasterizationStateCreateFlags(),
-                0, 0, vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack,
+                0, 0, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
                 vk::FrontFace::eClockwise, 0,
                 0, 0, 0, 1.0f
         };
-        vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{};
         vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{
                 vk::PipelineDepthStencilStateCreateFlags(), true, true, vk::CompareOp::eLessOrEqual,
                 false, false,
                 vk::StencilOpState{vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::StencilOp::eKeep,
-                                   vk::CompareOp::eAlways},
+                                   vk::CompareOp::eNever},
                 vk::StencilOpState{vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::StencilOp::eKeep,
                                    vk::CompareOp::eAlways},
                 0, 0
@@ -263,10 +262,12 @@ namespace tt {
                 vk::ColorComponentFlagBits::eB |
                 vk::ColorComponentFlagBits::eA);
         vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo{
-                vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eNoOp, 1,
-                &pipelineColorBlendAttachmentState, {1.0f, 1.0f, 1.0f, 1.0f}
+                vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eClear, 1,
+                &pipelineColorBlendAttachmentState
         };
         vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{};
+        vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{vk::PipelineMultisampleStateCreateFlags(),vk::SampleCountFlagBits::e1};
+
         auto renderPass = swapchain.getRenderPass();
         vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
                 vk::PipelineCreateFlags(),
@@ -283,82 +284,14 @@ namespace tt {
                 pipelineLayout,
                 renderPass
         };
-        graphicsPipeline = get().createGraphicsPipelineUnique(pipelineCache.get(), pipelineCreateInfo);
+        return get().createGraphicsPipelineUnique(pipelineCache.get(), pipelineCreateInfo);
     }
 
-    std::vector<vk::UniqueCommandBuffer>
-    Device::createCmdBuffers(vk::Buffer inputVertexBuffer,vk::Buffer inputIndexBuffer,
-                             uint32_t indexCount,
-                             tt::Swapchain &swapchain,
-                             vk::PipelineLayout pipelineLayout) {
-        std::cout<<__func__<<":allocateCommandBuffersUnique:"<<swapchain.getFrameBufferNum()<<std::endl;
-        std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
-                vk::CommandBufferAllocateInfo{commandPool.get(),
-                                              vk::CommandBufferLevel::ePrimary, swapchain.getFrameBufferNum()});
-
-        std::array<vk::ClearValue, 2> clearValues{
-                vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
-                vk::ClearDepthStencilValue{1.0f, 0},
-        };
-        uint32_t frameIndex = 0;
-        auto swapchainExtent = swapchain.getSwapchainExtent();
-        for(auto&cmdBuffer : commandBuffers){
-            //cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
-            //cmdBuffer->begin(vk::CommandBufferBeginInfo{});
-            {
-                CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
-                {
-                    RenderpassBeginHandle cmdHandleRenderpassBegin{
-                        cmdBeginHandle,
-                        vk::RenderPassBeginInfo{
-                            swapchain.getRenderPass(),
-                            swapchain.getFrameBuffer()[frameIndex].get(),
-                            vk::Rect2D{
-                                vk::Offset2D{},
-                                    swapchain.getSwapchainExtent()
-                            },
-                            clearValues.size(),clearValues.data()
-                        }
-                    };
-                    vk::Viewport viewport{
-                            0, 0, swapchainExtent.width, swapchainExtent.height, 0.0f, 1.0f
-                    };
-                    cmdHandleRenderpassBegin.setViewport(0,1,&viewport);
-                    vk::Rect2D scissors{vk::Offset2D{}, swapchainExtent};
-                    cmdHandleRenderpassBegin.setScissor(0,1,&scissors);
-
-                    cmdHandleRenderpassBegin.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.get());
-                    std::array<vk::DescriptorSet, 1> tmpDescriptorSets{
-                            descriptorSets[0].get()
-                    };
-                    cmdHandleRenderpassBegin.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0,
-                                                 tmpDescriptorSets, std::vector<uint32_t>{});
-                    vk::DeviceSize offsets[1] = {0};
-                    cmdHandleRenderpassBegin.bindVertexBuffers(0, 1, &inputVertexBuffer, offsets);
-                    cmdHandleRenderpassBegin.bindIndexBuffer(inputIndexBuffer,0,vk::IndexType::eUint32);
-                    cmdHandleRenderpassBegin.drawIndexed(indexCount,1,0,0,0);
-                }
-
-            }
-            ++frameIndex;
-        }
-        return commandBuffers;
-
-        //auto mvpBufferMemoryRq = getBufferMemoryRequirements(
-        //       mvpBuffer[frameIndex % SWAPCHAIN_NUM].get());
-        //memcpy(mapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get(), 0,
-        //                 mvpBufferMemoryRq.size,
-        //                 vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
-
-
-        //unmapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get());
-
-    }
 
     std::vector<vk::UniqueCommandBuffer>
     Device::createCmdBuffers(tt::Swapchain &swapchain,
-                             std::function<void(CommandBufferBeginHandle&)> functionBegin,
-                             std::function<void(RenderpassBeginHandle&)> functionRenderpassBegin) {
+                             std::function<void(RenderpassBeginHandle&)> functionRenderpassBegin,
+                             std::function<void(CommandBufferBeginHandle&)> functionBegin) {
         std::cout<<__func__<<":allocateCommandBuffersUnique:"<<swapchain.getFrameBufferNum()<<std::endl;
         std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
                 vk::CommandBufferAllocateInfo{commandPool.get(),
@@ -394,22 +327,24 @@ namespace tt {
             ++frameIndex;
         }
         return commandBuffers;
+    }
 
-        //auto mvpBufferMemoryRq = getBufferMemoryRequirements(
-        //       mvpBuffer[frameIndex % SWAPCHAIN_NUM].get());
-        //memcpy(mapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get(), 0,
-        //                 mvpBufferMemoryRq.size,
-        //                 vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
-
-
-        //unmapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get());
-
+    std::vector<vk::UniqueCommandBuffer>
+    Device::createCmdBuffers(size_t cmdNum, std::function<void(CommandBufferBeginHandle &)> functionBegin) {
+        std::cout<<__func__<<":allocateCommandBuffersUnique:"<<cmdNum<<std::endl;
+        std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
+                vk::CommandBufferAllocateInfo{commandPool.get(),
+                                              vk::CommandBufferLevel::ePrimary, cmdNum});
+        for(auto&cmdBuffer : commandBuffers){
+            CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
+            functionBegin(cmdBeginHandle);
+        }
+        return commandBuffers;
     }
 
     uint32_t
     Device::submitCmdBuffer(Swapchain &swapchain,std::vector<vk::UniqueCommandBuffer>& drawcommandBuffers) {
         auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-        //auto acquireNextImageFence = get().createFenceUnique(vk::FenceCreateInfo{});
         //std::cout << "acquireNextImageKHR:" << std::endl;
 
         auto currentBufferIndex = get().acquireNextImageKHR(swapchain.get(), UINT64_MAX,
@@ -426,12 +361,15 @@ namespace tt {
                 }
         };
         //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
-        get().getQueue(queueFamilyIndex, 0).submit(submitInfos, vk::Fence{});
+        auto renderFence = get().createFenceUnique(vk::FenceCreateInfo{});
+
+        get().getQueue(queueFamilyIndex, 0).submit(submitInfos, renderFence.get());
 
         auto presentRet = get().getQueue(queueFamilyIndex, 0).presentKHR(vk::PresentInfoKHR{
                 1, &renderSemaphore.get(), 1, &swapchain.get(),&currentBufferIndex.value});
         std::cout << "index:" << currentBufferIndex.value<<"\tpresentRet:"<<vk::to_string(presentRet)<< std::endl;
 
+        get().waitForFences(1,&renderFence.get(),true,1000000);
         return 0;
     }
 
@@ -450,17 +388,16 @@ namespace tt {
                                     1,
                                     vk::SampleCountFlagBits::e1,
                                     vk::ImageTiling::eOptimal,
-                                    imageUsageFlags,
-                                    vk::SharingMode::eExclusive});
+                                    imageUsageFlags});
 
         auto imageMemoryRq = get().getImageMemoryRequirements(std::get<vk::UniqueImage>(IVM).get());
-        auto typeIndex = findMemoryTypeIndex(imageMemoryRq.memoryTypeBits,
-                                             vk::MemoryPropertyFlagBits::eDeviceLocal);
+        //auto typeIndex = findMemoryTypeIndex(imageMemoryRq.memoryTypeBits,
+        //                                     vk::MemoryPropertyFlagBits::eDeviceLocal);
         std::get<vk::UniqueDeviceMemory>(IVM) = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
                 imageMemoryRq.size, findMemoryTypeIndex(imageMemoryRq.memoryTypeBits,
                                                         vk::MemoryPropertyFlagBits::eDeviceLocal)
         });
-        std::cout << "ImageMemory:alloc index:" << typeIndex << std::endl;
+        //std::cout << "ImageMemory:alloc index:" << typeIndex << std::endl;
         get().bindImageMemory(std::get<vk::UniqueImage>(IVM).get(),
                         std::get<vk::UniqueDeviceMemory>(IVM).get(), 0);
 
@@ -498,8 +435,8 @@ namespace tt {
     }
 
 
-#if 0
 
+#if 0
     void Device::buildSubmitThread(vk::SurfaceKHR &surfaceKHR) {
         submitExitFlag = false;
         return;
@@ -785,9 +722,9 @@ namespace tt {
                             0, 1, 0, 1}
             }));
 
-
-        auto defaultDevFormatProps = physicalDevice.getFormatProperties(depthFormat);
 /*
+        auto defaultDevFormatProps = physicalDevice.getFormatProperties(depthFormat);
+
         vk::ImageTiling tiling;
         if (defaultDevFormatProps.linearTilingFeatures &
             vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
@@ -802,36 +739,7 @@ namespace tt {
         */
         depth = device.createImageAndMemory(depthFormat, vk::Extent3D{swapchainExtent.width,
                                                                       swapchainExtent.height, 1});
-/*
-        depthImage = device.createImageUnique(vk::ImageCreateInfo{vk::ImageCreateFlags(),
-                                                                  vk::ImageType::e2D,
-                                                                  depthFormat,
-                                                                  vk::Extent3D{
-                                                                          swapchainExtent.width,
-                                                                          swapchainExtent.height,
-                                                                          1},
-                                                                  1,
-                                                                  1,
-                                                                  vk::SampleCountFlagBits::e1,
-                                                                  vk::ImageTiling::eOptimal,
-                                                                  vk::ImageUsageFlagBits::eDepthStencilAttachment |
-                                                                  vk::ImageUsageFlagBits::eTransientAttachment,
-                                                                  vk::SharingMode::eExclusive});
 
-        depthImageMemory = device.allocBindImageMemory(depthImage.get(),
-                                                       vk::MemoryPropertyFlagBits::eDeviceLocal);
-
-        depthImageView = device.createImageViewUnique(
-                vk::ImageViewCreateInfo{vk::ImageViewCreateFlags(),
-                                        depthImage.get(),
-                                        vk::ImageViewType::e2D,
-                                        depthFormat,
-                                        vk::ComponentMapping{},
-                                        vk::ImageSubresourceRange{
-                                                vk::ImageAspectFlagBits::eDepth |
-                                                vk::ImageAspectFlagBits::eStencil,
-                                                0, 1, 0, 1}
-                });        */
         createRenderpass(device);
 
         frameBuffers.clear();
