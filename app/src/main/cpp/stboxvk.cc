@@ -51,9 +51,6 @@ namespace tt {
         );
         devicePtr->descriptorSets = devicePtr->createDescriptorSets(descriptorSetLayout);
 
-        //static auto Model = glm::mat4{1.0f};
-
-
         auto swapchainExtent = swapchainPtr->getSwapchainExtent();
 
         static auto Projection =glm::perspective(glm::radians(60.0f), static_cast<float>(swapchainExtent.width) / static_cast<float>(swapchainExtent.height), 0.1f, 256.0f);
@@ -64,19 +61,13 @@ namespace tt {
                 glm::vec3(0, 1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
         );
 
-        //glm::rotate(View, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        //static auto Clip = glm::mat4{1.0f, 0.0f, 0.0f, 0.0f,
-        //                             0.0f, 1.0f, 0.0f, 0.0f,
-        //                             0.0f, 0.0f, 0.5f,  0.0f,
-        //                             0.0f, 0.0f, 0.5f, 1.0f};
-
         static auto mvpMat4 =  Projection  * View ;
-        //std::cout<<__func__<< static_cast<VkBuffer>(std::get<vk::UniqueBuffer>(mvpBuffer).get())<<std::endl;
+
         devicePtr->mvpBuffer = devicePtr->createBufferAndMemory(sizeof(glm::mat4),
                                                  vk::BufferUsageFlagBits::eUniformBuffer,
                                                  vk::MemoryPropertyFlagBits::eHostVisible |
                                                  vk::MemoryPropertyFlagBits::eHostCoherent);
-        //std::cout<<__func__<< static_cast<VkBuffer>(std::get<vk::UniqueBuffer>(mvpBuffer).get())<<std::endl;
+
         {
             auto mvpBuffer_ptr = devicePtr->mapMemoryAndSize(devicePtr->mvpBuffer);
             //todo copy to buffer
@@ -86,18 +77,13 @@ namespace tt {
 
 
         std::vector<VertexUV> vertices{
-                {{1.0f,  2.0f,  0.0f, 1.0f}, {1.0f, 1.0f}},
-                {{-1.0f, 3.0f,  0.0f, 1.0f}, {0.0f, 1.0f}},
+                {{1.0f,  1.0f,  0.0f, 1.0f}, {1.0f, 1.0f}},
+                {{-1.0f, 1.0f,  0.0f, 1.0f}, {0.0f, 1.0f}},
                 {{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
                 {{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
         };
 
-        /*std::vector<Vertex> vertices2{
-                {1.0f,  1.0f,  0.0f, 1.0f, 0.0f, 1.0f,1.0f,1.0f},
-                {-1.0f, 1.0f,  0.0f, 1.0f, 0.0f, 1.0f,1.0f,1.0f},
-                {-1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f,1.0f,1.0f},
-                {1.0f,  -1.0f, 0.0f, 1.0f, 0.0f, 1.0f,1.0f,1.0f}
-        };*/
+
         auto pipelineLayout = devicePtr->createPipelineLayout(descriptorSetLayout);
         devicePtr->graphicsPipeline = devicePtr->createPipeline(sizeof(decltype(vertices)::value_type), app, *swapchainPtr,
                                   pipelineLayout.get());
@@ -206,27 +192,12 @@ namespace tt {
                     }
             };
             devicePtr->graphsQueue().submit(submitInfos, fence.get());
-            (*devicePtr)->waitForFences(1,&fence.get(),1,100000000000);
-
+            devicePtr->waitFence(fence.get());
         }
 
-
-        vk::SamplerCreateInfo samplerCreateInfo{vk::SamplerCreateFlags(),
-                                                vk::Filter::eLinear,vk::Filter::eLinear,
-                                                vk::SamplerMipmapMode::eLinear,
-                                                vk::SamplerAddressMode::eRepeat,
-                                                vk::SamplerAddressMode::eRepeat,
-                                                vk::SamplerAddressMode::eRepeat,
-                                                0,
-                                                devicePtr->phyDevice().getFeatures().samplerAnisotropy,
-                                                devicePtr->phyDevice().getProperties().limits.maxSamplerAnisotropy,
-                                                0,vk::CompareOp::eNever,0,tex2d.levels(),vk::BorderColor::eFloatOpaqueWhite,0
-        };
-        auto sampler = (*devicePtr)->createSamplerUnique(samplerCreateInfo);
-        vk::DescriptorImageInfo descriptorImageInfo{
-            sampler.get(),std::get<vk::UniqueImageView >(sampleImage).get(),vk::ImageLayout::eShaderReadOnlyOptimal
-        };
-        auto descriptorBufferInfo = devicePtr->mvpBuffer.getDescriptorBufferInfo();
+        auto sampler = devicePtr->createSampler(tex2d.levels());
+        auto descriptorImageInfo = devicePtr->getDescriptorImageInfo(sampleImage,sampler.get());
+        auto descriptorBufferInfo = devicePtr->getDescriptorBufferInfo(devicePtr->mvpBuffer);
 
         std::array<vk::WriteDescriptorSet,2> writeDes{
                 vk::WriteDescriptorSet{
@@ -259,7 +230,7 @@ namespace tt {
             cmdHandleRenderpassBegin.bindIndexBuffer(std::get<vk::UniqueBuffer>(devicePtr->indexBuffer).get(),0,vk::IndexType::eUint32);
             cmdHandleRenderpassBegin.drawIndexed(indices.size(),1,0,0,0);
         });
-        devicePtr->submitCmdBuffer(*swapchainPtr,devicePtr->mianBuffers);
+        devicePtr->submitCmdBufferAndWait(*swapchainPtr, devicePtr->mianBuffers);
     }
 
     void stboxvk::cleanWindow() {

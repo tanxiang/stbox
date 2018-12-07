@@ -79,11 +79,11 @@ namespace tt {
     uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
                                             vk::SurfaceKHR surface) {
         auto queueFamilyProperties = PhyDevice.getQueueFamilyProperties();
-        std::cout << "getQueueFamilyProperties size : "
-                  << queueFamilyProperties.size() << std::endl;
+        //std::cout << "getQueueFamilyProperties size : "
+        //          << queueFamilyProperties.size() << std::endl;
         for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {
-            std::cout << "QueueFamilyProperties : " << i << "\tflags:"
-                      << vk::to_string(queueFamilyProperties[i].queueFlags) << std::endl;
+            //std::cout << "QueueFamilyProperties : " << i << "\tflags:"
+            //          << vk::to_string(queueFamilyProperties[i].queueFlags) << std::endl;
             if (PhyDevice.getSurfaceSupportKHR(i, surface) &&
                 (queueFamilyProperties[i].queueFlags & flags)) {
                 std::cout << "default_queue_index :" << i << "\tgetSurfaceSupportKHR:true"
@@ -181,8 +181,6 @@ namespace tt {
                                                         android_app *androidAppCtx) {
         // Read the file
         auto fileContent = loadDataFromAssets(filePath,androidAppCtx);
-        std::cout<<filePath<<":file length:" <<fileContent.size() <<std::endl;
-
         return get().createShaderModuleUnique(vk::ShaderModuleCreateInfo{
                 vk::ShaderModuleCreateFlags(), fileContent.size(),
                 reinterpret_cast<const uint32_t *>(fileContent.data())});
@@ -342,35 +340,36 @@ namespace tt {
         return commandBuffers;
     }
 
-    uint32_t
-    Device::submitCmdBuffer(Swapchain &swapchain,std::vector<vk::UniqueCommandBuffer>& drawcommandBuffers) {
-        auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-        //std::cout << "acquireNextImageKHR:" << std::endl;
-
+    vk::UniqueFence Device::submitCmdBuffer(Swapchain &swapchain,
+                                            std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers,
+                                            vk::Semaphore &imageAcquiredSemaphore,
+                                            vk::Semaphore &renderSemaphore) {
         auto currentBufferIndex = get().acquireNextImageKHR(swapchain.get(), UINT64_MAX,
-                imageAcquiredSemaphore.get(), nullptr);
-
-        auto renderSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+                                                            imageAcquiredSemaphore, nullptr);
 
         vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
         std::array<vk::SubmitInfo, 1> submitInfos{
                 vk::SubmitInfo{
-                        1, &imageAcquiredSemaphore.get(), &pipelineStageFlags,
+                        1, &imageAcquiredSemaphore, &pipelineStageFlags,
                         1, &drawcommandBuffers[currentBufferIndex.value].get(),
-                        1, &renderSemaphore.get()
+                        1, &renderSemaphore
                 }
         };
-        //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
         auto renderFence = get().createFenceUnique(vk::FenceCreateInfo{});
-
         get().getQueue(queueFamilyIndex, 0).submit(submitInfos, renderFence.get());
-
         auto presentRet = get().getQueue(queueFamilyIndex, 0).presentKHR(vk::PresentInfoKHR{
-                1, &renderSemaphore.get(), 1, &swapchain.get(),&currentBufferIndex.value});
+                1, &renderSemaphore, 1, &swapchain.get(),&currentBufferIndex.value});
         std::cout << "index:" << currentBufferIndex.value<<"\tpresentRet:"<<vk::to_string(presentRet)<< std::endl;
+        return renderFence;
+    }
 
-        get().waitForFences(1,&renderFence.get(),true,1000000);
-        return 0;
+    void Device::submitCmdBufferAndWait(Swapchain &swapchain,
+                                        std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers) {
+        auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+        auto renderSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+        auto renderFence = submitCmdBuffer(swapchain,drawcommandBuffers,imageAcquiredSemaphore.get(),renderSemaphore.get());
+        waitFence(renderFence.get());
+        //wait renderFence then free renderSemaphore imageAcquiredSemaphore
     }
 
     Device::ImageViewMemory Device::createImageAndMemory(vk::Format format, vk::Extent3D extent3D,
@@ -391,13 +390,10 @@ namespace tt {
                                     imageUsageFlags});
 
         auto imageMemoryRq = get().getImageMemoryRequirements(std::get<vk::UniqueImage>(IVM).get());
-        //auto typeIndex = findMemoryTypeIndex(imageMemoryRq.memoryTypeBits,
-        //                                     vk::MemoryPropertyFlagBits::eDeviceLocal);
         std::get<vk::UniqueDeviceMemory>(IVM) = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
                 imageMemoryRq.size, findMemoryTypeIndex(imageMemoryRq.memoryTypeBits,
                                                         vk::MemoryPropertyFlagBits::eDeviceLocal)
         });
-        //std::cout << "ImageMemory:alloc index:" << typeIndex << std::endl;
         get().bindImageMemory(std::get<vk::UniqueImage>(IVM).get(),
                         std::get<vk::UniqueDeviceMemory>(IVM).get(), 0);
 
@@ -434,194 +430,6 @@ namespace tt {
         return BVM;
     }
 
-
-
-#if 0
-    void Device::buildSubmitThread(vk::SurfaceKHR &surfaceKHR) {
-        submitExitFlag = false;
-        return;
-        submitThread = std::make_unique<std::thread>([this, &surfaceKHR] {
-            try {
-                while (draw_run(*this, surfaceKHR));
-            }
-            catch (std::system_error systemError) {
-                std::cout << "got system error:" << systemError.what() << "!#" << systemError.code()
-                          << std::endl;
-            }
-            catch (std::logic_error logicError) {
-                std::cout << "got logic error:" << logicError.what() << std::endl;
-            }
-        });
-    }
-
-    void Device::stopSubmitThread() {
-        {
-            std::lock_guard<std::mutex> lock{mutexDraw};
-            submitExitFlag = true;
-        }
-        cvDraw.notify_all();
-        submitThread->join();
-    }
-
-    void Device::swapchainPresent() {
-        if (frameSubmitIndex.empty()) {
-            cvDraw.notify_all();
-            return;
-        }
-        uint32_t index = frameSubmitIndex.front();
-        auto waitRet = waitForFences(1, std::get<vk::UniqueFence>(
-                vkSwapChainBuffers[index]).operator->(), true, 100000000);
-        if (waitRet != vk::Result::eSuccess) {
-            std::lock_guard<std::mutex> lock{mutexDraw};
-            std::cout << "waitForFences ret:" << vk::to_string(waitRet) << std::endl;
-            //todo fix timeout
-            frameSubmitIndex.pop();
-            return;
-        }
-        {
-            std::lock_guard<std::mutex> lock{mutexDraw};
-            frameSubmitIndex.pop();
-            getQueue(queueFamilyIndex, 0).presentKHR(vk::PresentInfoKHR{
-                    0, nullptr, 1, &swapchainKHR.get(), &index
-            });
-        }
-        //std::cout << "frameSubmitIndex pop :" << frameSubmitIndex.size() <<" idx :"<<index<< std::endl;
-
-        if (frameSubmitIndex.size() < 2)
-            cvDraw.notify_all();
-
-    }
-
-    void Device::swapchainPresentSync() {
-
-        auto swapchainExtent = getSwapchainExtent();
-        static auto Projection = glm::perspective(glm::radians(45.0f),
-                                                  static_cast<float>(swapchainExtent.width) /
-                                                  static_cast<float>(swapchainExtent.height), 0.1f,
-                                                  100.0f);
-        static auto View = glm::lookAt(
-                glm::vec3(-5, 3, -10),  // Camera is at (-5,3,-10), in World Space
-                glm::vec3(0, 0, 0),     // and looks at the origin
-                glm::vec3(0, -1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
-        );
-        glm::rotate(View, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        static auto Model = glm::mat4{1.0f};
-        // Vulkan clip space has inverted Y and half Z.
-        static auto Clip = glm::mat4{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                                     0.5f,
-                                     0.0f,
-                                     0.0f, 0.0f, 0.5f, 1.0f};
-
-        static vk::UniqueBuffer vertexBuffer;
-        static vk::UniqueDeviceMemory vertexMemory;
-        if (!vertexBuffer || !vertexMemory) {
-            vertexBuffer = createBufferUnique(
-                    vk::BufferCreateInfo{
-                            vk::BufferCreateFlags(),
-                            sizeof(g_vb_solid_face_colors_Data),
-                            vk::BufferUsageFlagBits::eVertexBuffer});
-            vertexMemory = allocMemoryAndWrite(vertexBuffer.get(),
-                                               (void *) &g_vb_solid_face_colors_Data,
-                                               sizeof(g_vb_solid_face_colors_Data),
-                                               vk::MemoryPropertyFlags() |
-                                               vk::MemoryPropertyFlagBits::eHostVisible |
-                                               vk::MemoryPropertyFlagBits::eHostCoherent);
-        }
-        auto MVP = Clip * Projection * glm::rotate(View, glm::radians(
-                (float) std::chrono::steady_clock::now().time_since_epoch().count() /
-                10000000.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * Model;
-        static int32_t frameIndex;
-
-        auto &cmdBuffer = commandBuffers[frameIndex % SWAPCHAIN_NUM].get();
-        auto mvpBufferMemoryRq = getBufferMemoryRequirements(
-                mvpBuffer[frameIndex % SWAPCHAIN_NUM].get());
-        memcpy(mapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get(), 0,
-                         mvpBufferMemoryRq.size,
-                         vk::MemoryMapFlagBits()), &MVP, sizeof(MVP));
-
-
-        unmapMemory(mvpMemorys[frameIndex % SWAPCHAIN_NUM].get());
-
-        {//FIXME acquireNextImageKHR present complete ???
-            std::unique_lock<std::mutex> lockFrame{mutexDraw};
-            cvDraw.wait(lockFrame,
-                        [this]() {
-                            return frameSubmitIndex.size() < SWAPCHAIN_NUM - 1 || submitExitFlag;
-                        });
-            if (submitExitFlag)
-                return;
-        }
-        auto imageAcquiredSemaphore = createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-        //auto acquireNextImageFence = createFenceUnique(vk::FenceCreateInfo{});
-        //std::cout << "acquireNextImageKHR:" << std::endl;
-        auto currentBufferIndex = acquireNextImageKHR(swapchainKHR.get(), UINT64_MAX,
-                                                      imageAcquiredSemaphore.get(),
-                                                      vk::Fence{});
-        //std::cout << "acquireNextImageKHR:" << vk::to_string(currentBufferIndex.result)
-        //          << currentBufferIndex.value << std::endl;
-        static std::array<vk::ClearValue, 2> clearValues{
-                vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
-                vk::ClearDepthStencilValue{1.0f, 0},
-        };
-        cmdBuffer.begin(vk::CommandBufferBeginInfo{});
-
-        cmdBuffer.beginRenderPass(vk::RenderPassBeginInfo{
-                renderPass.get(),
-                std::get<vk::UniqueFramebuffer>(vkSwapChainBuffers[currentBufferIndex.value]).get(),
-                vk::Rect2D{vk::Offset2D{}, swapchainExtent},
-                clearValues.size(), clearValues.data()
-        }, vk::SubpassContents::eInline);
-        cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.get());
-        std::array<vk::DescriptorSet, 1> tmpDescriptorSets{
-                this->descriptorSets[frameIndex % 2].get()};
-        cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout.get(), 0,
-                                     tmpDescriptorSets, std::vector<uint32_t>{});
-        vk::DeviceSize offsets[1] = {0};
-        cmdBuffer.bindVertexBuffers(0, 1, &vertexBuffer.get(), offsets);
-        cmdBuffer.draw(0, 0, 0, 0);
-        cmdBuffer.endRenderPass();
-        cmdBuffer.end();
-        vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-        std::array<vk::SubmitInfo, 1> submitInfos{
-                vk::SubmitInfo{
-                        1, &imageAcquiredSemaphore.get(), &pipelineStageFlags,
-                        1, &cmdBuffer
-                }
-        };
-        //getFenceFdKHR(vk::FenceGetFdInfoKHR{});
-        getQueue(queueFamilyIndex, 0).submit(submitInfos, std::get<vk::UniqueFence>(
-                vkSwapChainBuffers[currentBufferIndex.value]).get());
-        //currentBufferIndex.value;
-        //std::cout << "push index:" << currentBufferIndex.value << std::endl;
-
-        {
-            std::lock_guard<std::mutex> lock{mutexDraw};
-            frameSubmitIndex.push(currentBufferIndex.value);
-        }
-        frameIndex++;
-        auto waitRet = waitForFences(1, &std::get<vk::UniqueFence>(
-                vkSwapChainBuffers[currentBufferIndex.value]).get(), true, 100000000);
-        if (waitRet != vk::Result::eSuccess) {
-            std::lock_guard<std::mutex> lock{mutexDraw};
-            std::cout << "waitForFences ret:" << vk::to_string(waitRet) << std::endl;
-            //todo fix timeout
-            frameSubmitIndex.pop();
-            return;
-        }
-        {
-            std::lock_guard<std::mutex> lock{mutexDraw};
-            frameSubmitIndex.pop();
-            getQueue(queueFamilyIndex, 0).presentKHR(vk::PresentInfoKHR{
-                    0, nullptr, 1, &swapchainKHR.get()
-            });
-        }
-        //std::cout << "frameSubmitIndex pop :" << frameSubmitIndex.size() <<" idx :"<<index<< std::endl;
-
-        if (frameSubmitIndex.size() < 2)
-            cvDraw.notify_all();
-
-    }
-#endif
 
     Swapchain::Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device)
             : surface{std::move(sf)} {
@@ -722,21 +530,6 @@ namespace tt {
                             0, 1, 0, 1}
             }));
 
-/*
-        auto defaultDevFormatProps = physicalDevice.getFormatProperties(depthFormat);
-
-        vk::ImageTiling tiling;
-        if (defaultDevFormatProps.linearTilingFeatures &
-            vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
-            tiling = vk::ImageTiling::eLinear;
-        } else if (defaultDevFormatProps.optimalTilingFeatures &
-                   vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
-            tiling = vk::ImageTiling::eOptimal;
-        } else {
-            std::cout << "vk::ImageTiling no match exit!" << std::endl;
-            exit(-1);//todo throw
-        }
-        */
         depth = device.createImageAndMemory(depthFormat, vk::Extent3D{swapchainExtent.width,
                                                                       swapchainExtent.height, 1});
 

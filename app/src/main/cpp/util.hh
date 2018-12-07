@@ -58,11 +58,8 @@ namespace tt {
     class Device : public vk::UniqueDevice {
     public:
         using ImageViewMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueDeviceMemory>;
-        struct BufferViewMemory : public std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>{
-            auto getDescriptorBufferInfo(vk::DeviceSize size = VK_WHOLE_SIZE,vk::DeviceSize offset = 0){
-                return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(*this).get(),offset,size};
-            }
-        };
+
+        using BufferViewMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>;
 
         using BufferViewMemoryPtr = std::unique_ptr<void, std::function<void(void *)> >;
 
@@ -74,7 +71,7 @@ namespace tt {
         uint32_t queueFamilyIndex;
         vk::UniqueDescriptorPool descriptorPoll = ttcreateDescriptorPoolUnique();
         vk::UniquePipelineCache pipelineCache = get().createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
-        vk::UniqueCommandPool commandPool;
+        vk::UniqueCommandPool commandPool = get().createCommandPoolUnique(vk::CommandPoolCreateInfo{vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueFamilyIndex});
 
     public:
 
@@ -86,12 +83,12 @@ namespace tt {
         //std::vector<vk::UniqueCommandBuffer> commandBuffers;
 
         //std::vector<vk::UniqueFence> commandBufferFences;
-        struct {
-            // Swap chain image presentation
-            vk::Semaphore presentComplete;
-            // Command buffer submission and execution
-            vk::Semaphore renderComplete;
-        } semaphores;
+        //struct {
+            //Swap chain image presentation
+            //vk::Semaphore presentComplete;
+            //Command buffer submission and execution
+            //vk::Semaphore renderComplete;
+        //} semaphores;
 
 
 
@@ -115,11 +112,8 @@ namespace tt {
         //Device(){}
 
         Device(vk::UniqueDevice &&dev, vk::PhysicalDevice &phy, uint32_t qidx) :
-                vk::UniqueDevice{std::move(dev)}, physicalDevice{phy}, queueFamilyIndex{qidx},
-                commandPool{get().createCommandPoolUnique(
-                        vk::CommandPoolCreateInfo{
-                                vk::CommandPoolCreateFlagBits::eResetCommandBuffer, qidx})
-                } {}
+                vk::UniqueDevice{std::move(dev)}, physicalDevice{phy}, queueFamilyIndex{qidx}
+                {}
 
         auto phyDevice() {
             return physicalDevice;
@@ -127,6 +121,14 @@ namespace tt {
 
         auto getCommandPool(){
             return commandPool.get();
+        }
+
+        auto transQueue(){
+            return get().getQueue(queueFamilyIndex, 0);
+        }
+
+        auto compQueue(){
+            return get().getQueue(queueFamilyIndex, 0);
         }
 
         auto graphsQueue(){
@@ -141,8 +143,6 @@ namespace tt {
                     });
         }
 
-        //
-
         vk::UniquePipelineLayout  createPipelineLayout(vk::UniqueDescriptorSetLayout &descriptorSetLayout) {
             return get().createPipelineLayoutUnique(
                     vk::PipelineLayoutCreateInfo{
@@ -150,7 +150,6 @@ namespace tt {
                             nullptr
                     });
         }
-
 
         auto createDescriptorSets(vk::UniqueDescriptorSetLayout &descriptorSetLayout) {
             std::array<vk::DescriptorSetLayout, 1> descriptorSetLayouts{descriptorSetLayout.get()};
@@ -186,9 +185,21 @@ namespace tt {
         createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
                               vk::MemoryPropertyFlags memoryPropertyFlags);
 
+        auto createSampler(uint32_t levels){
+            return get().createSamplerUnique(vk::SamplerCreateInfo {vk::SamplerCreateFlags(),
+                                                                    vk::Filter::eLinear,vk::Filter::eLinear,
+                                                                    vk::SamplerMipmapMode::eLinear,
+                                                                    vk::SamplerAddressMode::eRepeat,
+                                                                    vk::SamplerAddressMode::eRepeat,
+                                                                    vk::SamplerAddressMode::eRepeat,
+                                                                    0,
+                                                                    phyDevice().getFeatures().samplerAnisotropy,
+                                                                    phyDevice().getProperties().limits.maxSamplerAnisotropy,
+                                                                    0,vk::CompareOp::eNever,0,levels,vk::BorderColor::eFloatOpaqueWhite,0});
+        }
+
         template<typename Tuple>
-        BufferViewMemoryPtr
-        mapMemoryAndSize(Tuple &tupleMemoryAndSize, size_t offset = 0){
+        auto mapMemoryAndSize(Tuple &tupleMemoryAndSize, size_t offset = 0){
             return BufferViewMemoryPtr{
                     get().mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
                                     offset,
@@ -200,6 +211,17 @@ namespace tt {
             };
         }
 
+        template<typename Tuple>
+        auto getDescriptorBufferInfo(Tuple &tupleMemoryAndSize,vk::DeviceSize size = VK_WHOLE_SIZE,vk::DeviceSize offset = 0){
+            return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(tupleMemoryAndSize).get(),offset,size};
+        }
+
+        template<typename Tuple>
+        auto getDescriptorImageInfo(Tuple &tupleImage,vk::Sampler &sampler){
+            return vk::DescriptorImageInfo{
+                    sampler,std::get<vk::UniqueImageView >(tupleImage).get(),vk::ImageLayout::eShaderReadOnlyOptimal
+            };
+        }
 
         vk::UniquePipeline createPipeline(uint32_t dataStepSize, android_app *app, Swapchain &swapchain,
                             vk::PipelineLayout pipelineLayout);
@@ -215,8 +237,16 @@ namespace tt {
                          std::function<void(CommandBufferBeginHandle&)> = [](CommandBufferBeginHandle&){});
 
 
-        uint32_t
-        submitCmdBuffer(Swapchain &swapchain,std::vector<vk::UniqueCommandBuffer>& drawcommandBuffers);
+        vk::UniqueFence submitCmdBuffer(Swapchain &swapchain,
+                                        std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers,
+                                        vk::Semaphore &imageAcquiredSemaphore,vk::Semaphore &renderSemaphore);
+
+        void submitCmdBufferAndWait(Swapchain &swapchain,
+                                    std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers);
+
+        auto waitFence(vk::Fence& Fence){
+            return get().waitForFences(1,&Fence,true,10000000);
+        }
 
     };
 
