@@ -237,6 +237,17 @@ namespace tt {
                          std::function<void(CommandBufferBeginHandle&)> = [](CommandBufferBeginHandle&){});
 
 
+        vk::UniqueFence submitCmdBuffer(vk::CommandBuffer &commandBuffer){
+            auto fence = get().createFenceUnique(vk::FenceCreateInfo{});
+            std::array<vk::SubmitInfo, 1> submitInfos{
+                    vk::SubmitInfo{
+                            0, nullptr, nullptr,
+                            1, &commandBuffer
+                    }
+            };
+            return fence;
+        }
+
         vk::UniqueFence submitCmdBuffer(Swapchain &swapchain,
                                         std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers,
                                         vk::Semaphore &imageAcquiredSemaphore,vk::Semaphore &renderSemaphore);

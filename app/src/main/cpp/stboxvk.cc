@@ -23,16 +23,9 @@ namespace tt {
     void stboxvk::initWindow(android_app *app, tt::Instance &instance) {
         assert(instance);
         auto surface = instance.connectToWSI(app->window);
-        //std::cout<<"instance.connectToWSI"<<std::endl;
-        //auto phyDevs = instance->enumeratePhysicalDevices();
-        //std::cout<<"instance.connectToDevice"<<std::endl
         if(!devicePtr || !devicePtr->checkSurfaceSupport(surface.get()))
             devicePtr = instance.connectToDevice(surface.get());//reconnect
-        //std::cout<<"instance.connectToDevice"<<std::endl;
         swapchainPtr = std::make_unique<tt::Swapchain>(std::move(surface), *devicePtr);
-
-        //std::cout<<"create Swapchain"<<std::endl;
-
         auto descriptorSetLayout = devicePtr->createDescriptorSetLayoutUnique(
                 std::vector<vk::DescriptorSetLayoutBinding>{
                         vk::DescriptorSetLayoutBinding{
@@ -73,8 +66,6 @@ namespace tt {
             //todo copy to buffer
             memcpy(mvpBuffer_ptr.get(), &mvpMat4, std::get<size_t>(devicePtr->mvpBuffer));
         }
-
-
 
         std::vector<VertexUV> vertices{
                 {{1.0f,  1.0f,  0.0f, 1.0f}, {1.0f, 1.0f}},
@@ -184,15 +175,8 @@ namespace tt {
                                                                    1, &imageMemoryBarrierToGeneral);
                                                        });
 
-            auto fence = (*devicePtr)->createFenceUnique(vk::FenceCreateInfo{});
-            std::array<vk::SubmitInfo, 1> submitInfos{
-                    vk::SubmitInfo{
-                            0, nullptr, nullptr,
-                            1, &copyCmd[0].get()
-                    }
-            };
-            devicePtr->graphsQueue().submit(submitInfos, fence.get());
-            devicePtr->waitFence(fence.get());
+            auto copyFence = devicePtr->submitCmdBuffer(copyCmd[0].get());
+            devicePtr->waitFence(copyFence.get());
         }
 
         auto sampler = devicePtr->createSampler(tex2d.levels());
