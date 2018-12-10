@@ -245,6 +245,7 @@ namespace tt {
                             1, &commandBuffer
                     }
             };
+            graphsQueue().submit(submitInfos, fence.get());
             return fence;
         }
 
