@@ -78,9 +78,9 @@ namespace tt {
             };
 
 
-            auto pipelineLayout = devicePtr->createPipelineLayout(descriptorSetLayout);
+            devicePtr->pipelineLayout = devicePtr->createPipelineLayout(descriptorSetLayout);
             devicePtr->graphicsPipeline = devicePtr->createPipeline(sizeof(decltype(vertices)::value_type), app, windowExtent,
-                                                                    pipelineLayout.get());
+                                                                    devicePtr->pipelineLayout.get());
             devicePtr->vertexBuffer = devicePtr->createBufferAndMemory(
                     sizeof(decltype(vertices)::value_type) * vertices.size(),
                     vk::BufferUsageFlagBits::eVertexBuffer,
@@ -197,37 +197,37 @@ namespace tt {
                     }
             };
             (*devicePtr)->updateDescriptorSets(writeDes, nullptr);
-            swapchainPtr = std::make_unique<tt::Swapchain>(std::move(surface), *devicePtr,windowExtent);
 
-            devicePtr->mianBuffers = devicePtr->createCmdBuffers(*swapchainPtr,[&](RenderpassBeginHandle& cmdHandleRenderpassBegin){
-                vk::Viewport viewport{
-                        0, 0, windowExtent.width, windowExtent.height, 0.0f, 1.0f
-                };
-                cmdHandleRenderpassBegin.setViewport(0,1,&viewport);
-                vk::Rect2D scissors{vk::Offset2D{}, windowExtent};
-                cmdHandleRenderpassBegin.setScissor(0,1,&scissors);
-
-                cmdHandleRenderpassBegin.bindPipeline(vk::PipelineBindPoint::eGraphics, devicePtr->graphicsPipeline.get());
-                std::array<vk::DescriptorSet, 1> tmpDescriptorSets{
-                        devicePtr->descriptorSets[0].get()
-                };
-                cmdHandleRenderpassBegin.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout.get(), 0,
-                                                            tmpDescriptorSets, std::vector<uint32_t>{});
-                vk::DeviceSize offsets[1] = {0};
-                cmdHandleRenderpassBegin.bindVertexBuffers(0, 1, &std::get<vk::UniqueBuffer>(devicePtr->vertexBuffer).get(), offsets);
-                cmdHandleRenderpassBegin.bindIndexBuffer(std::get<vk::UniqueBuffer>(devicePtr->indexBuffer).get(),0,vk::IndexType::eUint32);
-                cmdHandleRenderpassBegin.drawIndexed(indices.size(),1,0,0,0);
-            });
 
         }
+        swapchainPtr = std::make_unique<tt::Swapchain>(std::move(surface), *devicePtr,windowExtent);
 
+        devicePtr->mianBuffers = devicePtr->createCmdBuffers(*swapchainPtr,[&](RenderpassBeginHandle& cmdHandleRenderpassBegin){
+            vk::Viewport viewport{
+                    0, 0, windowExtent.width, windowExtent.height, 0.0f, 1.0f
+            };
+            cmdHandleRenderpassBegin.setViewport(0,1,&viewport);
+            vk::Rect2D scissors{vk::Offset2D{}, windowExtent};
+            cmdHandleRenderpassBegin.setScissor(0,1,&scissors);
+
+            cmdHandleRenderpassBegin.bindPipeline(vk::PipelineBindPoint::eGraphics, devicePtr->graphicsPipeline.get());
+            std::array<vk::DescriptorSet, 1> tmpDescriptorSets{
+                    devicePtr->descriptorSets[0].get()
+            };
+            cmdHandleRenderpassBegin.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, devicePtr->pipelineLayout.get(), 0,
+                                                        tmpDescriptorSets, std::vector<uint32_t>{});
+            vk::DeviceSize offsets[1] = {0};
+            cmdHandleRenderpassBegin.bindVertexBuffers(0, 1, &std::get<vk::UniqueBuffer>(devicePtr->vertexBuffer).get(), offsets);
+            cmdHandleRenderpassBegin.bindIndexBuffer(std::get<vk::UniqueBuffer>(devicePtr->indexBuffer).get(),0,vk::IndexType::eUint32);
+            cmdHandleRenderpassBegin.drawIndexed(6,1,0,0,0);
+        });
         devicePtr->submitCmdBufferAndWait(*swapchainPtr, devicePtr->mianBuffers);
     }
 
     void stboxvk::cleanWindow() {
         std::cout << __func__ << std::endl;
         swapchainPtr.reset();
-        devicePtr.reset();
+        //devicePtr.reset();
     }
 
 }

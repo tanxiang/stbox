@@ -77,7 +77,7 @@ namespace tt {
 
     public:
         vk::UniqueRenderPass renderPass;
-
+        vk::UniquePipelineLayout pipelineLayout;
         vk::UniquePipeline graphicsPipeline;
         std::vector<vk::UniqueCommandBuffer> mianBuffers;
         std::vector<vk::UniqueDescriptorSet> descriptorSets;//{createDescriptorSets()};

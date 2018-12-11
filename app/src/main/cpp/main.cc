@@ -82,14 +82,13 @@ void choreographerCallback(long frameTimeNanos, void* data) {
 }
 */
 void Android_handle_cmd(android_app *app, int32_t cmd) {
-    static tt::Instance instance;
+    static tt::Instance instance = tt::createInstance();
     static tt::stboxvk appbox;
     try {
         switch (cmd) {
             case APP_CMD_INIT_WINDOW:
                 // The window is being shown, get it ready.
                 std::cout << "APP_CMD_INIT_WINDOW:" << cmd << std::endl;
-                instance = tt::createInstance();
                 appbox.initWindow(app, instance);
                 break;
 
@@ -124,7 +123,6 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 std::cout << "APP_CMD_RESUME:" << cmd << std::endl;
                 break;
             case APP_CMD_DESTROY:
-                instance.reset();
                 std::cout << "APP_CMD_DESTROY:" << cmd << std::endl;
                 break;
             default:
