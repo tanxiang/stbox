@@ -430,11 +430,10 @@ namespace tt {
     }
 
 
-    Swapchain::Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device)
-            : surface{std::move(sf)} {
+    Swapchain::Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device,vk::Extent2D windowExtent)
+            : surface{std::move(sf)} ,swapchainExtent{windowExtent}{
         auto physicalDevice = device.phyDevice();
         auto surfaceCapabilitiesKHR = physicalDevice.getSurfaceCapabilitiesKHR(surface.get());
-        std::tie(swapchainExtent.width, swapchainExtent.height) = AndroidGetWindowSize();
         //std::cout << "AndroidGetWindowSize() : " << swapchainExtent.width << " x "
         //          << swapchainExtent.height << std::endl;
         if (surfaceCapabilitiesKHR.currentExtent.width == 0xFFFFFFFF) {

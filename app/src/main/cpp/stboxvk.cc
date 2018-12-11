@@ -23,11 +23,14 @@ namespace tt {
     void stboxvk::initWindow(android_app *app, tt::Instance &instance) {
         assert(instance);
         auto surface = instance.connectToWSI(app->window);
+        vk::Extent2D windowExtent;
+        std::tie(windowExtent.width, windowExtent.height) = AndroidGetWindowSize(app);
+
         if (!devicePtr || !devicePtr->checkSurfaceSupport(surface.get())){
             devicePtr = instance.connectToDevice(surface.get());//reconnect
             devicePtr->renderPass = devicePtr->createRenderpass(devicePtr->getSurfaceDefaultFormat(surface.get()));//FIXME check surface format
         }
-        swapchainPtr = std::make_unique<tt::Swapchain>(std::move(surface), *devicePtr);
+        swapchainPtr = std::make_unique<tt::Swapchain>(std::move(surface), *devicePtr,windowExtent);
         auto descriptorSetLayout = devicePtr->createDescriptorSetLayoutUnique(
                 std::vector<vk::DescriptorSetLayoutBinding>{
                         vk::DescriptorSetLayoutBinding{
@@ -46,9 +49,9 @@ namespace tt {
         );
         devicePtr->descriptorSets = devicePtr->createDescriptorSets(descriptorSetLayout);
 
-        auto swapchainExtent = swapchainPtr->getSwapchainExtent();
+        //auto windowExtent = swapchainPtr->getSwapchainExtent();
 
-        static auto Projection =glm::perspective(glm::radians(60.0f), static_cast<float>(swapchainExtent.width) / static_cast<float>(swapchainExtent.height), 0.1f, 256.0f);
+        static auto Projection =glm::perspective(glm::radians(60.0f), static_cast<float>(windowExtent.width) / static_cast<float>(windowExtent.height), 0.1f, 256.0f);
 
         static auto View = glm::lookAt(
                 glm::vec3(8, 3, 10),  // Camera is at (-5,3,-10), in World Space
@@ -199,10 +202,10 @@ namespace tt {
 
         devicePtr->mianBuffers = devicePtr->createCmdBuffers(*swapchainPtr,[&](RenderpassBeginHandle& cmdHandleRenderpassBegin){
             vk::Viewport viewport{
-                0, 0, swapchainExtent.width, swapchainExtent.height, 0.0f, 1.0f
+                0, 0, windowExtent.width, windowExtent.height, 0.0f, 1.0f
             };
             cmdHandleRenderpassBegin.setViewport(0,1,&viewport);
-            vk::Rect2D scissors{vk::Offset2D{}, swapchainExtent};
+            vk::Rect2D scissors{vk::Offset2D{}, windowExtent};
             cmdHandleRenderpassBegin.setScissor(0,1,&scissors);
 
             cmdHandleRenderpassBegin.bindPipeline(vk::PipelineBindPoint::eGraphics, devicePtr->graphicsPipeline.get());

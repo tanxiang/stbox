@@ -281,13 +281,11 @@ namespace tt {
     public:
         //Swapchain(){}
 
-        Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device);
+        Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device,vk::Extent2D windowExtent);
 
         vk::Extent2D getSwapchainExtent() {
             return swapchainExtent;
         }
-
-
 
         auto getSwapchainImageNum() {
             return imageViews.size();

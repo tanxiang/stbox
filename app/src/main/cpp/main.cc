@@ -14,26 +14,18 @@
 // Header files.
 #include <android/choreographer.h>
 
-#include <android_native_app_glue.h>
 #include <cstring>
 //#include "shaderc/shaderc.hpp"
 #include "main.hh"
 #include "stboxvk.hh"
 #include "vertexdata.hh"
 
-static android_app *Android_application = nullptr;
 
-std::pair<int32_t, int32_t> AndroidGetWindowSize() {
+std::pair<int32_t, int32_t> AndroidGetWindowSize(android_app *Android_application) {
     // On Android, retrieve the window size from the native window.
     assert(Android_application != nullptr);
     return std::make_pair(ANativeWindow_getWidth(Android_application->window),
                           ANativeWindow_getHeight(Android_application->window));
-}
-
-
-ANativeWindow *AndroidGetApplicationWindow() {
-    assert(Android_application != nullptr);
-    return Android_application->window;
 }
 
 class AndroidBuffer : public std::streambuf {
@@ -223,7 +215,6 @@ void Android_process(struct android_app *app) {
 void android_main(struct android_app *app) {
     assert(app != nullptr);
     // Set static variables.
-    Android_application = app;
     // Set the callback to process system events
 
     app->onAppCmd = Android_handle_cmd;
