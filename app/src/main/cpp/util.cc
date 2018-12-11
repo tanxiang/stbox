@@ -266,7 +266,6 @@ namespace tt {
         vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{};
         vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{vk::PipelineMultisampleStateCreateFlags(),vk::SampleCountFlagBits::e1};
 
-        auto renderPass = swapchain.getRenderPass();
         vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
                 vk::PipelineCreateFlags(),
                 shaderStageCreateInfos.size(), shaderStageCreateInfos.data(),
@@ -280,7 +279,7 @@ namespace tt {
                 &pipelineColorBlendStateCreateInfo,
                 &pipelineDynamicStateCreateInfo,
                 pipelineLayout,
-                renderPass
+                renderPass.get()
         };
         return get().createGraphicsPipelineUnique(pipelineCache.get(), pipelineCreateInfo);
     }
@@ -309,7 +308,7 @@ namespace tt {
                     RenderpassBeginHandle cmdHandleRenderpassBegin{
                             cmdBeginHandle,
                             vk::RenderPassBeginInfo{
-                                    swapchain.getRenderPass(),
+                                    renderPass.get(),
                                     swapchain.getFrameBuffer()[frameIndex].get(),
                                     vk::Rect2D{
                                             vk::Offset2D{},
@@ -530,10 +529,10 @@ namespace tt {
                             0, 1, 0, 1}
             }));
 
-        depth = device.createImageAndMemory(depthFormat, vk::Extent3D{swapchainExtent.width,
+        depth = device.createImageAndMemory(device.getDepthFormat(), vk::Extent3D{swapchainExtent.width,
                                                                       swapchainExtent.height, 1});
 
-        createRenderpass(device);
+        //createRenderpass(device);
 
         frameBuffers.clear();
         for (auto &imageView : imageViews) {
@@ -541,7 +540,7 @@ namespace tt {
                                                      std::get<vk::UniqueImageView>(depth).get()};
             frameBuffers.emplace_back(device->createFramebufferUnique(vk::FramebufferCreateInfo{
                     vk::FramebufferCreateFlags(),
-                    renderPass.get(),
+                    device.renderPass.get(),
                     attachments.size(), attachments.data(),
                     swapchainExtent.width, swapchainExtent.height,
                     1
@@ -550,8 +549,8 @@ namespace tt {
 
     }
 
-    void Swapchain::createRenderpass(Device &device) {
-        auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
+    vk::UniqueRenderPass Device::createRenderpass(vk::SurfaceFormatKHR surfaceDefaultFormat) {
+        //auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
         std::array<vk::AttachmentDescription, 2> attachDescs{
                 vk::AttachmentDescription{
                         vk::AttachmentDescriptionFlags(),
@@ -614,7 +613,7 @@ namespace tt {
                         vk::DependencyFlagBits::eByRegion
                 }
         };
-        renderPass = device->createRenderPassUnique(vk::RenderPassCreateInfo{
+        return get().createRenderPassUnique(vk::RenderPassCreateInfo{
                 vk::RenderPassCreateFlags(),
                 attachDescs.size(), attachDescs.data(),
                 subpassDescs.size(), subpassDescs.data(),

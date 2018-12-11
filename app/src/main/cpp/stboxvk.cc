@@ -23,8 +23,10 @@ namespace tt {
     void stboxvk::initWindow(android_app *app, tt::Instance &instance) {
         assert(instance);
         auto surface = instance.connectToWSI(app->window);
-        if(!devicePtr || !devicePtr->checkSurfaceSupport(surface.get()))
+        if (!devicePtr || !devicePtr->checkSurfaceSupport(surface.get())){
             devicePtr = instance.connectToDevice(surface.get());//reconnect
+            devicePtr->renderPass = devicePtr->createRenderpass(devicePtr->getSurfaceDefaultFormat(surface.get()));//FIXME check surface format
+        }
         swapchainPtr = std::make_unique<tt::Swapchain>(std::move(surface), *devicePtr);
         auto descriptorSetLayout = devicePtr->createDescriptorSetLayoutUnique(
                 std::vector<vk::DescriptorSetLayoutBinding>{

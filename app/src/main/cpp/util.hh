@@ -63,7 +63,6 @@ namespace tt {
 
         using BufferViewMemoryPtr = std::unique_ptr<void, std::function<void(void *)> >;
 
-
         BufferViewMemory mvpBuffer, vertexBuffer, indexBuffer;
 
     private:
@@ -72,8 +71,10 @@ namespace tt {
         vk::UniqueDescriptorPool descriptorPoll = ttcreateDescriptorPoolUnique();
         vk::UniquePipelineCache pipelineCache = get().createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
         vk::UniqueCommandPool commandPool = get().createCommandPoolUnique(vk::CommandPoolCreateInfo{vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueFamilyIndex});
+        vk::Format depthFormat = vk::Format::eD24UnormS8Uint;
 
     public:
+        vk::UniqueRenderPass renderPass;
 
         vk::UniquePipeline graphicsPipeline;
         std::vector<vk::UniqueCommandBuffer> mianBuffers;
@@ -135,6 +136,10 @@ namespace tt {
             return get().getQueue(queueFamilyIndex, 0);
         }
 
+        auto getDepthFormat(){
+            return depthFormat;
+        }
+
         vk::UniqueDescriptorSetLayout createDescriptorSetLayoutUnique(std::vector<vk::DescriptorSetLayoutBinding> descriptSlBs) {
             return get().createDescriptorSetLayoutUnique(
                     vk::DescriptorSetLayoutCreateInfo{
@@ -150,6 +155,9 @@ namespace tt {
                             nullptr
                     });
         }
+
+        vk::UniqueRenderPass createRenderpass(vk::SurfaceFormatKHR surfaceDefaultFormat);
+
 
         auto createDescriptorSets(vk::UniqueDescriptorSetLayout &descriptorSetLayout) {
             std::array<vk::DescriptorSetLayout, 1> descriptorSetLayouts{descriptorSetLayout.get()};
@@ -265,13 +273,10 @@ namespace tt {
     class Swapchain : public vk::UniqueSwapchainKHR {
         vk::UniqueSurfaceKHR surface;
         vk::Extent2D swapchainExtent;
-        vk::Format depthFormat = vk::Format::eD24UnormS8Uint;
         std::vector<vk::UniqueImageView> imageViews;
         Device::ImageViewMemory depth;
         std::vector<vk::UniqueFramebuffer> frameBuffers;
-        vk::UniqueRenderPass renderPass;
 
-        void createRenderpass(Device &device);
 
     public:
         //Swapchain(){}
@@ -282,9 +287,7 @@ namespace tt {
             return swapchainExtent;
         }
 
-        auto getRenderPass() {
-            return renderPass.get();
-        }
+
 
         auto getSwapchainImageNum() {
             return imageViews.size();
