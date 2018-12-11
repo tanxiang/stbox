@@ -187,7 +187,7 @@ namespace tt {
 
     }
 
-    vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize, android_app *app, Swapchain &swapchain,
+    vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize, android_app *app, vk::Extent2D swapchainExtent,
                                 vk::PipelineLayout pipelineLayout) {
         auto vertShaderModule = loadShaderFromAssets("shaders/mvp.vert.spv", app);
         auto fargShaderModule = loadShaderFromAssets("shaders/copy.frag.spv", app);
@@ -229,7 +229,7 @@ namespace tt {
                 vk::PipelineInputAssemblyStateCreateFlags(), vk::PrimitiveTopology::eTriangleList
         };
         //vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{};
-        auto swapchainExtent = swapchain.getSwapchainExtent();
+        //auto swapchainExtent = swapchain.getSwapchainExtent();
         vk::Viewport viewport{
                 0, 0, swapchainExtent.width, swapchainExtent.height, 0.0f, 1.0f
         };
@@ -284,6 +284,77 @@ namespace tt {
         return get().createGraphicsPipelineUnique(pipelineCache.get(), pipelineCreateInfo);
     }
 
+    vk::UniqueRenderPass Device::createRenderpass(vk::SurfaceFormatKHR surfaceDefaultFormat) {
+        //auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
+        std::array<vk::AttachmentDescription, 2> attachDescs{
+                vk::AttachmentDescription{
+                        vk::AttachmentDescriptionFlags(),
+                        surfaceDefaultFormat.format,
+                        vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eClear,
+                        vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare,
+                        vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::ePresentSrcKHR
+                },
+                vk::AttachmentDescription{
+                        vk::AttachmentDescriptionFlags(),
+                        depthFormat,
+                        vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eClear,
+                        vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eClear,
+                        vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eDepthStencilAttachmentOptimal
+                }
+        };
+        std::array<vk::AttachmentReference, 1> attachmentRefs{
+                vk::AttachmentReference{
+                        0, vk::ImageLayout::eColorAttachmentOptimal
+                }
+        };
+        vk::AttachmentReference depthAttacheRefs{
+                1, vk::ImageLayout::eDepthStencilAttachmentOptimal
+        };
+        std::array<vk::SubpassDescription, 1> subpassDescs{
+                vk::SubpassDescription{
+                        vk::SubpassDescriptionFlags(),
+                        vk::PipelineBindPoint::eGraphics,
+                        0, nullptr,
+                        attachmentRefs.size(), attachmentRefs.data(),
+                        nullptr,
+                        &depthAttacheRefs,
+                }
+        };
+        std::array<vk::SubpassDependency, 2> subpassDeps{
+                vk::SubpassDependency{
+                        VK_SUBPASS_EXTERNAL, 0,
+                        vk::PipelineStageFlagBits::eBottomOfPipe,
+                        vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                        vk::AccessFlagBits::eMemoryRead,
+                        vk::AccessFlagBits::eColorAttachmentRead |
+                        vk::AccessFlagBits::eColorAttachmentWrite,
+                        vk::DependencyFlagBits::eByRegion
+                },
+                vk::SubpassDependency{
+                        0, VK_SUBPASS_EXTERNAL,
+                        vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                        vk::PipelineStageFlagBits::eBottomOfPipe,
+                        vk::AccessFlagBits::eColorAttachmentRead |
+                        vk::AccessFlagBits::eColorAttachmentWrite,
+                        vk::AccessFlagBits::eMemoryRead,
+                        vk::DependencyFlagBits::eByRegion
+                }
+        };
+        return get().createRenderPassUnique(vk::RenderPassCreateInfo{
+                vk::RenderPassCreateFlags(),
+                attachDescs.size(), attachDescs.data(),
+                subpassDescs.size(), subpassDescs.data(),
+                subpassDeps.size(), subpassDeps.data()
+        });
+    }
 
     std::vector<vk::UniqueCommandBuffer>
     Device::createCmdBuffers(tt::Swapchain &swapchain,
@@ -531,7 +602,6 @@ namespace tt {
         depth = device.createImageAndMemory(device.getDepthFormat(), vk::Extent3D{swapchainExtent.width,
                                                                       swapchainExtent.height, 1});
 
-        //createRenderpass(device);
 
         frameBuffers.clear();
         for (auto &imageView : imageViews) {
@@ -548,75 +618,4 @@ namespace tt {
 
     }
 
-    vk::UniqueRenderPass Device::createRenderpass(vk::SurfaceFormatKHR surfaceDefaultFormat) {
-        //auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
-        std::array<vk::AttachmentDescription, 2> attachDescs{
-                vk::AttachmentDescription{
-                        vk::AttachmentDescriptionFlags(),
-                        surfaceDefaultFormat.format,
-                        vk::SampleCountFlagBits::e1,
-                        vk::AttachmentLoadOp::eClear,
-                        vk::AttachmentStoreOp::eStore,
-                        vk::AttachmentLoadOp::eDontCare,
-                        vk::AttachmentStoreOp::eDontCare,
-                        vk::ImageLayout::eUndefined,
-                        vk::ImageLayout::ePresentSrcKHR
-                },
-                vk::AttachmentDescription{
-                        vk::AttachmentDescriptionFlags(),
-                        depthFormat,
-                        vk::SampleCountFlagBits::e1,
-                        vk::AttachmentLoadOp::eClear,
-                        vk::AttachmentStoreOp::eStore,
-                        vk::AttachmentLoadOp::eClear,
-                        vk::AttachmentStoreOp::eDontCare,
-                        vk::ImageLayout::eUndefined,
-                        vk::ImageLayout::eDepthStencilAttachmentOptimal
-                }
-        };
-        std::array<vk::AttachmentReference, 1> attachmentRefs{
-                vk::AttachmentReference{
-                        0, vk::ImageLayout::eColorAttachmentOptimal
-                }
-        };
-        vk::AttachmentReference depthAttacheRefs{
-                1, vk::ImageLayout::eDepthStencilAttachmentOptimal
-        };
-        std::array<vk::SubpassDescription, 1> subpassDescs{
-                vk::SubpassDescription{
-                        vk::SubpassDescriptionFlags(),
-                        vk::PipelineBindPoint::eGraphics,
-                        0, nullptr,
-                        attachmentRefs.size(), attachmentRefs.data(),
-                        nullptr,
-                        &depthAttacheRefs,
-                }
-        };
-        std::array<vk::SubpassDependency, 2> subpassDeps{
-                vk::SubpassDependency{
-                        VK_SUBPASS_EXTERNAL, 0,
-                        vk::PipelineStageFlagBits::eBottomOfPipe,
-                        vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                        vk::AccessFlagBits::eMemoryRead,
-                        vk::AccessFlagBits::eColorAttachmentRead |
-                        vk::AccessFlagBits::eColorAttachmentWrite,
-                        vk::DependencyFlagBits::eByRegion
-                },
-                vk::SubpassDependency{
-                        0, VK_SUBPASS_EXTERNAL,
-                        vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                        vk::PipelineStageFlagBits::eBottomOfPipe,
-                        vk::AccessFlagBits::eColorAttachmentRead |
-                        vk::AccessFlagBits::eColorAttachmentWrite,
-                        vk::AccessFlagBits::eMemoryRead,
-                        vk::DependencyFlagBits::eByRegion
-                }
-        };
-        return get().createRenderPassUnique(vk::RenderPassCreateInfo{
-                vk::RenderPassCreateFlags(),
-                attachDescs.size(), attachDescs.data(),
-                subpassDescs.size(), subpassDescs.data(),
-                subpassDeps.size(), subpassDeps.data()
-        });
-    }
 }

@@ -64,8 +64,10 @@ namespace tt {
         using BufferViewMemoryPtr = std::unique_ptr<void, std::function<void(void *)> >;
 
         BufferViewMemory mvpBuffer, vertexBuffer, indexBuffer;
-
+        ImageViewMemory sampleImage;
+        vk::UniqueSampler sampler;
     private:
+
         vk::PhysicalDevice physicalDevice;
         uint32_t queueFamilyIndex;
         vk::UniqueDescriptorPool descriptorPoll = ttcreateDescriptorPoolUnique();
@@ -231,7 +233,7 @@ namespace tt {
             };
         }
 
-        vk::UniquePipeline createPipeline(uint32_t dataStepSize, android_app *app, Swapchain &swapchain,
+        vk::UniquePipeline createPipeline(uint32_t dataStepSize, android_app *app, vk::Extent2D swapchainExtent,
                             vk::PipelineLayout pipelineLayout);
 
 
