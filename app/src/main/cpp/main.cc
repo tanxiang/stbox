@@ -21,12 +21,7 @@
 #include "vertexdata.hh"
 
 
-std::pair<int32_t, int32_t> AndroidGetWindowSize(android_app *Android_application) {
-    // On Android, retrieve the window size from the native window.
-    assert(Android_application != nullptr);
-    return std::make_pair(ANativeWindow_getWidth(Android_application->window),
-                          ANativeWindow_getHeight(Android_application->window));
-}
+
 
 class AndroidBuffer : public std::streambuf {
 public:

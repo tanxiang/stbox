@@ -187,7 +187,7 @@ namespace tt {
 
     }
 
-    vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize, android_app *app, vk::Extent2D swapchainExtent,
+    vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize, android_app *app,
                                 vk::PipelineLayout pipelineLayout) {
         auto vertShaderModule = loadShaderFromAssets("shaders/mvp.vert.spv", app);
         auto fargShaderModule = loadShaderFromAssets("shaders/copy.frag.spv", app);
@@ -229,15 +229,14 @@ namespace tt {
                 vk::PipelineInputAssemblyStateCreateFlags(), vk::PrimitiveTopology::eTriangleList
         };
         //vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{};
-        //auto swapchainExtent = swapchain.getSwapchainExtent();
-        vk::Viewport viewport{
-                0, 0, swapchainExtent.width, swapchainExtent.height, 0.0f, 1.0f
-        };
-        vk::Rect2D scissors{vk::Offset2D{}, swapchainExtent};
+
         vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo{
                 vk::PipelineViewportStateCreateFlags(),
-                1, &viewport, 1, &scissors
+                1, nullptr, 1, nullptr
         };
+        std::array<vk::DynamicState ,2> dynamicStates{vk::DynamicState::eViewport,vk::DynamicState::eScissor};
+        vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{vk::PipelineDynamicStateCreateFlags(),dynamicStates.size(),dynamicStates.data()};
+
         vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo{
                 vk::PipelineRasterizationStateCreateFlags(),
                 0, 0, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
@@ -263,7 +262,6 @@ namespace tt {
                 vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eClear, 1,
                 &pipelineColorBlendAttachmentState
         };
-        vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{};
         vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{vk::PipelineMultisampleStateCreateFlags(),vk::SampleCountFlagBits::e1};
 
         vk::GraphicsPipelineCreateInfo pipelineCreateInfo{

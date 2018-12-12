@@ -233,7 +233,7 @@ namespace tt {
             };
         }
 
-        vk::UniquePipeline createPipeline(uint32_t dataStepSize, android_app *app, vk::Extent2D swapchainExtent,
+        vk::UniquePipeline createPipeline(uint32_t dataStepSize, android_app *app,
                             vk::PipelineLayout pipelineLayout);
 
 

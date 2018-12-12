@@ -18,14 +18,18 @@
 #include "util.hh"
 #include "vertexdata.hh"
 
+vk::Extent2D AndroidGetWindowSize(android_app *Android_application) {
+    // On Android, retrieve the window size from the native window.
+    assert(Android_application != nullptr);
+    return vk::Extent2D{ANativeWindow_getWidth(Android_application->window),
+                        ANativeWindow_getHeight(Android_application->window)};
+}
+
 namespace tt {
 
     void stboxvk::initWindow(android_app *app, tt::Instance &instance) {
         assert(instance);
         auto surface = instance.connectToWSI(app->window);
-        vk::Extent2D windowExtent;
-        std::tie(windowExtent.width, windowExtent.height) = AndroidGetWindowSize(app);
-
         if (!devicePtr || !devicePtr->checkSurfaceSupport(surface.get())){
             devicePtr = instance.connectToDevice(surface.get());//reconnect
             devicePtr->renderPass = devicePtr->createRenderpass(devicePtr->getSurfaceDefaultFormat(surface.get()));//FIXME check surface format
@@ -49,27 +53,10 @@ namespace tt {
 
             //auto windowExtent = swapchainPtr->getSwapchainExtent();
 
-            auto Projection =glm::perspective(glm::radians(60.0f), static_cast<float>(windowExtent.width) / static_cast<float>(windowExtent.height), 0.1f, 256.0f);
-
-            auto View = glm::lookAt(
-                    glm::vec3(8, 3, 10),  // Camera is at (-5,3,-10), in World Space
-                    glm::vec3(0, 0, 0),     // and looks at the origin
-                    glm::vec3(0, 1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
-            );
-
-            auto mvpMat4 =  Projection  * View ;
-
             devicePtr->mvpBuffer = devicePtr->createBufferAndMemory(sizeof(glm::mat4),
                                                                     vk::BufferUsageFlagBits::eUniformBuffer,
                                                                     vk::MemoryPropertyFlagBits::eHostVisible |
                                                                     vk::MemoryPropertyFlagBits::eHostCoherent);
-
-            {
-                auto mvpBuffer_ptr = devicePtr->mapMemoryAndSize(devicePtr->mvpBuffer);
-                //todo copy to buffer
-                memcpy(mvpBuffer_ptr.get(), &mvpMat4, std::get<size_t>(devicePtr->mvpBuffer));
-            }
-
             std::vector<VertexUV> vertices{
                     {{1.0f,  1.0f,  0.0f, 1.0f}, {1.0f, 1.0f}},
                     {{-1.0f, 1.0f,  0.0f, 1.0f}, {0.0f, 1.0f}},
@@ -79,7 +66,7 @@ namespace tt {
 
 
             devicePtr->pipelineLayout = devicePtr->createPipelineLayout(descriptorSetLayout);
-            devicePtr->graphicsPipeline = devicePtr->createPipeline(sizeof(decltype(vertices)::value_type), app, windowExtent,
+            devicePtr->graphicsPipeline = devicePtr->createPipeline(sizeof(decltype(vertices)::value_type), app,
                                                                     devicePtr->pipelineLayout.get());
             devicePtr->vertexBuffer = devicePtr->createBufferAndMemory(
                     sizeof(decltype(vertices)::value_type) * vertices.size(),
@@ -200,14 +187,34 @@ namespace tt {
 
 
         }
-        swapchainPtr = std::make_unique<tt::Swapchain>(std::move(surface), *devicePtr,windowExtent);
+
+
+        swapchainPtr = std::make_unique<tt::Swapchain>(std::move(surface), *devicePtr, AndroidGetWindowSize(app));
+
+        auto swapchainExtent = swapchainPtr->getSwapchainExtent();
+
+        auto Projection =glm::perspective(glm::radians(60.0f), static_cast<float>(swapchainExtent.width) / static_cast<float>(swapchainExtent.height), 0.1f, 256.0f);
+
+        auto View = glm::lookAt(
+                glm::vec3(8, 3, 10),  // Camera is at (-5,3,-10), in World Space
+                glm::vec3(0, 0, 0),     // and looks at the origin
+                glm::vec3(0, 1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
+        );
+
+        auto mvpMat4 =  Projection  * View ;
+
+        {
+            auto mvpBuffer_ptr = devicePtr->mapMemoryAndSize(devicePtr->mvpBuffer);
+            //todo copy to buffer
+            memcpy(mvpBuffer_ptr.get(), &mvpMat4, std::get<size_t>(devicePtr->mvpBuffer));
+        }
 
         devicePtr->mianBuffers = devicePtr->createCmdBuffers(*swapchainPtr,[&](RenderpassBeginHandle& cmdHandleRenderpassBegin){
             vk::Viewport viewport{
-                    0, 0, windowExtent.width, windowExtent.height, 0.0f, 1.0f
+                    0, 0, swapchainExtent.width, swapchainExtent.height, 0.0f, 1.0f
             };
             cmdHandleRenderpassBegin.setViewport(0,1,&viewport);
-            vk::Rect2D scissors{vk::Offset2D{}, windowExtent};
+            vk::Rect2D scissors{vk::Offset2D{}, swapchainExtent};
             cmdHandleRenderpassBegin.setScissor(0,1,&scissors);
 
             cmdHandleRenderpassBegin.bindPipeline(vk::PipelineBindPoint::eGraphics, devicePtr->graphicsPipeline.get());
