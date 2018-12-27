@@ -20,6 +20,7 @@
 #include <android_native_app_glue.h>
 #include <iostream>
 #include <memory>
+#include <map>
 
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);
 
@@ -27,7 +28,7 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
 
 namespace tt {
     class Swapchain;
-    std::vector<char> loadDataFromAssets(const char *filePath,android_app *androidAppCtx);
+    std::vector<char> loadDataFromAssets(const std::string& filePath,android_app *androidAppCtx);
     uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
                                             vk::SurfaceKHR surface);
 
@@ -83,18 +84,6 @@ namespace tt {
         std::vector<vk::UniqueDescriptorSet> descriptorSets;//{createDescriptorSets()};
 
     private:
-        //std::vector<vk::UniqueCommandBuffer> commandBuffers;
-
-        //std::vector<vk::UniqueFence> commandBufferFences;
-        //struct {
-            //Swap chain image presentation
-            //vk::Semaphore presentComplete;
-            //Command buffer submission and execution
-            //vk::Semaphore renderComplete;
-        //} semaphores;
-
-
-
 
         vk::UniqueDescriptorPool ttcreateDescriptorPoolUnique() {
             std::array<vk::DescriptorPoolSize,3> poolSize{
@@ -108,7 +97,10 @@ namespace tt {
 
         uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
-        vk::UniqueShaderModule loadShaderFromAssets(const char *filePath,
+        vk::UniqueShaderModule loadShaderFromAssets(const std::string& filePath,
+                                                    android_app *androidAppCtx);
+
+        std::vector<std::tuple<std::string,vk::UniqueShaderModule>> loadShaderFromAssetsDir(const char *dirPath,
                                                     android_app *androidAppCtx);
 
     public:
@@ -159,7 +151,6 @@ namespace tt {
         }
 
         vk::UniqueRenderPass createRenderpass(vk::SurfaceFormatKHR surfaceDefaultFormat);
-
 
         auto createDescriptorSets(vk::UniqueDescriptorSetLayout &descriptorSetLayout) {
             std::array<vk::DescriptorSetLayout, 1> descriptorSetLayouts{descriptorSetLayout.get()};
@@ -232,6 +223,8 @@ namespace tt {
                     sampler,std::get<vk::UniqueImageView >(tupleImage).get(),vk::ImageLayout::eShaderReadOnlyOptimal
             };
         }
+
+        std::map<std::string,vk::UniquePipeline> createComputePipeline(android_app *app);
 
         vk::UniquePipeline createPipeline(uint32_t dataStepSize, android_app *app,
                             vk::PipelineLayout pipelineLayout);

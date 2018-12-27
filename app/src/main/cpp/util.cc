@@ -19,7 +19,7 @@
 
 #include "vertexdata.hh"
 #include <algorithm>
-
+#include <cstring>
 
 using namespace std::chrono_literals;
 
@@ -160,12 +160,12 @@ namespace tt {
         exit(-1);//todo throw
     }
 
-    std::vector<char> loadDataFromAssets(const char *filePath,
+    std::vector<char> loadDataFromAssets(const std::string& filePath,
                                                         android_app *androidAppCtx) {
         // Read the file
         assert(androidAppCtx);
         std::unique_ptr<AAsset,std::function<void(AAsset *)> > file{
-                AAssetManager_open(androidAppCtx->activity->assetManager, filePath, AASSET_MODE_STREAMING),
+                AAssetManager_open(androidAppCtx->activity->assetManager, filePath.c_str(), AASSET_MODE_STREAMING),
                 [](AAsset *AAsset) {
                     AAsset_close(AAsset);
                 }
@@ -177,7 +177,7 @@ namespace tt {
         return fileContent;
     }
 
-    vk::UniqueShaderModule Device::loadShaderFromAssets(const char *filePath,
+    vk::UniqueShaderModule Device::loadShaderFromAssets(const std::string& filePath,
                                                         android_app *androidAppCtx) {
         // Read the file
         auto fileContent = loadDataFromAssets(filePath,androidAppCtx);
@@ -186,6 +186,66 @@ namespace tt {
                 reinterpret_cast<const uint32_t *>(fileContent.data())});
 
     }
+
+    std::vector<std::tuple<std::string, vk::UniqueShaderModule>>
+    Device::loadShaderFromAssetsDir(const char *dirPath, android_app *androidAppCtx) {
+        assert(androidAppCtx);
+        std::unique_ptr<AAssetDir,std::function<void(AAssetDir *)> > dir{
+                AAssetManager_openDir(androidAppCtx->activity->assetManager, dirPath),
+                [](AAssetDir *assetDir) {
+                    AAssetDir_close(assetDir);
+                }
+        };
+        std::vector<std::tuple<std::string, vk::UniqueShaderModule>> ShaderModules{};
+        for(const char *fileName = AAssetDir_getNextFileName(dir.get());fileName;fileName = AAssetDir_getNextFileName(dir.get())){
+            std::cout << fileName <<std::endl;
+            if(std::strstr(fileName,".comp.spv")){
+                std::string fullName{dirPath};
+                ShaderModules.emplace_back(fileName,loadShaderFromAssets(fullName+'/'+fileName,androidAppCtx));
+            }
+        }
+        return ShaderModules;
+    }
+
+    std::map<std::string,vk::UniquePipeline> Device::createComputePipeline(android_app *app){
+        auto shaderModules = loadShaderFromAssetsDir("shaders", app);
+        std::map<std::string,vk::UniquePipeline> mapComputePipeline;
+        auto descriptorSetLayout = createDescriptorSetLayoutUnique(
+                std::vector<vk::DescriptorSetLayoutBinding>{
+                        vk::DescriptorSetLayoutBinding{
+                                0,
+                                vk::DescriptorType::eStorageImage,
+                                1,
+                                vk::ShaderStageFlagBits::eCompute
+                        },
+                        vk::DescriptorSetLayoutBinding{
+                                1,
+                                vk::DescriptorType::eStorageImage,
+                                1,
+                                vk::ShaderStageFlagBits::eCompute
+                        }
+                }
+        );
+        auto pipelineLayout = createPipelineLayout(descriptorSetLayout);
+
+        for(auto& shaderModule:shaderModules){
+            vk::PipelineShaderStageCreateInfo shaderStageCreateInfo{
+                    vk::PipelineShaderStageCreateFlags(),
+                    vk::ShaderStageFlagBits::eCompute,
+                    std::get<vk::UniqueShaderModule>(shaderModule).get(),
+                    "forward"
+            };
+            vk::ComputePipelineCreateInfo computePipelineCreateInfo{
+                vk::PipelineCreateFlags(),
+                shaderStageCreateInfo,
+                pipelineLayout.get()
+            };
+            mapComputePipeline.emplace(std::get<std::string>(shaderModule),
+                    get().createComputePipelineUnique(pipelineCache.get(),computePipelineCreateInfo));
+        }
+        return mapComputePipeline;
+    };
+
 
     vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize, android_app *app,
                                 vk::PipelineLayout pipelineLayout) {
@@ -206,7 +266,7 @@ namespace tt {
 
         std::array<vk::VertexInputBindingDescription, 1> vertexInputBindingDescriptions{
                 vk::VertexInputBindingDescription{
-                        0, dataStepSize,// sizeof(g_vb_solid_face_colors_Data[0]),
+                        0, dataStepSize,
                         vk::VertexInputRate::eVertex
                 }
         };
@@ -497,6 +557,8 @@ namespace tt {
                          std::get<vk::UniqueDeviceMemory>(BVM).get(), 0);
         return BVM;
     }
+
+
 
 
     Swapchain::Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device,vk::Extent2D windowExtent)
