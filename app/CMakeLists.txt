@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.4.1)
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_ANDROID_KHR -Wno-narrowing")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 
 add_library( # Sets the name of the library.
              stbox
@@ -26,7 +26,11 @@ add_library( # Sets the name of the library.
              src/main/cpp/Blob.cc
              src/main/cpp/Connecter.cc
              src/main/cpp/Net.cc
-             src/main/cpp/Activation.cc )
+             src/main/cpp/Activation.cc
+             )
+
+target_compile_definitions(stbox PRIVATE VK_USE_PLATFORM_ANDROID_KHR)
+
 
 target_include_directories(stbox PRIVATE
                src/main/include
@@ -41,6 +45,13 @@ target_include_directories(stbox PRIVATE
 # default, you only need to specify the name of the public NDK library
 # you want to add. CMake verifies that the library exists before
 # completing its build.
+
+find_library( # Sets the name of the path variable.
+        z-lib
+
+        # Specifies the name of the NDK library that
+        # you want CMake to locate.
+        z )
 
 find_library( # Sets the name of the path variable.
               log-lib
@@ -95,3 +106,87 @@ target_link_libraries( # Specifies the target library.
                        ${android-lib}
                        #shaderc_lib
                        )
+
+
+set(protobuf_source_dir  .)
+set(libprotobuf_lite_files
+        ${protobuf_source_dir}/src/google/protobuf/arena.cc
+        ${protobuf_source_dir}/src/google/protobuf/arenastring.cc
+        ${protobuf_source_dir}/src/google/protobuf/extension_set.cc
+        ${protobuf_source_dir}/src/google/protobuf/generated_message_table_driven_lite.cc
+        ${protobuf_source_dir}/src/google/protobuf/generated_message_util.cc
+        ${protobuf_source_dir}/src/google/protobuf/implicit_weak_message.cc
+        ${protobuf_source_dir}/src/google/protobuf/parse_context.cc
+        ${protobuf_source_dir}/src/google/protobuf/io/coded_stream.cc
+        ${protobuf_source_dir}/src/google/protobuf/io/strtod.cc
+        ${protobuf_source_dir}/src/google/protobuf/io/zero_copy_stream.cc
+        ${protobuf_source_dir}/src/google/protobuf/io/zero_copy_stream_impl_lite.cc
+        ${protobuf_source_dir}/src/google/protobuf/message_lite.cc
+        ${protobuf_source_dir}/src/google/protobuf/repeated_field.cc
+        ${protobuf_source_dir}/src/google/protobuf/stubs/bytestream.cc
+        ${protobuf_source_dir}/src/google/protobuf/stubs/common.cc
+        ${protobuf_source_dir}/src/google/protobuf/stubs/int128.cc
+        ${protobuf_source_dir}/src/google/protobuf/stubs/io_win32.cc
+        ${protobuf_source_dir}/src/google/protobuf/stubs/status.cc
+        ${protobuf_source_dir}/src/google/protobuf/stubs/statusor.cc
+        ${protobuf_source_dir}/src/google/protobuf/stubs/stringpiece.cc
+        ${protobuf_source_dir}/src/google/protobuf/stubs/stringprintf.cc
+        ${protobuf_source_dir}/src/google/protobuf/stubs/structurally_valid.cc
+        ${protobuf_source_dir}/src/google/protobuf/stubs/strutil.cc
+        ${protobuf_source_dir}/src/google/protobuf/stubs/time.cc
+        ${protobuf_source_dir}/src/google/protobuf/wire_format_lite.cc
+        )
+
+set(libprotobuf_lite_includes
+        ${protobuf_source_dir}/src/google/protobuf/arena.h
+        ${protobuf_source_dir}/src/google/protobuf/arenastring.h
+        ${protobuf_source_dir}/src/google/protobuf/extension_set.h
+        ${protobuf_source_dir}/src/google/protobuf/generated_message_util.h
+        ${protobuf_source_dir}/src/google/protobuf/implicit_weak_message.h
+        ${protobuf_source_dir}/src/google/protobuf/parse_context.h
+        ${protobuf_source_dir}/src/google/protobuf/io/coded_stream.h
+        ${protobuf_source_dir}/src/google/protobuf/io/strtod.h
+        ${protobuf_source_dir}/src/google/protobuf/io/zero_copy_stream.h
+        ${protobuf_source_dir}/src/google/protobuf/io/zero_copy_stream_impl_lite.h
+        ${protobuf_source_dir}/src/google/protobuf/message_lite.h
+        ${protobuf_source_dir}/src/google/protobuf/repeated_field.h
+        ${protobuf_source_dir}/src/google/protobuf/stubs/bytestream.h
+        ${protobuf_source_dir}/src/google/protobuf/stubs/common.h
+        ${protobuf_source_dir}/src/google/protobuf/stubs/int128.h
+        ${protobuf_source_dir}/src/google/protobuf/stubs/once.h
+        ${protobuf_source_dir}/src/google/protobuf/stubs/status.h
+        ${protobuf_source_dir}/src/google/protobuf/stubs/statusor.h
+        ${protobuf_source_dir}/src/google/protobuf/stubs/stringpiece.h
+        ${protobuf_source_dir}/src/google/protobuf/stubs/stringprintf.h
+        ${protobuf_source_dir}/src/google/protobuf/stubs/strutil.h
+        ${protobuf_source_dir}/src/google/protobuf/stubs/time.h
+        ${protobuf_source_dir}/src/google/protobuf/wire_format_lite.h
+        )
+
+
+add_library(libprotobuf_lite STATIC
+        ${libprotobuf_lite_files} ${libprotobuf_lite_includes})
+target_link_libraries(libprotobuf_lite ${CMAKE_THREAD_LIBS_INIT})
+target_include_directories(libprotobuf_lite PUBLIC ${protobuf_source_dir}/src)
+target_compile_options(libprotobuf_lite PRIVATE -frtti)
+target_compile_definitions(libprotobuf_lite PRIVATE HAVE_PTHREAD)
+
+add_library(protobuf::libprotobuf_lite ALIAS libprotobuf_lite)
+
+add_library( # Sets the name of the library.
+        onnxpb
+        # Sets the library as a shared library.
+        SHARED
+        src/main/cpp/onnx.pb.cc )
+
+target_compile_options(onnxpb PRIVATE -frtti)
+
+target_include_directories(onnxpb PRIVATE
+        src/google/protobuf
+        )
+
+target_link_libraries(onnxpb
+        libprotobuf_lite
+        ${log-lib}
+        ${z-lib}
+        )
