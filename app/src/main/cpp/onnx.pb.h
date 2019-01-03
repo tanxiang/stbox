@@ -26,11 +26,12 @@
 #include <google/protobuf/generated_message_table_driven.h>
 #include <google/protobuf/generated_message_util.h>
 #include <google/protobuf/inlined_string_field.h>
-#include <google/protobuf/metadata_lite.h>
-#include <google/protobuf/message_lite.h>
+#include <google/protobuf/metadata.h>
+#include <google/protobuf/message.h>
 #include <google/protobuf/repeated_field.h>  // IWYU pragma: export
 #include <google/protobuf/extension_set.h>  // IWYU pragma: export
-#include <google/protobuf/generated_enum_util.h>
+#include <google/protobuf/generated_enum_reflection.h>
+#include <google/protobuf/unknown_field_set.h>
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
 #define PROTOBUF_INTERNAL_EXPORT_onnx_2eproto
@@ -47,6 +48,7 @@ struct TableStruct_onnx_2eproto {
     static const ::google::protobuf::internal::SerializationTable serialization_table[];
     static const ::google::protobuf::uint32 offsets[];
 };
+void AddDescriptors_onnx_2eproto();
 namespace onnx {
     class AttributeProto;
     class AttributeProtoDefaultTypeInternal;
@@ -125,6 +127,16 @@ namespace onnx {
     const AttributeProto_AttributeType AttributeProto_AttributeType_AttributeType_MAX = AttributeProto_AttributeType_GRAPHS;
     const int AttributeProto_AttributeType_AttributeType_ARRAYSIZE = AttributeProto_AttributeType_AttributeType_MAX + 1;
 
+    const ::google::protobuf::EnumDescriptor* AttributeProto_AttributeType_descriptor();
+    inline const ::std::string& AttributeProto_AttributeType_Name(AttributeProto_AttributeType value) {
+        return ::google::protobuf::internal::NameOfEnum(
+                AttributeProto_AttributeType_descriptor(), value);
+    }
+    inline bool AttributeProto_AttributeType_Parse(
+            const ::std::string& name, AttributeProto_AttributeType* value) {
+        return ::google::protobuf::internal::ParseNamedEnum<AttributeProto_AttributeType>(
+                AttributeProto_AttributeType_descriptor(), name, value);
+    }
     enum TensorProto_DataType {
         TensorProto_DataType_UNDEFINED = 0,
         TensorProto_DataType_FLOAT = 1,
@@ -149,6 +161,16 @@ namespace onnx {
     const TensorProto_DataType TensorProto_DataType_DataType_MAX = TensorProto_DataType_BFLOAT16;
     const int TensorProto_DataType_DataType_ARRAYSIZE = TensorProto_DataType_DataType_MAX + 1;
 
+    const ::google::protobuf::EnumDescriptor* TensorProto_DataType_descriptor();
+    inline const ::std::string& TensorProto_DataType_Name(TensorProto_DataType value) {
+        return ::google::protobuf::internal::NameOfEnum(
+                TensorProto_DataType_descriptor(), value);
+    }
+    inline bool TensorProto_DataType_Parse(
+            const ::std::string& name, TensorProto_DataType* value) {
+        return ::google::protobuf::internal::ParseNamedEnum<TensorProto_DataType>(
+                TensorProto_DataType_descriptor(), name, value);
+    }
     enum Version {
         _START_VERSION = 0,
         IR_VERSION_2017_10_10 = 1,
@@ -160,9 +182,19 @@ namespace onnx {
     const Version Version_MAX = IR_VERSION;
     const int Version_ARRAYSIZE = Version_MAX + 1;
 
+    const ::google::protobuf::EnumDescriptor* Version_descriptor();
+    inline const ::std::string& Version_Name(Version value) {
+        return ::google::protobuf::internal::NameOfEnum(
+                Version_descriptor(), value);
+    }
+    inline bool Version_Parse(
+            const ::std::string& name, Version* value) {
+        return ::google::protobuf::internal::ParseNamedEnum<Version>(
+                Version_descriptor(), name, value);
+    }
 // ===================================================================
 
-    class AttributeProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_point(class_definition:onnx.AttributeProto) */ {
+    class AttributeProto : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:onnx.AttributeProto) */ {
     public:
         AttributeProto();
         virtual ~AttributeProto();
@@ -188,13 +220,16 @@ namespace onnx {
             return *this;
         }
 #endif
-        inline const ::std::string& unknown_fields() const {
+        inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
             return _internal_metadata_.unknown_fields();
         }
-        inline ::std::string* mutable_unknown_fields() {
+        inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
             return _internal_metadata_.mutable_unknown_fields();
         }
 
+        static const ::google::protobuf::Descriptor* descriptor() {
+            return default_instance().GetDescriptor();
+        }
         static const AttributeProto& default_instance();
 
         static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
@@ -219,8 +254,8 @@ namespace onnx {
         AttributeProto* New(::google::protobuf::Arena* arena) const final {
             return CreateMaybeMessage<AttributeProto>(arena);
         }
-        void CheckTypeAndMergeFrom(const ::google::protobuf::MessageLite& from)
-        final;
+        void CopyFrom(const ::google::protobuf::Message& from) final;
+        void MergeFrom(const ::google::protobuf::Message& from) final;
         void CopyFrom(const AttributeProto& from);
         void MergeFrom(const AttributeProto& from);
         PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
@@ -236,13 +271,14 @@ namespace onnx {
 #endif  // GOOGLE_PROTOBUF_ENABLE_EXPERIMENTAL_PARSER
         void SerializeWithCachedSizes(
                 ::google::protobuf::io::CodedOutputStream* output) const final;
-        void DiscardUnknownFields();
+        ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+                ::google::protobuf::uint8* target) const final;
         int GetCachedSize() const final { return _cached_size_.Get(); }
 
     private:
         void SharedCtor();
         void SharedDtor();
-        void SetCachedSize(int size) const;
+        void SetCachedSize(int size) const final;
         void InternalSwap(AttributeProto* other);
     private:
         inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
@@ -253,7 +289,7 @@ namespace onnx {
         }
     public:
 
-        ::std::string GetTypeName() const final;
+        ::google::protobuf::Metadata GetMetadata() const final;
 
         // nested types ----------------------------------------------------
 
@@ -289,6 +325,17 @@ namespace onnx {
                 AttributeProto_AttributeType_AttributeType_MAX;
         static const int AttributeType_ARRAYSIZE =
                 AttributeProto_AttributeType_AttributeType_ARRAYSIZE;
+        static inline const ::google::protobuf::EnumDescriptor*
+        AttributeType_descriptor() {
+            return AttributeProto_AttributeType_descriptor();
+        }
+        static inline const ::std::string& AttributeType_Name(AttributeType value) {
+            return AttributeProto_AttributeType_Name(value);
+        }
+        static inline bool AttributeType_Parse(const ::std::string& name,
+                                               AttributeType* value) {
+            return AttributeProto_AttributeType_Parse(name, value);
+        }
 
         // accessors -------------------------------------------------------
 
@@ -465,7 +512,7 @@ namespace onnx {
     private:
         class HasBitSetters;
 
-        ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
+        ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
         ::google::protobuf::internal::HasBits<1> _has_bits_;
         mutable ::google::protobuf::internal::CachedSize _cached_size_;
         ::google::protobuf::RepeatedField< float > floats_;
@@ -486,7 +533,7 @@ namespace onnx {
     };
 // -------------------------------------------------------------------
 
-    class ValueInfoProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_point(class_definition:onnx.ValueInfoProto) */ {
+    class ValueInfoProto : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:onnx.ValueInfoProto) */ {
     public:
         ValueInfoProto();
         virtual ~ValueInfoProto();
@@ -512,13 +559,16 @@ namespace onnx {
             return *this;
         }
 #endif
-        inline const ::std::string& unknown_fields() const {
+        inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
             return _internal_metadata_.unknown_fields();
         }
-        inline ::std::string* mutable_unknown_fields() {
+        inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
             return _internal_metadata_.mutable_unknown_fields();
         }
 
+        static const ::google::protobuf::Descriptor* descriptor() {
+            return default_instance().GetDescriptor();
+        }
         static const ValueInfoProto& default_instance();
 
         static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
@@ -543,8 +593,8 @@ namespace onnx {
         ValueInfoProto* New(::google::protobuf::Arena* arena) const final {
             return CreateMaybeMessage<ValueInfoProto>(arena);
         }
-        void CheckTypeAndMergeFrom(const ::google::protobuf::MessageLite& from)
-        final;
+        void CopyFrom(const ::google::protobuf::Message& from) final;
+        void MergeFrom(const ::google::protobuf::Message& from) final;
         void CopyFrom(const ValueInfoProto& from);
         void MergeFrom(const ValueInfoProto& from);
         PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
@@ -560,13 +610,14 @@ namespace onnx {
 #endif  // GOOGLE_PROTOBUF_ENABLE_EXPERIMENTAL_PARSER
         void SerializeWithCachedSizes(
                 ::google::protobuf::io::CodedOutputStream* output) const final;
-        void DiscardUnknownFields();
+        ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+                ::google::protobuf::uint8* target) const final;
         int GetCachedSize() const final { return _cached_size_.Get(); }
 
     private:
         void SharedCtor();
         void SharedDtor();
-        void SetCachedSize(int size) const;
+        void SetCachedSize(int size) const final;
         void InternalSwap(ValueInfoProto* other);
     private:
         inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
@@ -577,7 +628,7 @@ namespace onnx {
         }
     public:
 
-        ::std::string GetTypeName() const final;
+        ::google::protobuf::Metadata GetMetadata() const final;
 
         // nested types ----------------------------------------------------
 
@@ -626,7 +677,7 @@ namespace onnx {
     private:
         class HasBitSetters;
 
-        ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
+        ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
         ::google::protobuf::internal::HasBits<1> _has_bits_;
         mutable ::google::protobuf::internal::CachedSize _cached_size_;
         ::google::protobuf::internal::ArenaStringPtr name_;
@@ -636,7 +687,7 @@ namespace onnx {
     };
 // -------------------------------------------------------------------
 
-    class NodeProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_point(class_definition:onnx.NodeProto) */ {
+    class NodeProto : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:onnx.NodeProto) */ {
     public:
         NodeProto();
         virtual ~NodeProto();
@@ -662,13 +713,16 @@ namespace onnx {
             return *this;
         }
 #endif
-        inline const ::std::string& unknown_fields() const {
+        inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
             return _internal_metadata_.unknown_fields();
         }
-        inline ::std::string* mutable_unknown_fields() {
+        inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
             return _internal_metadata_.mutable_unknown_fields();
         }
 
+        static const ::google::protobuf::Descriptor* descriptor() {
+            return default_instance().GetDescriptor();
+        }
         static const NodeProto& default_instance();
 
         static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
@@ -693,8 +747,8 @@ namespace onnx {
         NodeProto* New(::google::protobuf::Arena* arena) const final {
             return CreateMaybeMessage<NodeProto>(arena);
         }
-        void CheckTypeAndMergeFrom(const ::google::protobuf::MessageLite& from)
-        final;
+        void CopyFrom(const ::google::protobuf::Message& from) final;
+        void MergeFrom(const ::google::protobuf::Message& from) final;
         void CopyFrom(const NodeProto& from);
         void MergeFrom(const NodeProto& from);
         PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
@@ -710,13 +764,14 @@ namespace onnx {
 #endif  // GOOGLE_PROTOBUF_ENABLE_EXPERIMENTAL_PARSER
         void SerializeWithCachedSizes(
                 ::google::protobuf::io::CodedOutputStream* output) const final;
-        void DiscardUnknownFields();
+        ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+                ::google::protobuf::uint8* target) const final;
         int GetCachedSize() const final { return _cached_size_.Get(); }
 
     private:
         void SharedCtor();
         void SharedDtor();
-        void SetCachedSize(int size) const;
+        void SetCachedSize(int size) const final;
         void InternalSwap(NodeProto* other);
     private:
         inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
@@ -727,7 +782,7 @@ namespace onnx {
         }
     public:
 
-        ::std::string GetTypeName() const final;
+        ::google::protobuf::Metadata GetMetadata() const final;
 
         // nested types ----------------------------------------------------
 
@@ -853,7 +908,7 @@ namespace onnx {
     private:
         class HasBitSetters;
 
-        ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
+        ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
         ::google::protobuf::internal::HasBits<1> _has_bits_;
         mutable ::google::protobuf::internal::CachedSize _cached_size_;
         ::google::protobuf::RepeatedPtrField<::std::string> input_;
@@ -867,7 +922,7 @@ namespace onnx {
     };
 // -------------------------------------------------------------------
 
-    class ModelProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_point(class_definition:onnx.ModelProto) */ {
+    class ModelProto : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:onnx.ModelProto) */ {
     public:
         ModelProto();
         virtual ~ModelProto();
@@ -893,13 +948,16 @@ namespace onnx {
             return *this;
         }
 #endif
-        inline const ::std::string& unknown_fields() const {
+        inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
             return _internal_metadata_.unknown_fields();
         }
-        inline ::std::string* mutable_unknown_fields() {
+        inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
             return _internal_metadata_.mutable_unknown_fields();
         }
 
+        static const ::google::protobuf::Descriptor* descriptor() {
+            return default_instance().GetDescriptor();
+        }
         static const ModelProto& default_instance();
 
         static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
@@ -924,8 +982,8 @@ namespace onnx {
         ModelProto* New(::google::protobuf::Arena* arena) const final {
             return CreateMaybeMessage<ModelProto>(arena);
         }
-        void CheckTypeAndMergeFrom(const ::google::protobuf::MessageLite& from)
-        final;
+        void CopyFrom(const ::google::protobuf::Message& from) final;
+        void MergeFrom(const ::google::protobuf::Message& from) final;
         void CopyFrom(const ModelProto& from);
         void MergeFrom(const ModelProto& from);
         PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
@@ -941,13 +999,14 @@ namespace onnx {
 #endif  // GOOGLE_PROTOBUF_ENABLE_EXPERIMENTAL_PARSER
         void SerializeWithCachedSizes(
                 ::google::protobuf::io::CodedOutputStream* output) const final;
-        void DiscardUnknownFields();
+        ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+                ::google::protobuf::uint8* target) const final;
         int GetCachedSize() const final { return _cached_size_.Get(); }
 
     private:
         void SharedCtor();
         void SharedDtor();
-        void SetCachedSize(int size) const;
+        void SetCachedSize(int size) const final;
         void InternalSwap(ModelProto* other);
     private:
         inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
@@ -958,7 +1017,7 @@ namespace onnx {
         }
     public:
 
-        ::std::string GetTypeName() const final;
+        ::google::protobuf::Metadata GetMetadata() const final;
 
         // nested types ----------------------------------------------------
 
@@ -1075,7 +1134,7 @@ namespace onnx {
     private:
         class HasBitSetters;
 
-        ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
+        ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
         ::google::protobuf::internal::HasBits<1> _has_bits_;
         mutable ::google::protobuf::internal::CachedSize _cached_size_;
         ::google::protobuf::RepeatedPtrField< ::onnx::OperatorSetIdProto > opset_import_;
@@ -1091,7 +1150,7 @@ namespace onnx {
     };
 // -------------------------------------------------------------------
 
-    class StringStringEntryProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_point(class_definition:onnx.StringStringEntryProto) */ {
+    class StringStringEntryProto : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:onnx.StringStringEntryProto) */ {
     public:
         StringStringEntryProto();
         virtual ~StringStringEntryProto();
@@ -1117,13 +1176,16 @@ namespace onnx {
             return *this;
         }
 #endif
-        inline const ::std::string& unknown_fields() const {
+        inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
             return _internal_metadata_.unknown_fields();
         }
-        inline ::std::string* mutable_unknown_fields() {
+        inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
             return _internal_metadata_.mutable_unknown_fields();
         }
 
+        static const ::google::protobuf::Descriptor* descriptor() {
+            return default_instance().GetDescriptor();
+        }
         static const StringStringEntryProto& default_instance();
 
         static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
@@ -1148,8 +1210,8 @@ namespace onnx {
         StringStringEntryProto* New(::google::protobuf::Arena* arena) const final {
             return CreateMaybeMessage<StringStringEntryProto>(arena);
         }
-        void CheckTypeAndMergeFrom(const ::google::protobuf::MessageLite& from)
-        final;
+        void CopyFrom(const ::google::protobuf::Message& from) final;
+        void MergeFrom(const ::google::protobuf::Message& from) final;
         void CopyFrom(const StringStringEntryProto& from);
         void MergeFrom(const StringStringEntryProto& from);
         PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
@@ -1165,13 +1227,14 @@ namespace onnx {
 #endif  // GOOGLE_PROTOBUF_ENABLE_EXPERIMENTAL_PARSER
         void SerializeWithCachedSizes(
                 ::google::protobuf::io::CodedOutputStream* output) const final;
-        void DiscardUnknownFields();
+        ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+                ::google::protobuf::uint8* target) const final;
         int GetCachedSize() const final { return _cached_size_.Get(); }
 
     private:
         void SharedCtor();
         void SharedDtor();
-        void SetCachedSize(int size) const;
+        void SetCachedSize(int size) const final;
         void InternalSwap(StringStringEntryProto* other);
     private:
         inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
@@ -1182,7 +1245,7 @@ namespace onnx {
         }
     public:
 
-        ::std::string GetTypeName() const final;
+        ::google::protobuf::Metadata GetMetadata() const final;
 
         // nested types ----------------------------------------------------
 
@@ -1222,7 +1285,7 @@ namespace onnx {
     private:
         class HasBitSetters;
 
-        ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
+        ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
         ::google::protobuf::internal::HasBits<1> _has_bits_;
         mutable ::google::protobuf::internal::CachedSize _cached_size_;
         ::google::protobuf::internal::ArenaStringPtr key_;
@@ -1231,7 +1294,7 @@ namespace onnx {
     };
 // -------------------------------------------------------------------
 
-    class GraphProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_point(class_definition:onnx.GraphProto) */ {
+    class GraphProto : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:onnx.GraphProto) */ {
     public:
         GraphProto();
         virtual ~GraphProto();
@@ -1257,13 +1320,16 @@ namespace onnx {
             return *this;
         }
 #endif
-        inline const ::std::string& unknown_fields() const {
+        inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
             return _internal_metadata_.unknown_fields();
         }
-        inline ::std::string* mutable_unknown_fields() {
+        inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
             return _internal_metadata_.mutable_unknown_fields();
         }
 
+        static const ::google::protobuf::Descriptor* descriptor() {
+            return default_instance().GetDescriptor();
+        }
         static const GraphProto& default_instance();
 
         static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
@@ -1288,8 +1354,8 @@ namespace onnx {
         GraphProto* New(::google::protobuf::Arena* arena) const final {
             return CreateMaybeMessage<GraphProto>(arena);
         }
-        void CheckTypeAndMergeFrom(const ::google::protobuf::MessageLite& from)
-        final;
+        void CopyFrom(const ::google::protobuf::Message& from) final;
+        void MergeFrom(const ::google::protobuf::Message& from) final;
         void CopyFrom(const GraphProto& from);
         void MergeFrom(const GraphProto& from);
         PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
@@ -1305,13 +1371,14 @@ namespace onnx {
 #endif  // GOOGLE_PROTOBUF_ENABLE_EXPERIMENTAL_PARSER
         void SerializeWithCachedSizes(
                 ::google::protobuf::io::CodedOutputStream* output) const final;
-        void DiscardUnknownFields();
+        ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+                ::google::protobuf::uint8* target) const final;
         int GetCachedSize() const final { return _cached_size_.Get(); }
 
     private:
         void SharedCtor();
         void SharedDtor();
-        void SetCachedSize(int size) const;
+        void SetCachedSize(int size) const final;
         void InternalSwap(GraphProto* other);
     private:
         inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
@@ -1322,7 +1389,7 @@ namespace onnx {
         }
     public:
 
-        ::std::string GetTypeName() const final;
+        ::google::protobuf::Metadata GetMetadata() const final;
 
         // nested types ----------------------------------------------------
 
@@ -1422,7 +1489,7 @@ namespace onnx {
     private:
         class HasBitSetters;
 
-        ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
+        ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
         ::google::protobuf::internal::HasBits<1> _has_bits_;
         mutable ::google::protobuf::internal::CachedSize _cached_size_;
         ::google::protobuf::RepeatedPtrField< ::onnx::NodeProto > node_;
@@ -1436,7 +1503,7 @@ namespace onnx {
     };
 // -------------------------------------------------------------------
 
-    class TensorProto_Segment : public ::google::protobuf::MessageLite /* @@protoc_insertion_point(class_definition:onnx.TensorProto.Segment) */ {
+    class TensorProto_Segment : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:onnx.TensorProto.Segment) */ {
     public:
         TensorProto_Segment();
         virtual ~TensorProto_Segment();
@@ -1462,13 +1529,16 @@ namespace onnx {
             return *this;
         }
 #endif
-        inline const ::std::string& unknown_fields() const {
+        inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
             return _internal_metadata_.unknown_fields();
         }
-        inline ::std::string* mutable_unknown_fields() {
+        inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
             return _internal_metadata_.mutable_unknown_fields();
         }
 
+        static const ::google::protobuf::Descriptor* descriptor() {
+            return default_instance().GetDescriptor();
+        }
         static const TensorProto_Segment& default_instance();
 
         static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
@@ -1493,8 +1563,8 @@ namespace onnx {
         TensorProto_Segment* New(::google::protobuf::Arena* arena) const final {
             return CreateMaybeMessage<TensorProto_Segment>(arena);
         }
-        void CheckTypeAndMergeFrom(const ::google::protobuf::MessageLite& from)
-        final;
+        void CopyFrom(const ::google::protobuf::Message& from) final;
+        void MergeFrom(const ::google::protobuf::Message& from) final;
         void CopyFrom(const TensorProto_Segment& from);
         void MergeFrom(const TensorProto_Segment& from);
         PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
@@ -1510,13 +1580,14 @@ namespace onnx {
 #endif  // GOOGLE_PROTOBUF_ENABLE_EXPERIMENTAL_PARSER
         void SerializeWithCachedSizes(
                 ::google::protobuf::io::CodedOutputStream* output) const final;
-        void DiscardUnknownFields();
+        ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+                ::google::protobuf::uint8* target) const final;
         int GetCachedSize() const final { return _cached_size_.Get(); }
 
     private:
         void SharedCtor();
         void SharedDtor();
-        void SetCachedSize(int size) const;
+        void SetCachedSize(int size) const final;
         void InternalSwap(TensorProto_Segment* other);
     private:
         inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
@@ -1527,7 +1598,7 @@ namespace onnx {
         }
     public:
 
-        ::std::string GetTypeName() const final;
+        ::google::protobuf::Metadata GetMetadata() const final;
 
         // nested types ----------------------------------------------------
 
@@ -1551,7 +1622,7 @@ namespace onnx {
     private:
         class HasBitSetters;
 
-        ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
+        ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
         ::google::protobuf::internal::HasBits<1> _has_bits_;
         mutable ::google::protobuf::internal::CachedSize _cached_size_;
         ::google::protobuf::int64 begin_;
@@ -1560,7 +1631,7 @@ namespace onnx {
     };
 // -------------------------------------------------------------------
 
-    class TensorProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_point(class_definition:onnx.TensorProto) */ {
+    class TensorProto : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:onnx.TensorProto) */ {
     public:
         TensorProto();
         virtual ~TensorProto();
@@ -1586,13 +1657,16 @@ namespace onnx {
             return *this;
         }
 #endif
-        inline const ::std::string& unknown_fields() const {
+        inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
             return _internal_metadata_.unknown_fields();
         }
-        inline ::std::string* mutable_unknown_fields() {
+        inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
             return _internal_metadata_.mutable_unknown_fields();
         }
 
+        static const ::google::protobuf::Descriptor* descriptor() {
+            return default_instance().GetDescriptor();
+        }
         static const TensorProto& default_instance();
 
         static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
@@ -1617,8 +1691,8 @@ namespace onnx {
         TensorProto* New(::google::protobuf::Arena* arena) const final {
             return CreateMaybeMessage<TensorProto>(arena);
         }
-        void CheckTypeAndMergeFrom(const ::google::protobuf::MessageLite& from)
-        final;
+        void CopyFrom(const ::google::protobuf::Message& from) final;
+        void MergeFrom(const ::google::protobuf::Message& from) final;
         void CopyFrom(const TensorProto& from);
         void MergeFrom(const TensorProto& from);
         PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
@@ -1634,13 +1708,14 @@ namespace onnx {
 #endif  // GOOGLE_PROTOBUF_ENABLE_EXPERIMENTAL_PARSER
         void SerializeWithCachedSizes(
                 ::google::protobuf::io::CodedOutputStream* output) const final;
-        void DiscardUnknownFields();
+        ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+                ::google::protobuf::uint8* target) const final;
         int GetCachedSize() const final { return _cached_size_.Get(); }
 
     private:
         void SharedCtor();
         void SharedDtor();
-        void SetCachedSize(int size) const;
+        void SetCachedSize(int size) const final;
         void InternalSwap(TensorProto* other);
     private:
         inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
@@ -1651,7 +1726,7 @@ namespace onnx {
         }
     public:
 
-        ::std::string GetTypeName() const final;
+        ::google::protobuf::Metadata GetMetadata() const final;
 
         // nested types ----------------------------------------------------
 
@@ -1701,6 +1776,17 @@ namespace onnx {
                 TensorProto_DataType_DataType_MAX;
         static const int DataType_ARRAYSIZE =
                 TensorProto_DataType_DataType_ARRAYSIZE;
+        static inline const ::google::protobuf::EnumDescriptor*
+        DataType_descriptor() {
+            return TensorProto_DataType_descriptor();
+        }
+        static inline const ::std::string& DataType_Name(DataType value) {
+            return TensorProto_DataType_Name(value);
+        }
+        static inline bool DataType_Parse(const ::std::string& name,
+                                          DataType* value) {
+            return TensorProto_DataType_Parse(name, value);
+        }
 
         // accessors -------------------------------------------------------
 
@@ -1863,7 +1949,7 @@ namespace onnx {
     private:
         class HasBitSetters;
 
-        ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
+        ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
         ::google::protobuf::internal::HasBits<1> _has_bits_;
         mutable ::google::protobuf::internal::CachedSize _cached_size_;
         ::google::protobuf::RepeatedField< ::google::protobuf::int64 > dims_;
@@ -1887,7 +1973,7 @@ namespace onnx {
     };
 // -------------------------------------------------------------------
 
-    class TensorShapeProto_Dimension : public ::google::protobuf::MessageLite /* @@protoc_insertion_point(class_definition:onnx.TensorShapeProto.Dimension) */ {
+    class TensorShapeProto_Dimension : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:onnx.TensorShapeProto.Dimension) */ {
     public:
         TensorShapeProto_Dimension();
         virtual ~TensorShapeProto_Dimension();
@@ -1913,13 +1999,16 @@ namespace onnx {
             return *this;
         }
 #endif
-        inline const ::std::string& unknown_fields() const {
+        inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
             return _internal_metadata_.unknown_fields();
         }
-        inline ::std::string* mutable_unknown_fields() {
+        inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
             return _internal_metadata_.mutable_unknown_fields();
         }
 
+        static const ::google::protobuf::Descriptor* descriptor() {
+            return default_instance().GetDescriptor();
+        }
         static const TensorShapeProto_Dimension& default_instance();
 
         enum ValueCase {
@@ -1950,8 +2039,8 @@ namespace onnx {
         TensorShapeProto_Dimension* New(::google::protobuf::Arena* arena) const final {
             return CreateMaybeMessage<TensorShapeProto_Dimension>(arena);
         }
-        void CheckTypeAndMergeFrom(const ::google::protobuf::MessageLite& from)
-        final;
+        void CopyFrom(const ::google::protobuf::Message& from) final;
+        void MergeFrom(const ::google::protobuf::Message& from) final;
         void CopyFrom(const TensorShapeProto_Dimension& from);
         void MergeFrom(const TensorShapeProto_Dimension& from);
         PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
@@ -1967,13 +2056,14 @@ namespace onnx {
 #endif  // GOOGLE_PROTOBUF_ENABLE_EXPERIMENTAL_PARSER
         void SerializeWithCachedSizes(
                 ::google::protobuf::io::CodedOutputStream* output) const final;
-        void DiscardUnknownFields();
+        ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+                ::google::protobuf::uint8* target) const final;
         int GetCachedSize() const final { return _cached_size_.Get(); }
 
     private:
         void SharedCtor();
         void SharedDtor();
-        void SetCachedSize(int size) const;
+        void SetCachedSize(int size) const final;
         void InternalSwap(TensorShapeProto_Dimension* other);
     private:
         inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
@@ -1984,7 +2074,7 @@ namespace onnx {
         }
     public:
 
-        ::std::string GetTypeName() const final;
+        ::google::protobuf::Metadata GetMetadata() const final;
 
         // nested types ----------------------------------------------------
 
@@ -2038,7 +2128,7 @@ namespace onnx {
         inline bool has_value() const;
         inline void clear_has_value();
 
-        ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
+        ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
         ::google::protobuf::internal::HasBits<1> _has_bits_;
         mutable ::google::protobuf::internal::CachedSize _cached_size_;
         ::google::protobuf::internal::ArenaStringPtr denotation_;
@@ -2053,7 +2143,7 @@ namespace onnx {
     };
 // -------------------------------------------------------------------
 
-    class TensorShapeProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_point(class_definition:onnx.TensorShapeProto) */ {
+    class TensorShapeProto : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:onnx.TensorShapeProto) */ {
     public:
         TensorShapeProto();
         virtual ~TensorShapeProto();
@@ -2079,13 +2169,16 @@ namespace onnx {
             return *this;
         }
 #endif
-        inline const ::std::string& unknown_fields() const {
+        inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
             return _internal_metadata_.unknown_fields();
         }
-        inline ::std::string* mutable_unknown_fields() {
+        inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
             return _internal_metadata_.mutable_unknown_fields();
         }
 
+        static const ::google::protobuf::Descriptor* descriptor() {
+            return default_instance().GetDescriptor();
+        }
         static const TensorShapeProto& default_instance();
 
         static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
@@ -2110,8 +2203,8 @@ namespace onnx {
         TensorShapeProto* New(::google::protobuf::Arena* arena) const final {
             return CreateMaybeMessage<TensorShapeProto>(arena);
         }
-        void CheckTypeAndMergeFrom(const ::google::protobuf::MessageLite& from)
-        final;
+        void CopyFrom(const ::google::protobuf::Message& from) final;
+        void MergeFrom(const ::google::protobuf::Message& from) final;
         void CopyFrom(const TensorShapeProto& from);
         void MergeFrom(const TensorShapeProto& from);
         PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
@@ -2127,13 +2220,14 @@ namespace onnx {
 #endif  // GOOGLE_PROTOBUF_ENABLE_EXPERIMENTAL_PARSER
         void SerializeWithCachedSizes(
                 ::google::protobuf::io::CodedOutputStream* output) const final;
-        void DiscardUnknownFields();
+        ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+                ::google::protobuf::uint8* target) const final;
         int GetCachedSize() const final { return _cached_size_.Get(); }
 
     private:
         void SharedCtor();
         void SharedDtor();
-        void SetCachedSize(int size) const;
+        void SetCachedSize(int size) const final;
         void InternalSwap(TensorShapeProto* other);
     private:
         inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
@@ -2144,7 +2238,7 @@ namespace onnx {
         }
     public:
 
-        ::std::string GetTypeName() const final;
+        ::google::protobuf::Metadata GetMetadata() const final;
 
         // nested types ----------------------------------------------------
 
@@ -2168,7 +2262,7 @@ namespace onnx {
     private:
         class HasBitSetters;
 
-        ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
+        ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
         ::google::protobuf::internal::HasBits<1> _has_bits_;
         mutable ::google::protobuf::internal::CachedSize _cached_size_;
         ::google::protobuf::RepeatedPtrField< ::onnx::TensorShapeProto_Dimension > dim_;
@@ -2176,7 +2270,7 @@ namespace onnx {
     };
 // -------------------------------------------------------------------
 
-    class TypeProto_Tensor : public ::google::protobuf::MessageLite /* @@protoc_insertion_point(class_definition:onnx.TypeProto.Tensor) */ {
+    class TypeProto_Tensor : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:onnx.TypeProto.Tensor) */ {
     public:
         TypeProto_Tensor();
         virtual ~TypeProto_Tensor();
@@ -2202,13 +2296,16 @@ namespace onnx {
             return *this;
         }
 #endif
-        inline const ::std::string& unknown_fields() const {
+        inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
             return _internal_metadata_.unknown_fields();
         }
-        inline ::std::string* mutable_unknown_fields() {
+        inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
             return _internal_metadata_.mutable_unknown_fields();
         }
 
+        static const ::google::protobuf::Descriptor* descriptor() {
+            return default_instance().GetDescriptor();
+        }
         static const TypeProto_Tensor& default_instance();
 
         static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
@@ -2233,8 +2330,8 @@ namespace onnx {
         TypeProto_Tensor* New(::google::protobuf::Arena* arena) const final {
             return CreateMaybeMessage<TypeProto_Tensor>(arena);
         }
-        void CheckTypeAndMergeFrom(const ::google::protobuf::MessageLite& from)
-        final;
+        void CopyFrom(const ::google::protobuf::Message& from) final;
+        void MergeFrom(const ::google::protobuf::Message& from) final;
         void CopyFrom(const TypeProto_Tensor& from);
         void MergeFrom(const TypeProto_Tensor& from);
         PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
@@ -2250,13 +2347,14 @@ namespace onnx {
 #endif  // GOOGLE_PROTOBUF_ENABLE_EXPERIMENTAL_PARSER
         void SerializeWithCachedSizes(
                 ::google::protobuf::io::CodedOutputStream* output) const final;
-        void DiscardUnknownFields();
+        ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+                ::google::protobuf::uint8* target) const final;
         int GetCachedSize() const final { return _cached_size_.Get(); }
 
     private:
         void SharedCtor();
         void SharedDtor();
-        void SetCachedSize(int size) const;
+        void SetCachedSize(int size) const final;
         void InternalSwap(TypeProto_Tensor* other);
     private:
         inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
@@ -2267,7 +2365,7 @@ namespace onnx {
         }
     public:
 
-        ::std::string GetTypeName() const final;
+        ::google::protobuf::Metadata GetMetadata() const final;
 
         // nested types ----------------------------------------------------
 
@@ -2293,7 +2391,7 @@ namespace onnx {
     private:
         class HasBitSetters;
 
-        ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
+        ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
         ::google::protobuf::internal::HasBits<1> _has_bits_;
         mutable ::google::protobuf::internal::CachedSize _cached_size_;
         ::onnx::TensorShapeProto* shape_;
@@ -2302,7 +2400,7 @@ namespace onnx {
     };
 // -------------------------------------------------------------------
 
-    class TypeProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_point(class_definition:onnx.TypeProto) */ {
+    class TypeProto : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:onnx.TypeProto) */ {
     public:
         TypeProto();
         virtual ~TypeProto();
@@ -2328,13 +2426,16 @@ namespace onnx {
             return *this;
         }
 #endif
-        inline const ::std::string& unknown_fields() const {
+        inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
             return _internal_metadata_.unknown_fields();
         }
-        inline ::std::string* mutable_unknown_fields() {
+        inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
             return _internal_metadata_.mutable_unknown_fields();
         }
 
+        static const ::google::protobuf::Descriptor* descriptor() {
+            return default_instance().GetDescriptor();
+        }
         static const TypeProto& default_instance();
 
         enum ValueCase {
@@ -2364,8 +2465,8 @@ namespace onnx {
         TypeProto* New(::google::protobuf::Arena* arena) const final {
             return CreateMaybeMessage<TypeProto>(arena);
         }
-        void CheckTypeAndMergeFrom(const ::google::protobuf::MessageLite& from)
-        final;
+        void CopyFrom(const ::google::protobuf::Message& from) final;
+        void MergeFrom(const ::google::protobuf::Message& from) final;
         void CopyFrom(const TypeProto& from);
         void MergeFrom(const TypeProto& from);
         PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
@@ -2381,13 +2482,14 @@ namespace onnx {
 #endif  // GOOGLE_PROTOBUF_ENABLE_EXPERIMENTAL_PARSER
         void SerializeWithCachedSizes(
                 ::google::protobuf::io::CodedOutputStream* output) const final;
-        void DiscardUnknownFields();
+        ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+                ::google::protobuf::uint8* target) const final;
         int GetCachedSize() const final { return _cached_size_.Get(); }
 
     private:
         void SharedCtor();
         void SharedDtor();
-        void SetCachedSize(int size) const;
+        void SetCachedSize(int size) const final;
         void InternalSwap(TypeProto* other);
     private:
         inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
@@ -2398,7 +2500,7 @@ namespace onnx {
         }
     public:
 
-        ::std::string GetTypeName() const final;
+        ::google::protobuf::Metadata GetMetadata() const final;
 
         // nested types ----------------------------------------------------
 
@@ -2440,7 +2542,7 @@ namespace onnx {
         inline bool has_value() const;
         inline void clear_has_value();
 
-        ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
+        ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
         ::google::protobuf::internal::HasBits<1> _has_bits_;
         mutable ::google::protobuf::internal::CachedSize _cached_size_;
         ::google::protobuf::internal::ArenaStringPtr denotation_;
@@ -2454,7 +2556,7 @@ namespace onnx {
     };
 // -------------------------------------------------------------------
 
-    class OperatorSetIdProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_point(class_definition:onnx.OperatorSetIdProto) */ {
+    class OperatorSetIdProto : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:onnx.OperatorSetIdProto) */ {
     public:
         OperatorSetIdProto();
         virtual ~OperatorSetIdProto();
@@ -2480,13 +2582,16 @@ namespace onnx {
             return *this;
         }
 #endif
-        inline const ::std::string& unknown_fields() const {
+        inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
             return _internal_metadata_.unknown_fields();
         }
-        inline ::std::string* mutable_unknown_fields() {
+        inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
             return _internal_metadata_.mutable_unknown_fields();
         }
 
+        static const ::google::protobuf::Descriptor* descriptor() {
+            return default_instance().GetDescriptor();
+        }
         static const OperatorSetIdProto& default_instance();
 
         static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
@@ -2511,8 +2616,8 @@ namespace onnx {
         OperatorSetIdProto* New(::google::protobuf::Arena* arena) const final {
             return CreateMaybeMessage<OperatorSetIdProto>(arena);
         }
-        void CheckTypeAndMergeFrom(const ::google::protobuf::MessageLite& from)
-        final;
+        void CopyFrom(const ::google::protobuf::Message& from) final;
+        void MergeFrom(const ::google::protobuf::Message& from) final;
         void CopyFrom(const OperatorSetIdProto& from);
         void MergeFrom(const OperatorSetIdProto& from);
         PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
@@ -2528,13 +2633,14 @@ namespace onnx {
 #endif  // GOOGLE_PROTOBUF_ENABLE_EXPERIMENTAL_PARSER
         void SerializeWithCachedSizes(
                 ::google::protobuf::io::CodedOutputStream* output) const final;
-        void DiscardUnknownFields();
+        ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+                ::google::protobuf::uint8* target) const final;
         int GetCachedSize() const final { return _cached_size_.Get(); }
 
     private:
         void SharedCtor();
         void SharedDtor();
-        void SetCachedSize(int size) const;
+        void SetCachedSize(int size) const final;
         void InternalSwap(OperatorSetIdProto* other);
     private:
         inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
@@ -2545,7 +2651,7 @@ namespace onnx {
         }
     public:
 
-        ::std::string GetTypeName() const final;
+        ::google::protobuf::Metadata GetMetadata() const final;
 
         // nested types ----------------------------------------------------
 
@@ -2577,7 +2683,7 @@ namespace onnx {
     private:
         class HasBitSetters;
 
-        ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
+        ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
         ::google::protobuf::internal::HasBits<1> _has_bits_;
         mutable ::google::protobuf::internal::CachedSize _cached_size_;
         ::google::protobuf::internal::ArenaStringPtr domain_;
@@ -5620,8 +5726,20 @@ namespace google {
     namespace protobuf {
 
         template <> struct is_proto_enum< ::onnx::AttributeProto_AttributeType> : ::std::true_type {};
+        template <>
+        inline const EnumDescriptor* GetEnumDescriptor< ::onnx::AttributeProto_AttributeType>() {
+            return ::onnx::AttributeProto_AttributeType_descriptor();
+        }
         template <> struct is_proto_enum< ::onnx::TensorProto_DataType> : ::std::true_type {};
+        template <>
+        inline const EnumDescriptor* GetEnumDescriptor< ::onnx::TensorProto_DataType>() {
+            return ::onnx::TensorProto_DataType_descriptor();
+        }
         template <> struct is_proto_enum< ::onnx::Version> : ::std::true_type {};
+        template <>
+        inline const EnumDescriptor* GetEnumDescriptor< ::onnx::Version>() {
+            return ::onnx::Version_descriptor();
+        }
 
     }  // namespace protobuf
 }  // namespace google
