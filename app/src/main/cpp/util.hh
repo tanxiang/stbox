@@ -31,7 +31,6 @@ namespace tt {
     std::vector<char> loadDataFromAssets(const std::string& filePath,android_app *androidAppCtx);
     uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
                                             vk::SurfaceKHR surface);
-
     struct RenderpassBeginHandle: public vk::CommandBuffer{
         RenderpassBeginHandle(vk::CommandBuffer commandBuffer,vk::RenderPassBeginInfo renderPassBeginInfo)
                 :vk::CommandBuffer{commandBuffer}{
@@ -338,7 +337,8 @@ namespace tt {
                                                     window});
         }
 
-        std::unique_ptr<tt::Device> connectToDevice(vk::SurfaceKHR surface);
+        std::unique_ptr<tt::Device> connectToDevice(vk::PhysicalDevice& phyDevice,int queueIndex);
+
     };
 
     tt::Instance createInstance();

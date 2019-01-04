@@ -6,7 +6,7 @@
 #define STBOX_STBOXVK_HH
 
 #include "util.hh"
-
+#include "onnx.hh"
 //uint32_t draw_run(tt::Device &ttInstance,vk::SurfaceKHR &surfaceKHR);
 namespace tt {
     class stboxvk {
@@ -15,6 +15,10 @@ namespace tt {
 
 
     public:
+        void init(android_app *app, tt::Instance &instance);
+
+        void initDevice(android_app *app,tt::Instance &instance,vk::PhysicalDevice &physicalDevice,int queueIndex);
+
         void initWindow(android_app *app, tt::Instance &instance);
 
         void cleanWindow();

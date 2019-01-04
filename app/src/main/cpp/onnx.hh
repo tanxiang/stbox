@@ -5,10 +5,11 @@
 #ifndef STBOX_ONNX_HH
 #define STBOX_ONNX_HH
 
-
+#include <string>
+#include <memory>
 class Onnx {
 public:
-    Onnx();
+    Onnx(std::string);
 };
 
 

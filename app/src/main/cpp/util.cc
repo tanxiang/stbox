@@ -95,16 +95,12 @@ namespace tt {
     }
 
 
-    std::unique_ptr<tt::Device> Instance::connectToDevice(vk::SurfaceKHR surface) {
-        auto phyDevices = get().enumeratePhysicalDevices();
-        auto phyDevice = phyDevices[0];
-        auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevice,
-                                                                 vk::QueueFlagBits::eGraphics,
-                                                                 surface);
+
+    std::unique_ptr<tt::Device> Instance::connectToDevice(vk::PhysicalDevice& phyDevice,int queueIndex) {
         std::array<float, 1> queue_priorities{0.0};
         std::array<vk::DeviceQueueCreateInfo, 1> device_queue_create_infos{
                 vk::DeviceQueueCreateInfo{vk::DeviceQueueCreateFlags(),
-                                          graphicsQueueIndex,
+                                          queueIndex,
                                           queue_priorities.size(), queue_priorities.data()
                 }
         };
@@ -130,8 +126,8 @@ namespace tt {
                                       deviceLayerPropertiesName.data(),
                                       device_extension_names.size(),
                                       device_extension_names.data()}),
-                                               phyDevice,
-                                               graphicsQueueIndex);
+                                        phyDevice,
+                                        queueIndex);
     }
 
     vk::SurfaceFormatKHR Device::getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR) {
