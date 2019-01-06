@@ -30,6 +30,7 @@ add_library( # Sets the name of the library.
              )
 
 target_compile_definitions(stbox PRIVATE VK_USE_PLATFORM_ANDROID_KHR)
+target_compile_options(stbox PRIVATE -fno-rtti)
 
 
 target_include_directories(stbox PRIVATE

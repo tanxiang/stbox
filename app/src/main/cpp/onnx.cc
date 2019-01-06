@@ -11,7 +11,7 @@ namespace tt {
     Onnx::Onnx(std::string fname) { //
         int fd = open(fname.c_str(), O_RDONLY);
         if (fd < 0) {
-            std::cerr << strerror(errno) << fname;
+            std::cerr <<"opening :"<< fname << strerror(errno) ;
             return;
         }
         onnx::ModelProto modelProto;

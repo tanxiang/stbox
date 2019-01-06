@@ -188,6 +188,7 @@ namespace tt {
 
     void stboxvk::initWindow(android_app *app, tt::Instance &instance) {
         assert(instance);
+        initData(app,instance);
         auto surface = instance.connectToWSI(app->window);
         if (!devicePtr || !devicePtr->checkSurfaceSupport(surface.get())){
             auto phyDevices = instance->enumeratePhysicalDevices();
