@@ -31,6 +31,7 @@ namespace tt {
     std::vector<char> loadDataFromAssets(const std::string& filePath,android_app *androidAppCtx);
     uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
                                             vk::SurfaceKHR surface);
+
     struct RenderpassBeginHandle: public vk::CommandBuffer{
         RenderpassBeginHandle(vk::CommandBuffer commandBuffer,vk::RenderPassBeginInfo renderPassBeginInfo)
                 :vk::CommandBuffer{commandBuffer}{
@@ -55,8 +56,7 @@ namespace tt {
         CommandBufferBeginHandle& operator=( const CommandBufferBeginHandle& ) = delete; // non copyable
     };
 
-
-    uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
+    uint32_t findMemoryTypeIndex(vk::PhysicalDevice physicalDevice,uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
     class Device : public vk::UniqueDevice {
     public:
@@ -95,6 +95,10 @@ namespace tt {
             };
             return get().createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo{
                     vk::DescriptorPoolCreateFlags(), 3, poolSize.size(), poolSize.data()});
+        }
+
+        auto findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags){
+            return tt::findMemoryTypeIndex(physicalDevice,memoryTypeBits,flags);
         }
 
         vk::UniqueShaderModule loadShaderFromAssets(const std::string& filePath,

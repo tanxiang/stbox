@@ -507,7 +507,7 @@ namespace tt {
 
         auto imageMemoryRq = get().getImageMemoryRequirements(std::get<vk::UniqueImage>(IVM).get());
         std::get<vk::UniqueDeviceMemory>(IVM) = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
-                imageMemoryRq.size, findMemoryTypeIndex(physicalDevice,imageMemoryRq.memoryTypeBits,
+                imageMemoryRq.size, findMemoryTypeIndex(imageMemoryRq.memoryTypeBits,
                                                         vk::MemoryPropertyFlagBits::eDeviceLocal)
         });
         get().bindImageMemory(std::get<vk::UniqueImage>(IVM).get(),
@@ -535,7 +535,7 @@ namespace tt {
                         bufferUsageFlags});
         auto memoryRequirements = get().getBufferMemoryRequirements(
                 std::get<vk::UniqueBuffer>(BVM).get());
-        auto typeIndex = findMemoryTypeIndex(physicalDevice,memoryRequirements.memoryTypeBits,
+        auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits,
                                              memoryPropertyFlags);
         std::get<vk::UniqueDeviceMemory>(BVM) = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
                 memoryRequirements.size, typeIndex
