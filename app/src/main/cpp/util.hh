@@ -55,6 +55,9 @@ namespace tt {
         CommandBufferBeginHandle& operator=( const CommandBufferBeginHandle& ) = delete; // non copyable
     };
 
+
+    uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
+
     class Device : public vk::UniqueDevice {
     public:
         using ImageViewMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueDeviceMemory>;
@@ -74,7 +77,7 @@ namespace tt {
         vk::UniquePipelineCache pipelineCache = get().createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
         vk::UniqueCommandPool commandPool = get().createCommandPoolUnique(vk::CommandPoolCreateInfo{vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueFamilyIndex});
         vk::Format depthFormat = vk::Format::eD24UnormS8Uint;
-
+        vk::Format renderPassFormat ;
     public:
         vk::UniqueRenderPass renderPass;
         vk::UniquePipelineLayout pipelineLayout;
@@ -93,8 +96,6 @@ namespace tt {
             return get().createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo{
                     vk::DescriptorPoolCreateFlags(), 3, poolSize.size(), poolSize.data()});
         }
-
-        uint32_t findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
         vk::UniqueShaderModule loadShaderFromAssets(const std::string& filePath,
                                                     android_app *androidAppCtx);
@@ -133,6 +134,10 @@ namespace tt {
             return depthFormat;
         }
 
+        auto getRenderPassFormat(){
+            return renderPassFormat;
+        }
+
         vk::UniqueDescriptorSetLayout createDescriptorSetLayoutUnique(std::vector<vk::DescriptorSetLayoutBinding> descriptSlBs) {
             return get().createDescriptorSetLayoutUnique(
                     vk::DescriptorSetLayoutCreateInfo{
@@ -149,7 +154,7 @@ namespace tt {
                     });
         }
 
-        vk::UniqueRenderPass createRenderpass(vk::SurfaceFormatKHR surfaceDefaultFormat);
+        vk::UniqueRenderPass createRenderpass(vk::Format surfaceDefaultFormat);
 
         auto createDescriptorSets(vk::UniqueDescriptorSetLayout &descriptorSetLayout) {
             std::array<vk::DescriptorSetLayout, 1> descriptorSetLayouts{descriptorSetLayout.get()};
@@ -168,7 +173,7 @@ namespace tt {
             return false;
         }
 
-        vk::SurfaceFormatKHR getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR);
+        //vk::SurfaceFormatKHR getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR);
 
         ImageViewMemory createImageAndMemory(vk::Format format, vk::Extent3D extent3D,
                                              vk::ImageUsageFlags imageUsageFlags =

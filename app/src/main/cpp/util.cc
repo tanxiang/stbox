@@ -130,17 +130,8 @@ namespace tt {
                                         queueIndex);
     }
 
-    vk::SurfaceFormatKHR Device::getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR) {
-        auto defaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surfaceKHR);
 
-        //for (auto &format:defaultDeviceFormats) {
-            //std::cout << "\t\tSurfaceFormatsKHR have " << vk::to_string(format.format) << std::endl;
-        //}
-        return defaultDeviceFormats[0];
-    }
-
-
-    uint32_t Device::findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags) {
+    uint32_t findMemoryTypeIndex(vk::PhysicalDevice physicalDevice,uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags) {
         auto memoryProperties = physicalDevice.getMemoryProperties();
         for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
             if ((memoryTypeBits & 1) == 1) {
@@ -338,12 +329,13 @@ namespace tt {
         return get().createGraphicsPipelineUnique(pipelineCache.get(), pipelineCreateInfo);
     }
 
-    vk::UniqueRenderPass Device::createRenderpass(vk::SurfaceFormatKHR surfaceDefaultFormat) {
+    vk::UniqueRenderPass Device::createRenderpass(vk::Format surfaceDefaultFormat) {
         //auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
+        renderPassFormat = surfaceDefaultFormat;
         std::array<vk::AttachmentDescription, 2> attachDescs{
                 vk::AttachmentDescription{
                         vk::AttachmentDescriptionFlags(),
-                        surfaceDefaultFormat.format,
+                        renderPassFormat,
                         vk::SampleCountFlagBits::e1,
                         vk::AttachmentLoadOp::eClear,
                         vk::AttachmentStoreOp::eStore,
@@ -592,7 +584,7 @@ namespace tt {
                       << std::endl;
         }
         uint32_t desiredNumberOfSwapchainImages = surfaceCapabilitiesKHR.minImageCount;
-        auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
+        //auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
         vk::SurfaceTransformFlagBitsKHR preTransform{};
         if (surfaceCapabilitiesKHR.supportedTransforms &
             vk::SurfaceTransformFlagBitsKHR::eIdentity) {
@@ -618,7 +610,7 @@ namespace tt {
         vk::SwapchainCreateInfoKHR swapChainCreateInfo{vk::SwapchainCreateFlagsKHR(),
                                                        surface.get(),
                                                        desiredNumberOfSwapchainImages,
-                                                       surfaceDefaultFormat.format,
+                                                       device.getRenderPassFormat(),
                                                        vk::ColorSpaceKHR::eSrgbNonlinear,
                                                        swapchainExtent,
                                                        1,
@@ -644,7 +636,7 @@ namespace tt {
                     vk::ImageViewCreateFlags(),
                     vkSwapChainImage,
                     vk::ImageViewType::e2D,
-                    surfaceDefaultFormat.format,
+                    device.getRenderPassFormat(),
                     vk::ComponentMapping{
                             vk::ComponentSwizzle::eR,
                             vk::ComponentSwizzle::eG,

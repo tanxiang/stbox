@@ -17,6 +17,7 @@
 
 #include "util.hh"
 #include "vertexdata.hh"
+#include "onnx.hh"
 
 vk::Extent2D AndroidGetWindowSize(android_app *Android_application) {
     // On Android, retrieve the window size from the native window.
@@ -27,11 +28,10 @@ vk::Extent2D AndroidGetWindowSize(android_app *Android_application) {
 
 namespace tt {
 
-    void stboxvk::init(android_app *app, tt::Instance &instance) {
-        assert(instance);
-        auto surface = instance.connectToWSI(app->window);
+    void stboxvk::initData(android_app *app, tt::Instance &instance) {
+        Onnx nf{"/storage/0123-4567/nw/mobilenetv2-1.0.onnx"};
     }
-    void stboxvk::initDevice(android_app *app,tt::Instance &instance,vk::PhysicalDevice &physicalDevice,int queueIndex) {
+    void stboxvk::initDevice(android_app *app,tt::Instance &instance,vk::PhysicalDevice &physicalDevice,int queueIndex,vk::Format rederPassFormat) {
         devicePtr = instance.connectToDevice(physicalDevice,queueIndex);//reconnect
         auto descriptorSetLayout = devicePtr->createDescriptorSetLayoutUnique(
                 std::vector<vk::DescriptorSetLayoutBinding>{
@@ -51,7 +51,7 @@ namespace tt {
         );
         devicePtr->descriptorSets = devicePtr->createDescriptorSets(descriptorSetLayout);
 
-        //auto windowExtent = swapchainPtr->getSwapchainExtent();
+        devicePtr->renderPass = devicePtr->createRenderpass(rederPassFormat);
 
         devicePtr->mvpBuffer = devicePtr->createBufferAndMemory(sizeof(glm::mat4),
                                                                 vk::BufferUsageFlagBits::eUniformBuffer,
@@ -194,8 +194,9 @@ namespace tt {
             auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevices[0],
                                                                      vk::QueueFlagBits::eGraphics,
                                                                      surface.get());
-            initDevice(app,instance,phyDevices[0],graphicsQueueIndex);
-            devicePtr->renderPass = devicePtr->createRenderpass(devicePtr->getSurfaceDefaultFormat(surface.get()));//FIXME check surface format
+            auto defaultDeviceFormats = phyDevices[0].getSurfaceFormatsKHR(surface.get());
+
+            initDevice(app,instance,phyDevices[0],graphicsQueueIndex,defaultDeviceFormats[0].format);
 
         }
 

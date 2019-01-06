@@ -104,7 +104,7 @@ target_link_libraries( # Specifies the target library.
                        ${log-lib}
                        ${vulkan-lib}
                        ${android-lib}
-                       #shaderc_lib
+                       onnxpb
                        )
 
 

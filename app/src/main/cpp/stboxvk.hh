@@ -15,9 +15,9 @@ namespace tt {
 
 
     public:
-        void init(android_app *app, tt::Instance &instance);
+        void initData(android_app *app, tt::Instance &instance);
 
-        void initDevice(android_app *app,tt::Instance &instance,vk::PhysicalDevice &physicalDevice,int queueIndex);
+        void initDevice(android_app *app,tt::Instance &instance,vk::PhysicalDevice &physicalDevice,int queueIndex,vk::Format rederPassFormat);
 
         void initWindow(android_app *app, tt::Instance &instance);
 

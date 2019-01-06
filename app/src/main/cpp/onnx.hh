@@ -7,10 +7,12 @@
 
 #include <string>
 #include <memory>
-class Onnx {
-public:
-    Onnx(std::string);
-};
+namespace tt {
 
+    class Onnx {
+    public:
+        Onnx(std::string);
+    };
+}
 
 #endif //STBOX_ONNX_HH
