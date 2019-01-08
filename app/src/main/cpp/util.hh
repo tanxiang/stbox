@@ -11,7 +11,6 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <unistd.h>
-#include <android/log.h>
 #include <vulkan.hpp>
 #include "main.hh"
 #include <thread>

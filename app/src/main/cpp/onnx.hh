@@ -7,6 +7,8 @@
 
 #include <string>
 #include <memory>
+#include "ss.hh"
+
 namespace tt {
 
     class Onnx {

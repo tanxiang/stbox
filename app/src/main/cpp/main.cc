@@ -23,40 +23,7 @@
 
 
 
-class AndroidBuffer : public std::streambuf {
-public:
-    AndroidBuffer(android_LogPriority priority) {
-        priority_ = priority;
-        this->setp(buffer_, buffer_ + kBufferSize - 1);
-    }
 
-private:
-    static const int32_t kBufferSize = 128;
-
-    int32_t overflow(int32_t c) {
-        if (c == traits_type::eof()) {
-            *this->pptr() = traits_type::to_char_type(c);
-            this->sbumpc();
-        }
-        return this->sync() ? traits_type::eof() : traits_type::not_eof(c);
-    }
-
-    int32_t sync() {
-        int32_t rc = 0;
-        if (this->pbase() != this->pptr()) {
-            char writebuf[kBufferSize + 1];
-            memcpy(writebuf, this->pbase(), this->pptr() - this->pbase());
-            writebuf[this->pptr() - this->pbase()] = '\0';
-
-            rc = __android_log_write(priority_, "STBOX", writebuf) > 0;
-            this->setp(buffer_, buffer_ + kBufferSize - 1);
-        }
-        return rc;
-    }
-
-    android_LogPriority priority_ = ANDROID_LOG_INFO;
-    char buffer_[kBufferSize];
-};
 
 /*
 void choreographerCallback(long frameTimeNanos, void* data) {
@@ -67,7 +34,7 @@ void choreographerCallback(long frameTimeNanos, void* data) {
 
     auto laterTime = (std::chrono::steady_clock::now().time_since_epoch().count() - frameTimeNanos )/ 1000000;
     if(laterTime > 12)
-        std::cout <<"later"<< laterTime << " minseconds" <<std::endl;
+        MY_LOG(INFO) <<"later"<< laterTime << " minseconds" ;
     //draw_run(ttInstance.defaultDevice(), ttInstance.defaultSurface());
 
     if (ttInstance.isFocus()) {
@@ -83,53 +50,52 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
         switch (cmd) {
             case APP_CMD_INIT_WINDOW:
                 // The window is being shown, get it ready.
-                std::cout << "APP_CMD_INIT_WINDOW:" << cmd << std::endl;
+                MY_LOG(INFO) << "APP_CMD_INIT_WINDOW:" << cmd ;
                 appbox.initWindow(app, instance);
                 break;
 
             case APP_CMD_TERM_WINDOW:
-                std::cout << "APP_CMD_TERM_WINDOW:" << cmd << std::endl;
+                MY_LOG(INFO) << "APP_CMD_TERM_WINDOW:" << cmd ;
                 appbox.cleanWindow();
                 break;
             case APP_CMD_INPUT_CHANGED:
                 break;
             case APP_CMD_START:
-                std::cout << "APP_CMD_START:" << cmd << std::endl;
+                MY_LOG(INFO) << "APP_CMD_START:" << cmd ;
                 break;
             case APP_CMD_STOP:
-                std::cout << "APP_CMD_STOP:" << cmd << std::endl;
+                MY_LOG(INFO) << "APP_CMD_STOP:" << cmd ;
                 break;
             case APP_CMD_GAINED_FOCUS:
-                std::cout << "APP_CMD_GAINED_FOCUS:" << cmd << std::endl;
+                MY_LOG(INFO) << "APP_CMD_GAINED_FOCUS:" << cmd ;
                 break;
             case APP_CMD_LOST_FOCUS:
-                std::cout << "APP_CMD_LOST_FOCUS:" << cmd << std::endl;
+                MY_LOG(INFO) << "APP_CMD_LOST_FOCUS:" << cmd ;
                 break;
             case APP_CMD_SAVE_STATE:
-                std::cout << "APP_CMD_SAVE_STATE:" << cmd << std::endl;
+                MY_LOG(INFO) << "APP_CMD_SAVE_STATE:" << cmd ;
                 break;
             case APP_CMD_LOW_MEMORY:
-                std::cout << "APP_CMD_LOW_MEMORY:" << cmd << std::endl;
+                MY_LOG(INFO) << "APP_CMD_LOW_MEMORY:" << cmd ;
                 break;
             case APP_CMD_PAUSE:
-                std::cout << "APP_CMD_PAUSE:" << cmd << std::endl;
+                MY_LOG(INFO) << "APP_CMD_PAUSE:" << cmd ;
                 break;
             case APP_CMD_RESUME:
-                std::cout << "APP_CMD_RESUME:" << cmd << std::endl;
+                MY_LOG(INFO) << "APP_CMD_RESUME:" << cmd ;
                 break;
             case APP_CMD_DESTROY:
-                std::cout << "APP_CMD_DESTROY:" << cmd << std::endl;
+                MY_LOG(INFO) << "APP_CMD_DESTROY:" << cmd ;
                 break;
             default:
-                std::cout << "event not handled:" << cmd << std::endl;
+                MY_LOG(INFO) << "event not handled:" << cmd ;
         }
     }
     catch (std::system_error systemError) {
-        std::cout << "got system error:" << systemError.what() << "!#" << systemError.code()
-                  << std::endl;
+        MY_LOG(ERROR) << "got system error:" << systemError.what() << "!#" << systemError.code() ;
     }
     catch (std::logic_error logicError) {
-        std::cout << "got logic error:" << logicError.what() << std::endl;
+        MY_LOG(ERROR) << "got logic error:" << logicError.what() ;
     }
 }
 
@@ -189,22 +155,57 @@ void Android_process(struct android_app *app) {
         switch (ident) {
             case ALOOPER_POLL_WAKE:
             case ALOOPER_POLL_TIMEOUT:
-                std::cout << "ALOOPER_POLL:\t" << ident << std::endl;
+                MY_LOG(INFO) << "ALOOPER_POLL:\t" << ident ;
                 {
 
                 }
                 break;
             case ALOOPER_POLL_ERROR:
             default:
-                std::cout << "ALOOPER_ERROR:\t" << ident << std::endl;
+                MY_LOG(INFO) << "ALOOPER_ERROR:\t" << ident ;
         };
 
     } while (true);
-    std::cout << "ALOOPER_EXIT:\t ANativeActivity_finish" << std::endl;
+    MY_LOG(INFO) << "ALOOPER_EXIT:\t ANativeActivity_finish" ;
     return ANativeActivity_finish(app->activity);
 }
 
+/*
+class AndroidBuffer : public std::streambuf {
+public:
+    AndroidBuffer(android_LogPriority priority) {
+        priority_ = priority;
+        this->setp(buffer_, buffer_ + kBufferSize - 1);
+    }
 
+private:
+    static const int32_t kBufferSize = 128;
+
+    int32_t overflow(int32_t c) {
+        if (c == traits_type::eof()) {
+            *this->pptr() = traits_type::to_char_type(c);
+            this->sbumpc();
+        }
+        return this->sync() ? traits_type::eof() : traits_type::not_eof(c);
+    }
+
+    int32_t sync() {
+        int32_t rc = 0;
+        if (this->pbase() != this->pptr()) {
+            char writebuf[kBufferSize + 1];
+            memcpy(writebuf, this->pbase(), this->pptr() - this->pbase());
+            writebuf[this->pptr() - this->pbase()] = '\0';
+
+            rc = __android_log_write(priority_, "STBOX", writebuf) > 0;
+            this->setp(buffer_, buffer_ + kBufferSize - 1);
+        }
+        return rc;
+    }
+
+    android_LogPriority priority_ = ANDROID_LOG_INFO;
+    char buffer_[kBufferSize];
+};
+*/
 void android_main(struct android_app *app) {
     assert(app != nullptr);
     // Set static variables.
@@ -215,8 +216,8 @@ void android_main(struct android_app *app) {
 
 
     // Forward cout/cerr to logcat.
-    std::cout.rdbuf(new AndroidBuffer(ANDROID_LOG_INFO));
-    std::cerr.rdbuf(new AndroidBuffer(ANDROID_LOG_ERROR));
+    //std::cout.rdbuf(new AndroidBuffer(ANDROID_LOG_INFO));
+    //std::cerr.rdbuf(new AndroidBuffer(ANDROID_LOG_ERROR));
 
     // Main loop
     return Android_process(app);

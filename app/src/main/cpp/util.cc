@@ -55,12 +55,12 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
 namespace tt {
     tt::Instance createInstance() {
         auto instanceLayerProperties = vk::enumerateInstanceLayerProperties();
-        std::cout << "enumerateInstanceLayerProperties:" << instanceLayerProperties.size()
-                  << std::endl;
+        MY_LOG(INFO) << "enumerateInstanceLayerProperties:" << instanceLayerProperties.size()
+                  ;
         std::vector<const char *> instanceLayerPropertiesName;
 
         for (auto &prop:instanceLayerProperties){
-            std::cout << prop.layerName << std::endl;
+            MY_LOG(INFO) << prop.layerName ;
             //instanceLayerPropertiesName.emplace_back(prop.layerName);
         }
         vk::ApplicationInfo vkAppInfo{"stbox", VK_VERSION_1_0, "stbox",
@@ -79,15 +79,15 @@ namespace tt {
     uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
                                             vk::SurfaceKHR surface) {
         auto queueFamilyProperties = PhyDevice.getQueueFamilyProperties();
-        //std::cout << "getQueueFamilyProperties size : "
-        //          << queueFamilyProperties.size() << std::endl;
+        //MY_LOG(INFO) << "getQueueFamilyProperties size : "
+        //          << queueFamilyProperties.size() ;
         for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {
-            //std::cout << "QueueFamilyProperties : " << i << "\tflags:"
-            //          << vk::to_string(queueFamilyProperties[i].queueFlags) << std::endl;
+            //MY_LOG(INFO) << "QueueFamilyProperties : " << i << "\tflags:"
+            //          << vk::to_string(queueFamilyProperties[i].queueFlags) ;
             if (PhyDevice.getSurfaceSupportKHR(i, surface) &&
                 (queueFamilyProperties[i].queueFlags & flags)) {
-                std::cout << "default_queue_index :" << i << "\tgetSurfaceSupportKHR:true"
-                          << std::endl;
+                MY_LOG(INFO) << "default_queue_index :" << i << "\tgetSurfaceSupportKHR:true"
+                          ;
                 return i;
             }
         }
@@ -106,17 +106,17 @@ namespace tt {
         };
 
         auto deviceLayerProperties = phyDevice.enumerateDeviceLayerProperties();
-        std::cout << "phyDeviceDeviceLayerProperties : " << deviceLayerProperties.size() <<std::endl;
+        MY_LOG(INFO) << "phyDeviceDeviceLayerProperties : " << deviceLayerProperties.size() ;
         std::vector<const char *> deviceLayerPropertiesName;
         for(auto deviceLayerPropertie :deviceLayerProperties) {
-            std::cout << "phyDeviceDeviceLayerPropertie : " << deviceLayerPropertie.layerName
-                      << std::endl;
+            MY_LOG(INFO) << "phyDeviceDeviceLayerPropertie : " << deviceLayerPropertie.layerName
+                      ;
             deviceLayerPropertiesName.emplace_back(deviceLayerPropertie.layerName);
         }
         auto deviceExtensionProperties = phyDevice.enumerateDeviceExtensionProperties();
         for (auto &deviceExtensionPropertie:deviceExtensionProperties)
-            std::cout << "PhyDeviceExtensionPropertie : " << deviceExtensionPropertie.extensionName
-                      << std::endl;
+            MY_LOG(INFO) << "PhyDeviceExtensionPropertie : " << deviceExtensionPropertie.extensionName
+                      ;
         std::array<const char *, 1> device_extension_names{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
         return std::make_unique<Device>(phyDevice.createDeviceUnique(
                 vk::DeviceCreateInfo {vk::DeviceCreateFlags(),
@@ -137,13 +137,13 @@ namespace tt {
             if ((memoryTypeBits & 1) == 1) {
                 // Type is available, does it match user properties?
                 if ((memoryProperties.memoryTypes[i].propertyFlags & flags) == flags) {
-                    std::cout<<vk::to_string(memoryProperties.memoryTypes[i].propertyFlags)<<" march " << vk::to_string(flags) <<" return "<< i<< std::endl;
+                    MY_LOG(INFO)<<vk::to_string(memoryProperties.memoryTypes[i].propertyFlags)<<" march " << vk::to_string(flags) <<" return "<< i;
                     return i;
                 }
             }
             memoryTypeBits >>= 1;
         }
-        std::cout << "memoryProperties no match exit!" << std::endl;
+        MY_LOG(INFO) << "memoryProperties no match exit!" ;
         exit(-1);//todo throw
     }
 
@@ -185,7 +185,7 @@ namespace tt {
         };
         std::vector<std::tuple<std::string, vk::UniqueShaderModule>> ShaderModules{};
         for(const char *fileName = AAssetDir_getNextFileName(dir.get());fileName;fileName = AAssetDir_getNextFileName(dir.get())){
-            std::cout << fileName <<std::endl;
+            MY_LOG(INFO) << fileName ;
             if(std::strstr(fileName,".comp.spv")){
                 std::string fullName{dirPath};
                 ShaderModules.emplace_back(fileName,loadShaderFromAssets(fullName+'/'+fileName,androidAppCtx));
@@ -406,7 +406,7 @@ namespace tt {
     Device::createCmdBuffers(tt::Swapchain &swapchain,
                              std::function<void(RenderpassBeginHandle&)> functionRenderpassBegin,
                              std::function<void(CommandBufferBeginHandle&)> functionBegin) {
-        std::cout<<__func__<<":allocateCommandBuffersUnique:"<<swapchain.getFrameBufferNum()<<std::endl;
+        MY_LOG(INFO)<<":allocateCommandBuffersUnique:"<<swapchain.getFrameBufferNum();
         std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
                 vk::CommandBufferAllocateInfo{commandPool.get(),
                                               vk::CommandBufferLevel::ePrimary, swapchain.getFrameBufferNum()});
@@ -445,7 +445,7 @@ namespace tt {
 
     std::vector<vk::UniqueCommandBuffer>
     Device::createCmdBuffers(size_t cmdNum, std::function<void(CommandBufferBeginHandle &)> functionBegin) {
-        std::cout<<__func__<<":allocateCommandBuffersUnique:"<<cmdNum<<std::endl;
+        MY_LOG(INFO)<<":allocateCommandBuffersUnique:"<<cmdNum;
         std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
                 vk::CommandBufferAllocateInfo{commandPool.get(),
                                               vk::CommandBufferLevel::ePrimary, cmdNum});
@@ -475,7 +475,7 @@ namespace tt {
         get().getQueue(queueFamilyIndex, 0).submit(submitInfos, renderFence.get());
         auto presentRet = get().getQueue(queueFamilyIndex, 0).presentKHR(vk::PresentInfoKHR{
                 1, &renderSemaphore, 1, &swapchain.get(),&currentBufferIndex.value});
-        std::cout << "index:" << currentBufferIndex.value<<"\tpresentRet:"<<vk::to_string(presentRet)<< std::endl;
+        MY_LOG(INFO) << "index:" << currentBufferIndex.value<<"\tpresentRet:"<<vk::to_string(presentRet);
         return renderFence;
     }
 
@@ -553,8 +553,8 @@ namespace tt {
             : surface{std::move(sf)} ,swapchainExtent{windowExtent}{
         auto physicalDevice = device.phyDevice();
         auto surfaceCapabilitiesKHR = physicalDevice.getSurfaceCapabilitiesKHR(surface.get());
-        //std::cout << "AndroidGetWindowSize() : " << swapchainExtent.width << " x "
-        //          << swapchainExtent.height << std::endl;
+        //MY_LOG(INFO) << "AndroidGetWindowSize() : " << swapchainExtent.width << " x "
+        //          << swapchainExtent.height ;
         if (surfaceCapabilitiesKHR.currentExtent.width == 0xFFFFFFFF) {
             // If the surface size is undefined, the size is set to
             // the size of the images requested.
@@ -572,16 +572,16 @@ namespace tt {
             // If the surface size is defined, the swap chain size must match
             swapchainExtent = surfaceCapabilitiesKHR.currentExtent;
         }
-        std::cout << "swapchainExtent : " << swapchainExtent.width << " x "
-                  << swapchainExtent.height << std::endl;
+        MY_LOG(INFO) << "swapchainExtent : " << swapchainExtent.width << " x "
+                  << swapchainExtent.height ;
         auto surfacePresentMods = physicalDevice.getSurfacePresentModesKHR(surface.get());
 
         //if(std::find(surfacePresentMods.begin(),surfacePresentMods.end(),vk::PresentModeKHR::eMailbox) != surfacePresentMods.end()){
-        //    std::cout << "surfacePresentMods have: eMailbox\n";
+        //    MY_LOG(INFO) << "surfacePresentMods have: eMailbox\n";
         //}
         for (auto &surfacePresentMod :surfacePresentMods) {
-            std::cout << "\t\tsurfacePresentMods have " << vk::to_string(surfacePresentMod)
-                      << std::endl;
+            MY_LOG(INFO) << "\t\tsurfacePresentMods have " << vk::to_string(surfacePresentMod)
+                      ;
         }
         uint32_t desiredNumberOfSwapchainImages = surfaceCapabilitiesKHR.minImageCount;
         //auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
@@ -628,7 +628,7 @@ namespace tt {
         vk::UniqueSwapchainKHR::operator=(device->createSwapchainKHRUnique(swapChainCreateInfo));
 
         auto vkSwapChainImages = device->getSwapchainImagesKHR(get());
-        std::cout << "vkSwapChainImages size : " << vkSwapChainImages.size() << std::endl;
+        MY_LOG(INFO) << "vkSwapChainImages size : " << vkSwapChainImages.size() ;
 
         imageViews.clear();
         for (auto &vkSwapChainImage : vkSwapChainImages)

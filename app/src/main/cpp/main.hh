@@ -6,8 +6,7 @@
 #define STBOX_MAIN_H
 
 #include <unistd.h>
-#include <android/log.h>
-#include <android_native_app_glue.h>
+#include "ss.hh"
 
 //vk::Extent2D AndroidGetWindowSize(android_app *Android_application);
 #endif //STBOX_MAIN_H

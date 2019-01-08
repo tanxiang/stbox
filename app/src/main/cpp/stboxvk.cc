@@ -122,8 +122,8 @@ namespace tt {
             };
             std::vector<vk::BufferImageCopy> bufferCopyRegion;
             for (int i = 0, offset = 0; i < tex2d.levels(); ++i) {
-                std::cout << "BufferImageCopy" << tex2d[i].extent().x << 'X' << tex2d[i].extent().y
-                          << std::endl;
+                MY_LOG(INFO) << "BufferImageCopy" << tex2d[i].extent().x << 'X' << tex2d[i].extent().y
+                          ;
                 bufferCopyRegion.emplace_back(offset, 0, 0,
                                               vk::ImageSubresourceLayers{
                                                       vk::ImageAspectFlagBits::eColor, i, 0, 1},
@@ -245,7 +245,7 @@ namespace tt {
     }
 
     void stboxvk::cleanWindow() {
-        std::cout << __func__ << std::endl;
+        MY_LOG(INFO) << __func__ ;
         swapchainPtr.reset();
         //devicePtr.reset();
     }
