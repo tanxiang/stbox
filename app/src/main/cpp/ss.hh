@@ -34,6 +34,6 @@ namespace tt{
 
 }
 
-#define MY_LOG(LOG_LEVEL) tt::ss(ANDROID_LOG_##LOG_LEVEL) << __FUNCTION__ << ":" << __LINE__ << " : "
+#define MY_LOG(LOG_LEVEL) tt::ss(ANDROID_LOG_##LOG_LEVEL) << __FILE__ << '#' << __LINE__ << " : "
 
 #endif //STBOX_SS_HH
