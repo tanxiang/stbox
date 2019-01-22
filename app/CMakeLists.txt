@@ -13,12 +13,15 @@ cmake_minimum_required(VERSION 3.6)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 
+add_library( app-glue
+        STATIC
+        ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c )
+
 add_library( # Sets the name of the library.
              stbox
              # Sets the library as a shared library.
              SHARED
              # Provides a relative path to your source file(s).
-             ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
              src/main/cpp/util.cc
              src/main/cpp/main.cc
              src/main/cpp/stboxvk.cc
@@ -46,12 +49,11 @@ target_include_directories(stbox PRIVATE
 # you want to add. CMake verifies that the library exists before
 # completing its build.
 
-find_library( # Sets the name of the path variable.
-        z-lib
-
+#find_library( # Sets the name of the path variable.
+        # z-lib
         # Specifies the name of the NDK library that
         # you want CMake to locate.
-        z )
+        # z )
 
 find_library( # Sets the name of the path variable.
               log-lib
@@ -106,6 +108,7 @@ target_link_libraries( # Specifies the target library.
         ${vulkan-lib}
                        ${android-lib}
                        onnxpb
+        app-glue
                        )
 
 
@@ -278,5 +281,5 @@ target_include_directories(onnxpb PRIVATE
 target_link_libraries(onnxpb
         protobuf
         ${log-lib}
-        ${z-lib}
+        #${z-lib}
         )
