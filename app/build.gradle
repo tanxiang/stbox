@@ -19,6 +19,7 @@ android {
             glslcArgs.addAll(['-c','-g'])
         }
     }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -30,6 +31,7 @@ android {
             path "CMakeLists.txt"
         }
     }
+
 }
 
 dependencies {

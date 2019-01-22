@@ -3,8 +3,9 @@
 
 # Sets the minimum version of CMake required to build the native library.
 
-cmake_minimum_required(VERSION 3.4.1)
+cmake_minimum_required(VERSION 3.6)
 
+#message(FATAL_ERROR ${CMAKE_ANDROID_NDK})
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -14,10 +15,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 
 add_library( # Sets the name of the library.
              stbox
-
              # Sets the library as a shared library.
              SHARED
-
              # Provides a relative path to your source file(s).
              ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
              src/main/cpp/util.cc
@@ -66,7 +65,8 @@ find_library( # Sets the name of the path variable.
 
               # Specifies the name of the NDK library that
               # you want CMake to locate.
-              vulkan )
+              vulkan)
+
 
 find_library( # Sets the name of the path variable.
               android-lib
@@ -83,14 +83,14 @@ find_library( # Sets the name of the path variable.
 #                       ${ANDROID_NDK}/sources/third_party/shaderc
 #                       ABSOLUTE)
 # Build Util Lib
-set(UTILS_NAME  vsamputils)
-set(GLSLANG_SPIRV_INCLUDE_DIR ${SHADERC_SRC}/third_party/glslang)
-get_filename_component(PROJECT_SOURCE_DIR
-                       "${CMAKE_SOURCE_DIR}/../../.."
-                       ABSOLUTE)
-get_filename_component(GLMINC_PREFIX
-                       "${CMAKE_SOURCE_DIR}/../utils"
-                       ABSOLUTE)
+#set(UTILS_NAME  vsamputils)
+#set(GLSLANG_SPIRV_INCLUDE_DIR ${SHADERC_SRC}/third_party/glslang)
+#get_filename_component(PROJECT_SOURCE_DIR
+#                       "${CMAKE_SOURCE_DIR}/../../.."
+#                       ABSOLUTE)
+#get_filename_component(GLMINC_PREFIX
+#                       "${CMAKE_SOURCE_DIR}/../utils"
+#                       ABSOLUTE)
 #add_library(shaderc_lib STATIC IMPORTED)
 #set_target_properties(shaderc_lib PROPERTIES IMPORTED_LOCATION
 #                      ${SHADERC_SRC}/libs/${ANDROID_STL}/${ANDROID_ABI}/libshaderc.a)
@@ -103,7 +103,7 @@ target_link_libraries( # Specifies the target library.
                        # Links the target library to the log library
                        # included in the NDK.
                        ${log-lib}
-                       ${vulkan-lib}
+        ${vulkan-lib}
                        ${android-lib}
                        onnxpb
                        )
@@ -253,14 +253,14 @@ set(libprotobuf_includes
         )
 
 
-add_library(libprotobuf STATIC ${libprotobuf_lite_files}
+add_library(protobuf STATIC ${libprotobuf_lite_files}
         ${libprotobuf_files} ${libprotobuf_includes})
-target_link_libraries(libprotobuf ${CMAKE_THREAD_LIBS_INIT})
-target_include_directories(libprotobuf PUBLIC ${protobuf_source_dir}/src)
-target_compile_options(libprotobuf PRIVATE -frtti)
-target_compile_definitions(libprotobuf PRIVATE HAVE_PTHREAD)
+target_link_libraries(protobuf ${CMAKE_THREAD_LIBS_INIT})
+target_include_directories(protobuf PUBLIC ${protobuf_source_dir}/src)
+target_compile_options(protobuf PRIVATE -frtti)
+target_compile_definitions(protobuf PRIVATE HAVE_PTHREAD)
 
-add_library(protobuf::libprotobuf ALIAS libprotobuf)
+#add_library(protobuf::libprotobuf ALIAS libprotobuf)
 
 add_library( # Sets the name of the library.
         onnxpb
@@ -276,7 +276,7 @@ target_include_directories(onnxpb PRIVATE
         )
 
 target_link_libraries(onnxpb
-        libprotobuf
+        protobuf
         ${log-lib}
         ${z-lib}
         )
