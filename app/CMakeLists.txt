@@ -38,9 +38,6 @@ target_compile_options(stbox PRIVATE -fno-rtti)
 target_include_directories(stbox PRIVATE
                src/main/include
                ${ANDROID_NDK}/sources/android/native_app_glue
-               #${ANDROID_NDK}/sources/third_party/vulkan/src/include
-               #${ANDROID_NDK}/sources/third_party/vulkan/src/libs
-               #${ANDROID_NDK}/sources/third_party/shaderc/include
                )
 
 # Searches for a specified prebuilt library and stores the path as a
