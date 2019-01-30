@@ -13,16 +13,23 @@ namespace onnx {
 
     bool operator<(const ValueInfoProto &k1, const std::string &k2) { return k1.name() < k2; }
     bool operator<(const std::string &k1, const ValueInfoProto &k2) { return k1 < k2.name(); }
-    bool operator<(const NodeProto &k1, const std::string &k2) { return k1.name() < k2; }
-    bool operator<(const std::string &k1, const NodeProto &k2) { return k1 < k2.name(); }
-    template <typename T>
-    bool operator<(const T &k1, const T &k2) {
+    bool operator<(const ValueInfoProto &k1, const ValueInfoProto &k2) {
         return k1.name() < k2.name();
     }
 
+    bool operator<(const TensorProto &k1, const std::string &k2) { return k1.name() < k2; }
+    bool operator<(const std::string &k1, const TensorProto &k2) { return k1 < k2.name(); }
+    bool operator<(const TensorProto &k1, const TensorProto &k2) {
+        return k1.name() < k2.name();
+    }
+
+    bool operator<(const NodeProto &k1, const std::string &k2) { return (k1.has_name()?k1.name():k1.output(0)) < k2; }
+    bool operator<(const std::string &k1, const NodeProto &k2) { return k1 < (k2.has_name()?k2.name():k2.output(0)); }
+    bool operator<(const NodeProto &k1, const NodeProto &k2) {
+        return (k1.has_name()?k1.name():k1.output(0)) < (k2.has_name()?k2.name():k2.output(0));
+    }
+
 }
-
-
 
 namespace tt {
 
@@ -38,14 +45,14 @@ namespace tt {
         modelProto.ParseFromZeroCopyStream(fileInputStream.get());
         MY_LOG(INFO) << "Onnxfile length:" << modelProto.ByteSize() ;
 
-        for(auto& opset:modelProto.opset_import()){
-            MY_LOG(INFO) << "Onnxfile opset_import " <<opset.domain();
-        }
+        //for(auto& opset:modelProto.opset_import()){
+        //    MY_LOG(INFO) << "Onnxfile opset_import " <<opset.kDomainFieldNumber;
+        //}
         if(modelProto.has_graph()){
             std::set<onnx::ValueInfoProto,std::less<>> inputSet{};
             std::set<onnx::ValueInfoProto,std::less<>> outputSet{};
             std::set<onnx::NodeProto,std::less<>> nodeSet{};
-            std::map<std::string,std::string> nodeOutputMap{};
+            std::set<onnx::TensorProto,std::less<>> tensorSet{};
 
             auto& graph = modelProto.graph();
 
@@ -58,40 +65,53 @@ namespace tt {
                 //MY_LOG(INFO) << "Onnx Output: " << outputInfo.name();
                 outputSet.insert(outputInfo);
             }
-            for(auto& initializer : graph.initializer()){
-                //MY_LOG(INFO) << "Onnx Initializer: " << initializer.name();
-            }
-
 
             for(auto& node : graph.node()){
                 //MY_LOG(INFO) << "Onnx Node: " << node.name();
-
-                for(auto&inputName:node.input()) {
-//                    MY_LOG(INFO) << inputSet[inputName].DebugString();
-                    auto inputInfoItr = inputSet.find(inputName);
-                    if(inputInfoItr == inputSet.end()) {
-                        if(auto nodeOutputitr = nodeOutputMap.find(inputName) == nodeOutputMap.end()){
-                            MY_LOG(ERROR) << "node " << node.name() << "'s input " << inputName << " not found!!";
-                        }
-                    }
-                };
-                for(auto&outputName:node.output()){
-                    auto outputIfoItr = outputSet.find(outputName);
-                    if(outputIfoItr == outputSet.end()){
-                        nodeOutputMap.emplace(outputName,node.name());
-                        //MY_LOG(ERROR) << "node " << node.name() << "'s output " << outputName
-                        //              << " not found!!";
-                    }
-                }
-                node.op_type();
-                node.attribute();
                 nodeSet.insert(node);
             }
+            for(auto& initializer : graph.initializer()){
+                //MY_LOG(INFO) << "Onnx Initializer: " << initializer.name();
+                tensorSet.insert(initializer);
+            }
 
+            std::multimap<std::string,std::string> outputNodeMap{},inputNodeMap{};
+
+            for(auto& node:nodeSet){
+                for(auto&inputName:node.input()) {
+                    inputNodeMap.emplace(inputName,node.has_name()?node.name():node.output(0));
+                };
+                if(node.has_name()) {
+                    for (auto &outputName:node.output()) {
+                        outputNodeMap.emplace(outputName, node.name());
+                    }
+                }
+            }
             for(auto& value_info :graph.value_info()) {
                 MY_LOG(INFO) << "Onnx value_info: " << value_info.name();
             }
 
+            //fw test
+            std::string firstInputName;
+            for(auto&[inputName,nodeName]:inputNodeMap){
+                if(tensorSet.find(inputName)==tensorSet.end() &&
+                outputNodeMap.find(inputName)==outputNodeMap.end() &&
+                nodeSet.find(inputName) == nodeSet.end()){
+                    MY_LOG(INFO) << inputName <<" in "<< nodeName <<":input first node!";
+                    firstInputName = inputName;
+                }
+            }
+
+            if(!firstInputName.empty()){
+                auto nodeRange = inputNodeMap.equal_range(firstInputName);
+                for(auto nodeItr = nodeRange.first; nodeItr != nodeRange.second;++nodeItr){
+                    MY_LOG(INFO) << nodeItr->second;
+                }
+                //auto nodeItr = nodeSet.find(firstInputName);
+                //for(auto&inputName : nodeItr->input()){
+                //    MY_LOG(INFO) << "";
+                //}
+            }
         }
     }
 }
