@@ -26,7 +26,7 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
 #define SWAPCHAIN_NUM 2
 
 namespace tt {
-    class Swapchain;
+    class Window;
     std::vector<char> loadDataFromAssets(const std::string& filePath,android_app *androidAppCtx);
     uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
                                             vk::SurfaceKHR surface);
@@ -81,7 +81,6 @@ namespace tt {
         vk::UniqueRenderPass renderPass;
         vk::UniquePipelineLayout pipelineLayout;
         vk::UniquePipeline graphicsPipeline;
-        std::vector<vk::UniqueCommandBuffer> mianBuffers;
         std::vector<vk::UniqueDescriptorSet> descriptorSets;//{createDescriptorSets()};
 
     private:
@@ -242,7 +241,7 @@ namespace tt {
                          std::function<void(CommandBufferBeginHandle&)> = [](CommandBufferBeginHandle&){});
 
         std::vector<vk::UniqueCommandBuffer>
-        createCmdBuffers(tt::Swapchain &swapchain,
+        createCmdBuffers(tt::Window &swapchain,
                          std::function<void(RenderpassBeginHandle&)> =[](RenderpassBeginHandle&){},
                          std::function<void(CommandBufferBeginHandle&)> = [](CommandBufferBeginHandle&){});
 
@@ -259,38 +258,29 @@ namespace tt {
             return fence;
         }
 
-        vk::UniqueFence submitCmdBuffer(Swapchain &swapchain,
-                                        std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers,
-                                        vk::Semaphore &imageAcquiredSemaphore,vk::Semaphore &renderSemaphore);
-
-        void submitCmdBufferAndWait(Swapchain &swapchain,
-                                    std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers);
-
         auto waitFence(vk::Fence& Fence){
             return get().waitForFences(1,&Fence,true,10000000);
         }
 
     };
 
-    class Swapchain : public vk::UniqueSwapchainKHR {
+    class Window {
         vk::UniqueSurfaceKHR surface;
         vk::Extent2D swapchainExtent;
+        vk::UniqueSwapchainKHR swapchain;
         std::vector<vk::UniqueImageView> imageViews;
         Device::ImageViewMemory depth;
         std::vector<vk::UniqueFramebuffer> frameBuffers;
 
-
     public:
+        std::vector<vk::UniqueCommandBuffer> mianBuffers;
+
         //Swapchain(){}
 
-        Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device,vk::Extent2D windowExtent);
+        Window(vk::UniqueSurfaceKHR &&sf, tt::Device &device,vk::Extent2D windowExtent);
 
         vk::Extent2D getSwapchainExtent() {
             return swapchainExtent;
-        }
-
-        auto getSwapchainImageNum() {
-            return imageViews.size();
         }
 
         auto getFrameBufferNum() {
@@ -301,13 +291,20 @@ namespace tt {
             return frameBuffers;
         }
 
-        auto acquireNextImage(Device &device,vk::Semaphore presentCompleteSemaphore){
-            return device->acquireNextImageKHR(get(),UINT64_MAX,presentCompleteSemaphore,vk::Fence{});
+        auto acquireNextImage(Device &device,vk::Semaphore imageAcquiredSemaphore){
+            return device->acquireNextImageKHR(swapchain.get(),UINT64_MAX,imageAcquiredSemaphore,vk::Fence{});
         }
 
-        auto queuePresent(vk::Queue& queue,uint32_t imageIndex,vk::Semaphore waitSemaphore = vk::Semaphore{}){
+        vk::UniqueFence submitCmdBuffer(Device &device,
+                                        std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers,
+                                        vk::Semaphore &imageAcquiredSemaphore,vk::Semaphore &renderSemaphore);
+
+        void submitCmdBufferAndWait(Device &device,
+                                    std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers);
+
+        auto queuePresent(vk::Queue queue,uint32_t imageIndex,vk::Semaphore waitSemaphore = vk::Semaphore{}){
             vk::PresentInfoKHR presentInfo{
-                    0, nullptr,1,&get(),&imageIndex,
+                    0, nullptr,1,&swapchain.get(),&imageIndex,
 
             };
             if(waitSemaphore) {

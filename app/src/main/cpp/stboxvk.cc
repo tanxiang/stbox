@@ -202,9 +202,9 @@ namespace tt {
         }
 
 
-        swapchainPtr = std::make_unique<tt::Swapchain>(std::move(surface), *devicePtr, AndroidGetWindowSize(app));
+        windowPtr = std::make_unique<tt::Window>(std::move(surface), *devicePtr, AndroidGetWindowSize(app));
 
-        auto swapchainExtent = swapchainPtr->getSwapchainExtent();
+        auto swapchainExtent = windowPtr->getSwapchainExtent();
 
         auto Projection =glm::perspective(glm::radians(60.0f), static_cast<float>(swapchainExtent.width) / static_cast<float>(swapchainExtent.height), 0.1f, 256.0f);
 
@@ -222,7 +222,7 @@ namespace tt {
             memcpy(mvpBuffer_ptr.get(), &mvpMat4, std::get<size_t>(devicePtr->mvpBuffer));
         }
 
-        devicePtr->mianBuffers = devicePtr->createCmdBuffers(*swapchainPtr,[&](RenderpassBeginHandle& cmdHandleRenderpassBegin){
+        windowPtr->mianBuffers = devicePtr->createCmdBuffers(*windowPtr,[&](RenderpassBeginHandle& cmdHandleRenderpassBegin){
             vk::Viewport viewport{
                     0, 0, swapchainExtent.width, swapchainExtent.height, 0.0f, 1.0f
             };
@@ -241,12 +241,12 @@ namespace tt {
             cmdHandleRenderpassBegin.bindIndexBuffer(std::get<vk::UniqueBuffer>(devicePtr->indexBuffer).get(),0,vk::IndexType::eUint32);
             cmdHandleRenderpassBegin.drawIndexed(6,1,0,0,0);
         });
-        devicePtr->submitCmdBufferAndWait(*swapchainPtr, devicePtr->mianBuffers);
+        windowPtr->submitCmdBufferAndWait(*devicePtr, windowPtr->mianBuffers);
     }
 
     void stboxvk::cleanWindow() {
         MY_LOG(INFO) << __func__ ;
-        swapchainPtr.reset();
+        windowPtr.reset();
         //devicePtr.reset();
     }
 

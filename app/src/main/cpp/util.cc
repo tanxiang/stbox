@@ -20,6 +20,7 @@
 #include "vertexdata.hh"
 #include <algorithm>
 #include <cstring>
+#include <array>
 
 using namespace std::chrono_literals;
 
@@ -52,28 +53,91 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
     return std::vector<uint32_t>{module.cbegin(), module.cend()};
 }
 */
+
+#include <android/log.h>
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(
+        VkDebugReportFlagsEXT msgFlags,
+        VkDebugReportObjectTypeEXT objType,
+        uint64_t srcObject, size_t location,
+        int32_t msgCode, const char * pLayerPrefix,
+        const char * pMsg, void * pUserData )
+{
+    if (msgFlags & VK_DEBUG_REPORT_ERROR_BIT_EXT) {
+        __android_log_print(ANDROID_LOG_ERROR,
+                            "Stbox",
+                            "ERROR: [%s] Code %i : %s",
+                            pLayerPrefix, msgCode, pMsg);
+    } else if (msgFlags & VK_DEBUG_REPORT_WARNING_BIT_EXT) {
+        __android_log_print(ANDROID_LOG_WARN,
+                            "Stbox",
+                            "WARNING: [%s] Code %i : %s",
+                            pLayerPrefix, msgCode, pMsg);
+    } else if (msgFlags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT) {
+        __android_log_print(ANDROID_LOG_WARN,
+                            "Stbox",
+                            "PERFORMANCE WARNING: [%s] Code %i : %s",
+                            pLayerPrefix, msgCode, pMsg);
+    } else if (msgFlags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT) {
+        __android_log_print(ANDROID_LOG_INFO,
+                            "Stbox", "INFO: [%s] Code %i : %s",
+                            pLayerPrefix, msgCode, pMsg);
+    } else if (msgFlags & VK_DEBUG_REPORT_DEBUG_BIT_EXT) {
+        __android_log_print(ANDROID_LOG_VERBOSE,
+                            "Stbox", "DEBUG: [%s] Code %i : %s",
+                            pLayerPrefix, msgCode, pMsg);
+    }
+
+    // Returning false tells the layer not to stop when the event occurs, so
+    // they see the same behavior with and without validation layers enabled.
+    return VK_FALSE;
+}
+VkDebugReportCallbackEXT debugReportCallback;
+
+
 namespace tt {
     tt::Instance createInstance() {
         auto instanceLayerProperties = vk::enumerateInstanceLayerProperties();
-        MY_LOG(INFO) << "enumerateInstanceLayerProperties:" << instanceLayerProperties.size()
-                  ;
+        MY_LOG(INFO) << "enumerateInstanceLayerProperties:" << instanceLayerProperties.size();
         std::vector<const char *> instanceLayerPropertiesName;
 
         for (auto &prop:instanceLayerProperties){
             MY_LOG(INFO) << prop.layerName ;
-            //instanceLayerPropertiesName.emplace_back(prop.layerName);
+            instanceLayerPropertiesName.emplace_back(prop.layerName);
         }
-        vk::ApplicationInfo vkAppInfo{"stbox", VK_VERSION_1_0, "stbox",
-                                      VK_VERSION_1_0, VK_API_VERSION_1_0};
-        std::array<const char *, 2> instanceEtensionNames{VK_KHR_SURFACE_EXTENSION_NAME,
-                                                          VK_KHR_ANDROID_SURFACE_EXTENSION_NAME};
+        vk::ApplicationInfo vkAppInfo{"stbox", VK_VERSION_1_1, "stbox",
+                                      VK_VERSION_1_1, VK_API_VERSION_1_0};
+        auto instanceExts = vk::enumerateInstanceExtensionProperties();
+        for(auto& Ext: instanceExts){
+            MY_LOG(INFO) << Ext.extensionName ;
+        }
+        std::array instanceEtensionNames{
+            VK_KHR_SURFACE_EXTENSION_NAME,
+            VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
+            VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+            VK_EXT_DEBUG_REPORT_EXTENSION_NAME};
 
         vk::InstanceCreateInfo instanceInfo{vk::InstanceCreateFlags(), &vkAppInfo,
                                             instanceLayerPropertiesName.size(),
                                             instanceLayerPropertiesName.data(),
                                             instanceEtensionNames.size(),
                                             instanceEtensionNames.data()};
-        return tt::Instance{vk::createInstanceUnique(instanceInfo)};
+        auto ins = vk::createInstanceUnique(instanceInfo);
+
+        auto vkCreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT)(ins->getProcAddr("vkCreateDebugReportCallbackEXT"));
+        vk::DebugReportCallbackCreateInfoEXT debugReportInfo{
+                            vk::DebugReportFlagBitsEXT::eError|
+                            vk::DebugReportFlagBitsEXT::eWarning|
+                            vk::DebugReportFlagBitsEXT::ePerformanceWarning|
+                            vk::DebugReportFlagBitsEXT::eDebug|
+                            vk::DebugReportFlagBitsEXT::eInformation,
+                            DebugReportCallback};
+
+        vkCreateDebugReportCallbackEXT((VkInstance)ins.get(),(VkDebugReportCallbackCreateInfoEXT*)&debugReportInfo, nullptr,&debugReportCallback);
+        //auto vkDestroyDebugReportCallbackEXT = static_cast<PFN_vkDestroyDebugReportCallbackEXT>(ins->getProcAddr("vkDestroyDebugReportCallbackEXT"));
+        //assert(vkCreateDebugReportCallbackEXT);
+        //assert(vkDestroyDebugReportCallbackEXT);
+        return tt::Instance{std::move(ins)};
     }
 
     uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
@@ -98,7 +162,7 @@ namespace tt {
 
     std::unique_ptr<tt::Device> Instance::connectToDevice(vk::PhysicalDevice& phyDevice,int queueIndex) {
         std::array<float, 1> queue_priorities{0.0};
-        std::array<vk::DeviceQueueCreateInfo, 1> device_queue_create_infos{
+        std::array<vk::DeviceQueueCreateInfo, 1> deviceQueueCreateInfos{
                 vk::DeviceQueueCreateInfo{vk::DeviceQueueCreateFlags(),
                                           queueIndex,
                                           queue_priorities.size(), queue_priorities.data()
@@ -109,25 +173,32 @@ namespace tt {
         MY_LOG(INFO) << "phyDeviceDeviceLayerProperties : " << deviceLayerProperties.size() ;
         std::vector<const char *> deviceLayerPropertiesName;
         for(auto deviceLayerPropertie :deviceLayerProperties) {
-            MY_LOG(INFO) << "phyDeviceDeviceLayerPropertie : " << deviceLayerPropertie.layerName
-                      ;
+            MY_LOG(INFO) << "phyDeviceDeviceLayerPropertie : " << deviceLayerPropertie.layerName;
             deviceLayerPropertiesName.emplace_back(deviceLayerPropertie.layerName);
         }
         auto deviceExtensionProperties = phyDevice.enumerateDeviceExtensionProperties();
         for (auto &deviceExtensionPropertie:deviceExtensionProperties)
             MY_LOG(INFO) << "PhyDeviceExtensionPropertie : " << deviceExtensionPropertie.extensionName
                       ;
-        std::array<const char *, 1> device_extension_names{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+        std::array deviceExtensionNames{
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
+            VK_KHR_DESCRIPTOR_UPDATE_TEMPLATE_EXTENSION_NAME,
+            //VK_KHR_SHARED_PRESENTABLE_IMAGE_EXTENSION_NAME,
+            //VK_KHR_INCREMENTAL_PRESENT_EXTENSION_NAME,
+            //VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME
+        };
+
         return std::make_unique<Device>(phyDevice.createDeviceUnique(
                 vk::DeviceCreateInfo {vk::DeviceCreateFlags(),
-                                      device_queue_create_infos.size(),
-                                      device_queue_create_infos.data(),
+                                      deviceQueueCreateInfos.size(),
+                                      deviceQueueCreateInfos.data(),
                                       deviceLayerPropertiesName.size(),
                                       deviceLayerPropertiesName.data(),
-                                      device_extension_names.size(),
-                                      device_extension_names.data()}),
-                                        phyDevice,
-                                        queueIndex);
+                                      deviceExtensionNames.size(),
+                                      deviceExtensionNames.data()}),
+                                      phyDevice,
+                                      queueIndex);
     }
 
 
@@ -403,7 +474,7 @@ namespace tt {
     }
 
     std::vector<vk::UniqueCommandBuffer>
-    Device::createCmdBuffers(tt::Swapchain &swapchain,
+    Device::createCmdBuffers(tt::Window &swapchain,
                              std::function<void(RenderpassBeginHandle&)> functionRenderpassBegin,
                              std::function<void(CommandBufferBeginHandle&)> functionBegin) {
         MY_LOG(INFO)<<":allocateCommandBuffersUnique:"<<swapchain.getFrameBufferNum();
@@ -456,12 +527,11 @@ namespace tt {
         return commandBuffers;
     }
 
-    vk::UniqueFence Device::submitCmdBuffer(Swapchain &swapchain,
+    vk::UniqueFence Window::submitCmdBuffer(Device &device,
                                             std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers,
                                             vk::Semaphore &imageAcquiredSemaphore,
                                             vk::Semaphore &renderSemaphore) {
-        auto currentBufferIndex = get().acquireNextImageKHR(swapchain.get(), UINT64_MAX,
-                                                            imageAcquiredSemaphore, nullptr);
+        auto currentBufferIndex = acquireNextImage(device, imageAcquiredSemaphore);
 
         vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
         std::array<vk::SubmitInfo, 1> submitInfos{
@@ -471,20 +541,19 @@ namespace tt {
                         1, &renderSemaphore
                 }
         };
-        auto renderFence = get().createFenceUnique(vk::FenceCreateInfo{});
-        get().getQueue(queueFamilyIndex, 0).submit(submitInfos, renderFence.get());
-        auto presentRet = get().getQueue(queueFamilyIndex, 0).presentKHR(vk::PresentInfoKHR{
-                1, &renderSemaphore, 1, &swapchain.get(),&currentBufferIndex.value});
+        auto renderFence = device->createFenceUnique(vk::FenceCreateInfo{});
+        device.graphsQueue().submit(submitInfos, renderFence.get());
+        auto presentRet = queuePresent(device.graphsQueue(),currentBufferIndex.value, renderSemaphore);
         MY_LOG(INFO) << "index:" << currentBufferIndex.value<<"\tpresentRet:"<<vk::to_string(presentRet);
         return renderFence;
     }
 
-    void Device::submitCmdBufferAndWait(Swapchain &swapchain,
+    void Window::submitCmdBufferAndWait(Device &device,
                                         std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers) {
-        auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-        auto renderSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-        auto renderFence = submitCmdBuffer(swapchain,drawcommandBuffers,imageAcquiredSemaphore.get(),renderSemaphore.get());
-        waitFence(renderFence.get());
+        auto imageAcquiredSemaphore = device->createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+        auto renderSemaphore = device->createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+        auto renderFence = submitCmdBuffer(device,drawcommandBuffers,imageAcquiredSemaphore.get(),renderSemaphore.get());
+        device.waitFence(renderFence.get());
         //wait renderFence then free renderSemaphore imageAcquiredSemaphore
     }
 
@@ -549,7 +618,7 @@ namespace tt {
 
 
 
-    Swapchain::Swapchain(vk::UniqueSurfaceKHR &&sf, tt::Device &device,vk::Extent2D windowExtent)
+    Window::Window(vk::UniqueSurfaceKHR &&sf, tt::Device &device,vk::Extent2D windowExtent)
             : surface{std::move(sf)} ,swapchainExtent{windowExtent}{
         auto physicalDevice = device.phyDevice();
         auto surfaceCapabilitiesKHR = physicalDevice.getSurfaceCapabilitiesKHR(surface.get());
@@ -580,8 +649,7 @@ namespace tt {
         //    MY_LOG(INFO) << "surfacePresentMods have: eMailbox\n";
         //}
         for (auto &surfacePresentMod :surfacePresentMods) {
-            MY_LOG(INFO) << "\t\tsurfacePresentMods have " << vk::to_string(surfacePresentMod)
-                      ;
+            MY_LOG(INFO) << "\t\tsurfacePresentMods had " << vk::to_string(surfacePresentMod);
         }
         uint32_t desiredNumberOfSwapchainImages = surfaceCapabilitiesKHR.minImageCount;
         //auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
@@ -625,13 +693,13 @@ namespace tt {
                                                        true};
 
         //swap(device->createSwapchainKHRUnique(swapChainCreateInfo));
-        vk::UniqueSwapchainKHR::operator=(device->createSwapchainKHRUnique(swapChainCreateInfo));
+        swapchain = (device->createSwapchainKHRUnique(swapChainCreateInfo));
 
-        auto vkSwapChainImages = device->getSwapchainImagesKHR(get());
-        MY_LOG(INFO) << "vkSwapChainImages size : " << vkSwapChainImages.size() ;
+        auto swapChainImages = device->getSwapchainImagesKHR(swapchain.get());
+        MY_LOG(INFO) << "swapChainImages size : " << swapChainImages.size() ;
 
         imageViews.clear();
-        for (auto &vkSwapChainImage : vkSwapChainImages)
+        for (auto &vkSwapChainImage : swapChainImages)
             imageViews.emplace_back(device->createImageViewUnique(vk::ImageViewCreateInfo{
                     vk::ImageViewCreateFlags(),
                     vkSwapChainImage,

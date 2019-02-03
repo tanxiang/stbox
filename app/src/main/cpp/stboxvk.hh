@@ -12,7 +12,7 @@
 namespace tt {
     class stboxvk {
         std::unique_ptr<tt::Device> devicePtr;
-        std::unique_ptr<tt::Swapchain> swapchainPtr;
+        std::unique_ptr<tt::Window> windowPtr;
 
     public:
         void initData(android_app *app, tt::Instance &instance);
@@ -24,7 +24,7 @@ namespace tt {
         void cleanWindow();
 
         explicit operator bool() const {
-            return devicePtr && swapchainPtr;
+            return devicePtr && windowPtr;
         }
     };
 }
