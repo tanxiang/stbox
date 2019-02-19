@@ -200,8 +200,8 @@ namespace tt {
                                                                     vk::SamplerAddressMode::eRepeat,
                                                                     vk::SamplerAddressMode::eRepeat,
                                                                     0,
-                                                                    phyDevice().getFeatures().samplerAnisotropy,
-                                                                    phyDevice().getProperties().limits.maxSamplerAnisotropy,
+                                                                    0,
+                                                                    0,
                                                                     0,vk::CompareOp::eNever,0,levels,vk::BorderColor::eFloatOpaqueWhite,0});
         }
 

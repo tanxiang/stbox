@@ -122,8 +122,7 @@ namespace tt {
             };
             std::vector<vk::BufferImageCopy> bufferCopyRegion;
             for (int i = 0, offset = 0; i < tex2d.levels(); ++i) {
-                MY_LOG(INFO) << "BufferImageCopy" << tex2d[i].extent().x << 'X' << tex2d[i].extent().y
-                          ;
+                MY_LOG(INFO) << "BufferImageCopy" << tex2d[i].extent().x << 'X' << tex2d[i].extent().y;
                 bufferCopyRegion.emplace_back(offset, 0, 0,
                                               vk::ImageSubresourceLayers{
                                                       vk::ImageAspectFlagBits::eColor, i, 0, 1},

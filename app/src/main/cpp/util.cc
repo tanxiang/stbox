@@ -170,6 +170,8 @@ namespace tt {
         };
 
         auto deviceLayerProperties = phyDevice.enumerateDeviceLayerProperties();
+        //auto deviceFeatures = phyDevice.getFeatures();
+        //MY_LOG(INFO) << "deviceFeatures.samplerAnisotropy = "<<deviceFeatures.samplerAnisotropy;
         MY_LOG(INFO) << "phyDeviceDeviceLayerProperties : " << deviceLayerProperties.size() ;
         std::vector<const char *> deviceLayerPropertiesName;
         for(auto deviceLayerPropertie :deviceLayerProperties) {
