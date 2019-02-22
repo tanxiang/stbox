@@ -97,25 +97,36 @@ VkDebugReportCallbackEXT debugReportCallback;
 
 namespace tt {
     tt::Instance createInstance() {
+#ifdef __arm__
+        MY_LOG(INFO) << "__arm__";
+#elif defined __aarch64__
+        MY_LOG(INFO) << "__aarch64__";
+#endif
         auto instanceLayerProperties = vk::enumerateInstanceLayerProperties();
         MY_LOG(INFO) << "enumerateInstanceLayerProperties:" << instanceLayerProperties.size();
         std::vector<const char *> instanceLayerPropertiesName;
 
         for (auto &prop:instanceLayerProperties){
             MY_LOG(INFO) << prop.layerName ;
-            instanceLayerPropertiesName.emplace_back(prop.layerName);
+            //instanceLayerPropertiesName.emplace_back(prop.layerName);
         }
-        vk::ApplicationInfo vkAppInfo{"stbox", VK_VERSION_1_1, "stbox",
-                                      VK_VERSION_1_1, VK_API_VERSION_1_0};
-        auto instanceExts = vk::enumerateInstanceExtensionProperties();
-        for(auto& Ext: instanceExts){
-            MY_LOG(INFO) << Ext.extensionName ;
-        }
-        std::array instanceEtensionNames{
+        vk::ApplicationInfo vkAppInfo{"stbox", VK_VERSION_1_0, "stbox",
+                                      VK_VERSION_1_0, VK_API_VERSION_1_0};
+
+        std::vector instanceEtensionNames{
             VK_KHR_SURFACE_EXTENSION_NAME,
             VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
-            VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-            VK_EXT_DEBUG_REPORT_EXTENSION_NAME};
+            //VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+            //VK_EXT_DEBUG_REPORT_EXTENSION_NAME
+        };
+        auto instanceExts = vk::enumerateInstanceExtensionProperties();
+        for(auto& Ext: instanceExts){
+            //MY_LOG(INFO) << Ext.extensionName ;
+            if(!std::strcmp(Ext.extensionName,VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
+                MY_LOG(INFO) << "push " << Ext.extensionName ;
+                instanceEtensionNames.emplace_back(Ext.extensionName);
+            }
+        }
 
         vk::InstanceCreateInfo instanceInfo{vk::InstanceCreateFlags(), &vkAppInfo,
                                             instanceLayerPropertiesName.size(),
@@ -123,17 +134,22 @@ namespace tt {
                                             instanceEtensionNames.size(),
                                             instanceEtensionNames.data()};
         auto ins = vk::createInstanceUnique(instanceInfo);
+        for(auto& ExtName:instanceEtensionNames)
+            if(!std::strcmp(VK_EXT_DEBUG_REPORT_EXTENSION_NAME,ExtName)){
+                auto vkCreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT)(ins->getProcAddr("vkCreateDebugReportCallbackEXT"));
+                vk::DebugReportCallbackCreateInfoEXT debugReportInfo{
+                                vk::DebugReportFlagBitsEXT::eError|
+                                vk::DebugReportFlagBitsEXT::eWarning|
+                                vk::DebugReportFlagBitsEXT::ePerformanceWarning|
+                                vk::DebugReportFlagBitsEXT::eDebug|
+                                vk::DebugReportFlagBitsEXT::eInformation,
+                                DebugReportCallback};
+                vkCreateDebugReportCallbackEXT((VkInstance)ins.get(),(VkDebugReportCallbackCreateInfoEXT*)&debugReportInfo, nullptr,&debugReportCallback);
+                MY_LOG(ERROR) << "vkCreateDebugReportCallbackEXT" ;
+            }
 
-        auto vkCreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT)(ins->getProcAddr("vkCreateDebugReportCallbackEXT"));
-        vk::DebugReportCallbackCreateInfoEXT debugReportInfo{
-                            vk::DebugReportFlagBitsEXT::eError|
-                            vk::DebugReportFlagBitsEXT::eWarning|
-                            vk::DebugReportFlagBitsEXT::ePerformanceWarning|
-                            vk::DebugReportFlagBitsEXT::eDebug|
-                            vk::DebugReportFlagBitsEXT::eInformation,
-                            DebugReportCallback};
 
-        vkCreateDebugReportCallbackEXT((VkInstance)ins.get(),(VkDebugReportCallbackCreateInfoEXT*)&debugReportInfo, nullptr,&debugReportCallback);
+        //vkCreateDebugReportCallbackEXT((VkInstance)ins.get(),(VkDebugReportCallbackCreateInfoEXT*)&debugReportInfo, nullptr,&debugReportCallback);
         //auto vkDestroyDebugReportCallbackEXT = static_cast<PFN_vkDestroyDebugReportCallbackEXT>(ins->getProcAddr("vkDestroyDebugReportCallbackEXT"));
         //assert(vkCreateDebugReportCallbackEXT);
         //assert(vkDestroyDebugReportCallbackEXT);

@@ -196,6 +196,9 @@ namespace tt {
                                                                      surface.get());
             auto defaultDeviceFormats = phyDevices[0].getSurfaceFormatsKHR(surface.get());
 
+            for(auto&phdFormat:defaultDeviceFormats){
+                MY_LOG(INFO) << vk::to_string(phdFormat.colorSpace)<<"@"<<vk::to_string(phdFormat.format);
+            }
             initDevice(app,instance,phyDevices[0],graphicsQueueIndex,defaultDeviceFormats[0].format);
 
         }
@@ -220,7 +223,7 @@ namespace tt {
             //todo copy to buffer
             memcpy(mvpBuffer_ptr.get(), &mvpMat4, std::get<size_t>(devicePtr->mvpBuffer));
         }
-
+//sleep(1);
         windowPtr->mianBuffers = devicePtr->createCmdBuffers(*windowPtr,[&](RenderpassBeginHandle& cmdHandleRenderpassBegin){
             vk::Viewport viewport{
                     0, 0, swapchainExtent.width, swapchainExtent.height, 0.0f, 1.0f
