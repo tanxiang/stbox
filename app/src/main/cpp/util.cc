@@ -166,8 +166,7 @@ namespace tt {
             //          << vk::to_string(queueFamilyProperties[i].queueFlags) ;
             if (PhyDevice.getSurfaceSupportKHR(i, surface) &&
                 (queueFamilyProperties[i].queueFlags & flags)) {
-                MY_LOG(INFO) << "default_queue_index :" << i << "\tgetSurfaceSupportKHR:true"
-                          ;
+                MY_LOG(INFO) << "default_queue_index :" << i << "\tgetSurfaceSupportKHR:true";
                 return i;
             }
         }
@@ -496,13 +495,13 @@ namespace tt {
                              std::function<void(RenderpassBeginHandle&)> functionRenderpassBegin,
                              std::function<void(CommandBufferBeginHandle&)> functionBegin) {
         MY_LOG(INFO)<<":allocateCommandBuffersUnique:"<<swapchain.getFrameBufferNum();
-        std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
+        std::vector commandBuffers = get().allocateCommandBuffersUnique(
                 vk::CommandBufferAllocateInfo{commandPool.get(),
                                               vk::CommandBufferLevel::ePrimary, swapchain.getFrameBufferNum()});
 
-        std::array<vk::ClearValue, 2> clearValues{
-                vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}},
-                vk::ClearDepthStencilValue{1.0f, 0},
+        std::array clearValues{
+                vk::ClearValue{vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}}},
+                vk::ClearValue{vk::ClearDepthStencilValue{1.0f, 0}},
         };
         uint32_t frameIndex = 0;
         for(auto&cmdBuffer : commandBuffers){

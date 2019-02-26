@@ -225,15 +225,19 @@ namespace tt {
         }
 //sleep(1);
         windowPtr->mianBuffers = devicePtr->createCmdBuffers(*windowPtr,[&](RenderpassBeginHandle& cmdHandleRenderpassBegin){
-            vk::Viewport viewport{
+            std::array viewports{
+                vk::Viewport {
                     0, 0, swapchainExtent.width, swapchainExtent.height, 0.0f, 1.0f
+                }
             };
-            cmdHandleRenderpassBegin.setViewport(0,1,&viewport);
-            vk::Rect2D scissors{vk::Offset2D{}, swapchainExtent};
-            cmdHandleRenderpassBegin.setScissor(0,1,&scissors);
+            cmdHandleRenderpassBegin.setViewport(0,viewports);
+            std::array scissors{
+                vk::Rect2D{vk::Offset2D{}, swapchainExtent}
+            };
+            cmdHandleRenderpassBegin.setScissor(0,scissors);
 
             cmdHandleRenderpassBegin.bindPipeline(vk::PipelineBindPoint::eGraphics, devicePtr->graphicsPipeline.get());
-            std::array<vk::DescriptorSet, 1> tmpDescriptorSets{
+            std::array tmpDescriptorSets{
                     devicePtr->descriptorSets[0].get()
             };
             cmdHandleRenderpassBegin.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, devicePtr->pipelineLayout.get(), 0,
@@ -247,7 +251,7 @@ namespace tt {
     }
 
     void stboxvk::cleanWindow() {
-        MY_LOG(INFO) << __func__ ;
+        //MY_LOG(INFO) << __func__ ;
         windowPtr.reset();
         //devicePtr.reset();
     }
