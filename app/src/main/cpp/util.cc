@@ -177,7 +177,7 @@ namespace tt {
 
     std::unique_ptr<tt::Device> Instance::connectToDevice(vk::PhysicalDevice& phyDevice,int queueIndex) {
         std::array<float, 1> queue_priorities{0.0};
-        std::array<vk::DeviceQueueCreateInfo, 1> deviceQueueCreateInfos{
+        std::array deviceQueueCreateInfos{
                 vk::DeviceQueueCreateInfo{vk::DeviceQueueCreateFlags(),
                                           queueIndex,
                                           queue_priorities.size(), queue_priorities.data()
@@ -326,7 +326,7 @@ namespace tt {
                                 vk::PipelineLayout pipelineLayout) {
         auto vertShaderModule = loadShaderFromAssets("shaders/mvp.vert.spv", app);
         auto fargShaderModule = loadShaderFromAssets("shaders/copy.frag.spv", app);
-        std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStageCreateInfos{
+        std::array shaderStageCreateInfos{
                 vk::PipelineShaderStageCreateInfo{
                         vk::PipelineShaderStageCreateFlags(),
                         vk::ShaderStageFlagBits::eVertex,
@@ -339,13 +339,13 @@ namespace tt {
                 }
         };
 
-        std::array<vk::VertexInputBindingDescription, 1> vertexInputBindingDescriptions{
+        std::array vertexInputBindingDescriptions{
                 vk::VertexInputBindingDescription{
                         0, dataStepSize,
                         vk::VertexInputRate::eVertex
                 }
         };
-        std::array<vk::VertexInputAttributeDescription, 2> vertexInputAttributeDescriptions{
+        std::array vertexInputAttributeDescriptions{
                 vk::VertexInputAttributeDescription{
                         0, 0, vk::Format::eR32G32B32A32Sfloat, 0
                 },
@@ -369,7 +369,7 @@ namespace tt {
                 vk::PipelineViewportStateCreateFlags(),
                 1, nullptr, 1, nullptr
         };
-        std::array<vk::DynamicState ,2> dynamicStates{vk::DynamicState::eViewport,vk::DynamicState::eScissor};
+        std::array dynamicStates{vk::DynamicState::eViewport,vk::DynamicState::eScissor};
         vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{vk::PipelineDynamicStateCreateFlags(),dynamicStates.size(),dynamicStates.data()};
 
         vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo{
@@ -420,7 +420,7 @@ namespace tt {
     vk::UniqueRenderPass Device::createRenderpass(vk::Format surfaceDefaultFormat) {
         //auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
         renderPassFormat = surfaceDefaultFormat;
-        std::array<vk::AttachmentDescription, 2> attachDescs{
+        std::array attachDescs{
                 vk::AttachmentDescription{
                         vk::AttachmentDescriptionFlags(),
                         renderPassFormat,
@@ -444,7 +444,7 @@ namespace tt {
                         vk::ImageLayout::eDepthStencilAttachmentOptimal
                 }
         };
-        std::array<vk::AttachmentReference, 1> attachmentRefs{
+        std::array attachmentRefs{
                 vk::AttachmentReference{
                         0, vk::ImageLayout::eColorAttachmentOptimal
                 }
@@ -452,7 +452,7 @@ namespace tt {
         vk::AttachmentReference depthAttacheRefs{
                 1, vk::ImageLayout::eDepthStencilAttachmentOptimal
         };
-        std::array<vk::SubpassDescription, 1> subpassDescs{
+        std::array subpassDescs{
                 vk::SubpassDescription{
                         vk::SubpassDescriptionFlags(),
                         vk::PipelineBindPoint::eGraphics,
@@ -462,7 +462,7 @@ namespace tt {
                         &depthAttacheRefs,
                 }
         };
-        std::array<vk::SubpassDependency, 2> subpassDeps{
+        std::array subpassDeps{
                 vk::SubpassDependency{
                         VK_SUBPASS_EXTERNAL, 0,
                         vk::PipelineStageFlagBits::eBottomOfPipe,
@@ -551,7 +551,7 @@ namespace tt {
         auto currentBufferIndex = acquireNextImage(device, imageAcquiredSemaphore);
 
         vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-        std::array<vk::SubmitInfo, 1> submitInfos{
+        std::array submitInfos{
                 vk::SubmitInfo{
                         1, &imageAcquiredSemaphore, &pipelineStageFlags,
                         1, &drawcommandBuffers[currentBufferIndex.value].get(),
@@ -738,7 +738,7 @@ namespace tt {
 
         frameBuffers.clear();
         for (auto &imageView : imageViews) {
-            std::array<vk::ImageView, 2> attachments{imageView.get(),
+            std::array attachments{imageView.get(),
                                                      std::get<vk::UniqueImageView>(depth).get()};
             frameBuffers.emplace_back(device->createFramebufferUnique(vk::FramebufferCreateInfo{
                     vk::FramebufferCreateFlags(),

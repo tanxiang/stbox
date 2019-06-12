@@ -172,7 +172,7 @@ namespace tt {
         auto descriptorImageInfo = devicePtr->getDescriptorImageInfo(devicePtr->sampleImage,devicePtr->sampler.get());
         auto descriptorBufferInfo = devicePtr->getDescriptorBufferInfo(devicePtr->mvpBuffer);
 
-        std::array<vk::WriteDescriptorSet,2> writeDes{
+        std::array writeDes{
                 vk::WriteDescriptorSet{
                         devicePtr->descriptorSets[0].get(),0,0,1,vk::DescriptorType::eUniformBuffer,
                         nullptr,&descriptorBufferInfo

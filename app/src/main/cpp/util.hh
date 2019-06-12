@@ -86,7 +86,7 @@ namespace tt {
     private:
 
         vk::UniqueDescriptorPool ttcreateDescriptorPoolUnique() {
-            std::array<vk::DescriptorPoolSize,3> poolSize{
+            std::array poolSize{
                     vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 2},
                     vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 2},
                     vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 2}
@@ -159,7 +159,7 @@ namespace tt {
         vk::UniqueRenderPass createRenderpass(vk::Format surfaceDefaultFormat);
 
         auto createDescriptorSets(vk::UniqueDescriptorSetLayout &descriptorSetLayout) {
-            std::array<vk::DescriptorSetLayout, 1> descriptorSetLayouts{descriptorSetLayout.get()};
+            std::array descriptorSetLayouts{descriptorSetLayout.get()};
             return get().allocateDescriptorSetsUnique(
                     vk::DescriptorSetAllocateInfo{
                             descriptorPoll.get(), descriptorSetLayouts.size(),
@@ -248,7 +248,7 @@ namespace tt {
 
         vk::UniqueFence submitCmdBuffer(vk::CommandBuffer &commandBuffer){
             auto fence = get().createFenceUnique(vk::FenceCreateInfo{});
-            std::array<vk::SubmitInfo, 1> submitInfos{
+            std::array submitInfos{
                     vk::SubmitInfo{
                             0, nullptr, nullptr,
                             1, &commandBuffer
