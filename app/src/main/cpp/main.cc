@@ -146,9 +146,9 @@ void Android_process(struct android_app *app) {
     do {
         int ident;
         int minTimeout = -1;
-        while (!app->destroyRequested && (ident = ALooper_pollAll(minTimeout, NULL, &events, (void **) &source)) >= 0) {
+        while (!app->destroyRequested && (ident = ALooper_pollAll(minTimeout, nullptr, &events, (void **) &source)) >= 0) {
             // Process each polled events
-            if (source != NULL) source->process(app, source);
+            if (source != nullptr) source->process(app, source);
         }
         if(app->destroyRequested)
             break;

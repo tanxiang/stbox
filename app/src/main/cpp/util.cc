@@ -195,13 +195,12 @@ namespace tt {
         }
         auto deviceExtensionProperties = phyDevice.enumerateDeviceExtensionProperties();
         for (auto &deviceExtensionPropertie:deviceExtensionProperties)
-            MY_LOG(INFO) << "PhyDeviceExtensionPropertie : " << deviceExtensionPropertie.extensionName
-                      ;
+            MY_LOG(INFO) << "PhyDeviceExtensionPropertie : " << deviceExtensionPropertie.extensionName;
         std::array deviceExtensionNames{
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
             VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
             VK_KHR_DESCRIPTOR_UPDATE_TEMPLATE_EXTENSION_NAME,
-            //VK_KHR_SHARED_PRESENTABLE_IMAGE_EXTENSION_NAME,
+            VK_KHR_SHARED_PRESENTABLE_IMAGE_EXTENSION_NAME,
             //VK_KHR_INCREMENTAL_PRESENT_EXTENSION_NAME,
             //VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME
         };
@@ -228,6 +227,7 @@ namespace tt {
                     MY_LOG(INFO)<<vk::to_string(memoryProperties.memoryTypes[i].propertyFlags)<<" march " << vk::to_string(flags) <<" return "<< i;
                     return i;
                 }
+
             }
             memoryTypeBits >>= 1;
         }

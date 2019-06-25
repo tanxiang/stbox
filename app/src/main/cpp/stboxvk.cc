@@ -191,6 +191,7 @@ namespace tt {
         auto surface = instance.connectToWSI(app->window);
         if (!devicePtr || !devicePtr->checkSurfaceSupport(surface.get())){
             auto phyDevices = instance->enumeratePhysicalDevices();
+            //phyDevices[0].getSurfaceCapabilities2KHR(vk::PhysicalDeviceSurfaceInfo2KHR{surface.get()});
             auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevices[0],
                                                                      vk::QueueFlagBits::eGraphics,
                                                                      surface.get());
