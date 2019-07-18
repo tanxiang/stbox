@@ -3,11 +3,11 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 26
+    compileSdkVersion 28
     defaultConfig {
         applicationId "net.xigang.ttand.stbox"
         minSdkVersion 24
-        targetSdkVersion 26
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -16,6 +16,9 @@ android {
                 cppFlags "-std=c++17 -fexceptions"
                 arguments "-DANDROID_STL=c++_shared"
             }
+        }
+        ndk{
+            abiFilter "arm64-v8a"
         }
         shaders {
             glslcArgs.addAll(['-c','-g'])

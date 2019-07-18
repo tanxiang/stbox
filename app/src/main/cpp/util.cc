@@ -22,6 +22,8 @@
 #include <cstring>
 #include <array>
 
+#include "stb_font_consolas_24_latin1.inl"
+
 using namespace std::chrono_literals;
 
 /*
@@ -121,7 +123,7 @@ namespace tt {
         };
         auto instanceExts = vk::enumerateInstanceExtensionProperties();
         for(auto& Ext: instanceExts){
-            //MY_LOG(INFO) << Ext.extensionName ;
+            MY_LOG(INFO) <<"instanceExt"<< Ext.extensionName ;
             if(!std::strcmp(Ext.extensionName,VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
                 MY_LOG(INFO) << "push " << Ext.extensionName ;
                 instanceEtensionNames.emplace_back(Ext.extensionName);
@@ -201,6 +203,7 @@ namespace tt {
             VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
             VK_KHR_DESCRIPTOR_UPDATE_TEMPLATE_EXTENSION_NAME,
             VK_KHR_SHARED_PRESENTABLE_IMAGE_EXTENSION_NAME,
+            //VK_EXT_DEBUG_MARKER_EXTENSION_NAME
             //VK_KHR_INCREMENTAL_PRESENT_EXTENSION_NAME,
             //VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME
         };
@@ -251,6 +254,9 @@ namespace tt {
         AAsset_read(file.get(), reinterpret_cast<void *>(fileContent.data()), fileContent.size());
         return fileContent;
     }
+
+
+    StbFontChar stbFontData[STB_FONT_consolas_24_latin1_NUM_CHARS];
 
     vk::UniqueShaderModule Device::loadShaderFromAssets(const std::string& filePath,
                                                         android_app *androidAppCtx) {
