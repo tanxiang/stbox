@@ -57,18 +57,50 @@ namespace tt {
 
     uint32_t findMemoryTypeIndex(vk::PhysicalDevice physicalDevice,uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags);
 
+
+	using ImageViewMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueDeviceMemory>;
+
+    using ImageViewSamplerMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueSampler ,vk::UniqueDeviceMemory>;
+
+	using BufferViewMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>;
+
+	using BufferViewMemoryPtr = std::unique_ptr<void, std::function<void(void *)> >;
+
+	class Job :public vk::Device{
+        uint32_t queueFamilyIndex;
+
+        //memory using
+	    std::vector<BufferViewMemory> BVMs;
+	    std::vector<ImageViewMemory> IVMs;
+	    std::vector<ImageViewSamplerMemory> IVSMs;
+
+		vk::UniqueCommandPool commandPool = createCommandPoolUnique(vk::CommandPoolCreateInfo{vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueFamilyIndex});
+        std::vector<vk::UniqueCommandBuffer> cmdBuffers;
+
+        vk::UniqueRenderPass renderPass;
+        vk::UniquePipelineCache pipelineCache = createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
+        vk::UniquePipelineLayout pipelineLayout;
+        vk::UniquePipeline graphicsPipeline;
+
+		vk::UniqueDescriptorPool descriptorPoll ;//= ttcreateDescriptorPoolUnique();
+        std::vector<vk::UniqueDescriptorSet> descriptorSets;//{createDescriptorSets()};
+
+	public:
+		auto submit(){
+
+		}
+	};
+
     class Device : public vk::UniqueDevice {
     public:
-        using ImageViewMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueDeviceMemory>;
-
-        using BufferViewMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>;
-
-        using BufferViewMemoryPtr = std::unique_ptr<void, std::function<void(void *)> >;
 
         BufferViewMemory mvpBuffer, vertexBuffer, indexBuffer;
         ImageViewMemory sampleImage;
         vk::UniqueSampler sampler;
+
     private:
+
+        std::vector<Job> jobs;
 
         vk::PhysicalDevice physicalDevice;
         uint32_t queueFamilyIndex;
@@ -114,6 +146,11 @@ namespace tt {
 
         auto phyDevice() {
             return physicalDevice;
+        }
+
+		template <typename Job>
+        auto runJob(Job j){
+
         }
 
         auto getCommandPool(){
@@ -269,7 +306,7 @@ namespace tt {
         vk::Extent2D swapchainExtent;
         vk::UniqueSwapchainKHR swapchain;
         std::vector<vk::UniqueImageView> imageViews;
-        Device::ImageViewMemory depth;
+        ImageViewMemory depth;
         std::vector<vk::UniqueFramebuffer> frameBuffers;
 
     public:

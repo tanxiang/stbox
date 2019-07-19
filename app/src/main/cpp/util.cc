@@ -191,7 +191,7 @@ namespace tt {
         //MY_LOG(INFO) << "deviceFeatures.samplerAnisotropy = "<<deviceFeatures.samplerAnisotropy;
         MY_LOG(INFO) << "phyDeviceDeviceLayerProperties : " << deviceLayerProperties.size() ;
         std::vector<const char *> deviceLayerPropertiesName;
-        for(auto deviceLayerPropertie :deviceLayerProperties) {
+        for(auto &deviceLayerPropertie :deviceLayerProperties) {
             MY_LOG(INFO) << "phyDeviceDeviceLayerPropertie : " << deviceLayerPropertie.layerName;
             deviceLayerPropertiesName.emplace_back(deviceLayerPropertie.layerName);
         }
@@ -580,7 +580,7 @@ namespace tt {
         //wait renderFence then free renderSemaphore imageAcquiredSemaphore
     }
 
-    Device::ImageViewMemory Device::createImageAndMemory(vk::Format format, vk::Extent3D extent3D,
+    ImageViewMemory Device::createImageAndMemory(vk::Format format, vk::Extent3D extent3D,
                                                          vk::ImageUsageFlags imageUsageFlags,
                                                          uint32_t mipLevels,
                                                          vk::ComponentMapping componentMapping,
@@ -615,7 +615,7 @@ namespace tt {
         return IVM;
     }
 
-    Device::BufferViewMemory
+    BufferViewMemory
     Device::createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
                                   vk::MemoryPropertyFlags memoryPropertyFlags) {
 
