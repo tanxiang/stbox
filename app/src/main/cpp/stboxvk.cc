@@ -33,7 +33,7 @@ namespace tt {
     }
     void stboxvk::initDevice(android_app *app,tt::Instance &instance,vk::PhysicalDevice &physicalDevice,int queueIndex,vk::Format rederPassFormat) {
         devicePtr = instance.connectToDevice(physicalDevice,queueIndex);//reconnect
-        auto descriptorSetLayout = devicePtr->createDescriptorSetLayoutUnique(
+        devicePtr->descriptorSetLayout = devicePtr->createDescriptorSetLayoutUnique(
                 std::vector<vk::DescriptorSetLayoutBinding>{
                         vk::DescriptorSetLayoutBinding{
                                 0,
@@ -49,7 +49,7 @@ namespace tt {
                         }
                 }
         );
-        devicePtr->descriptorSets = devicePtr->createDescriptorSets(descriptorSetLayout);
+        devicePtr->descriptorSets = devicePtr->createDescriptorSets(devicePtr->descriptorSetLayout);
 
         devicePtr->renderPass = devicePtr->createRenderpass(rederPassFormat);
 
@@ -65,7 +65,7 @@ namespace tt {
         };
 
 
-        devicePtr->pipelineLayout = devicePtr->createPipelineLayout(descriptorSetLayout);
+        devicePtr->pipelineLayout = devicePtr->createPipelineLayout(devicePtr->descriptorSetLayout);
         devicePtr->graphicsPipeline = devicePtr->createPipeline(sizeof(decltype(vertices)::value_type), app,
                                                                 devicePtr->pipelineLayout.get());
         devicePtr->vertexBuffer = devicePtr->createBufferAndMemory(

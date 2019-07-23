@@ -78,11 +78,13 @@ namespace tt {
         std::vector<vk::UniqueCommandBuffer> cmdBuffers;
 
         vk::UniqueRenderPass renderPass;
+
         vk::UniquePipelineCache pipelineCache = createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
         vk::UniquePipelineLayout pipelineLayout;
-        vk::UniquePipeline graphicsPipeline;
+        vk::UniquePipeline Pipeline;
 
 		vk::UniqueDescriptorPool descriptorPoll ;//= ttcreateDescriptorPoolUnique();
+		vk::UniqueDescriptorSetLayout descriptorSetLayout;
         std::vector<vk::UniqueDescriptorSet> descriptorSets;//{createDescriptorSets()};
 
 	public:
@@ -113,6 +115,7 @@ namespace tt {
         vk::UniqueRenderPass renderPass;
         vk::UniquePipelineLayout pipelineLayout;
         vk::UniquePipeline graphicsPipeline;
+	    vk::UniqueDescriptorSetLayout descriptorSetLayout;
         std::vector<vk::UniqueDescriptorSet> descriptorSets;//{createDescriptorSets()};
 
     private:
