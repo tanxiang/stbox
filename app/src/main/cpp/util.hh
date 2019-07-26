@@ -290,13 +290,14 @@ namespace tt {
 		//vk::UniqueRenderPass renderPass;
 
 		vk::UniquePipelineCache pipelineCache;
+	public:
 		vk::UniquePipelineLayout pipelineLayout;//todo vector
-		vk::UniquePipeline Pipeline;//todo vector
-
+	private:
 		vk::UniqueCommandPool commandPool;
+	public:
+		vk::UniquePipeline uniquePipeline;//todo vector
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
 
-	public:
 		//memory using
 		std::vector<BufferViewMemory> BVMs;
 		std::vector<ImageViewMemory> IVMs;
@@ -316,8 +317,7 @@ namespace tt {
 				/* renderPass{device->createRenderPassUnique(renderPassCreateInfo)},*/
 				pipelineCache{device->createPipelineCacheUnique(vk::PipelineCacheCreateInfo{})},
 				pipelineLayout{device->createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo{vk::PipelineLayoutCreateFlags(), 1,descriptorSetLayout.operator->(),0,nullptr})},
-				commandPool{device->createCommandPoolUnique(vk::CommandPoolCreateInfo{vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueInxdex})}
-				{
+				commandPool{device->createCommandPoolUnique(vk::CommandPoolCreateInfo{vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueInxdex})} {
 		}
 	};
 

@@ -264,6 +264,44 @@ namespace tt {
     		}
     	);
 
+		job.BVMs.emplace_back(
+				device.createBufferAndMemory(sizeof(glm::mat4), vk::BufferUsageFlagBits::eUniformBuffer,
+						vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)
+						);
+
+		std::vector<VertexUV> vertices{
+				{{1.0f,  1.0f,  0.0f, 1.0f}, {1.0f, 1.0f}},
+				{{-1.0f, 1.0f,  0.0f, 1.0f}, {0.0f, 1.0f}},
+				{{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+				{{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
+		};
+
+		job.BVMs.emplace_back(
+				device.createBufferAndMemory(
+						sizeof(decltype(vertices)::value_type) * vertices.size(), vk::BufferUsageFlagBits::eVertexBuffer,
+						vk::MemoryPropertyFlagBits::eHostVisible |
+						vk::MemoryPropertyFlagBits::eHostCoherent)
+						);
+		{
+			auto vertexBuffer_ptr = device.mapMemoryAndSize(job.BVMs[1]);
+			memcpy(vertexBuffer_ptr.get(),vertices.data(),std::get<size_t>(job.BVMs[1]));
+		}
+
+		std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
+
+		job.BVMs.emplace_back(
+				device.createBufferAndMemory(
+						sizeof(decltype(indices)::value_type) * indices.size(), vk::BufferUsageFlagBits::eIndexBuffer,
+						vk::MemoryPropertyFlagBits::eHostVisible |
+						vk::MemoryPropertyFlagBits::eHostCoherent)
+				);
+		{
+			auto indexBuffer_ptr = devicePtr->mapMemoryAndSize(job.BVMs[2]);
+			memcpy(indexBuffer_ptr.get(), indices.data(), std::get<size_t>(job.BVMs[2]));
+		}
+
+		job.uniquePipeline = device.createPipeline(sizeof(decltype(vertices)::value_type), app, job.pipelineLayout.get());
+
 	}
 
     void stboxvk::cleanWindow() {
