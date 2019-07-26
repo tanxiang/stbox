@@ -251,10 +251,27 @@ namespace tt {
         windowPtr->submitCmdBufferAndWait(*devicePtr, windowPtr->mianBuffers);
     }
 
+	void stboxvk::initJobs(android_app *app, tt::Device &device, tt::Window& window) {
+    	auto& job = device.createJob(
+    		std::vector {
+    			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 2},
+    			vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 2},
+    			vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 2}
+    	    },
+			std::vector{
+    			vk::DescriptorSetLayoutBinding{0,vk::DescriptorType::eUniformBuffer,1,vk::ShaderStageFlagBits::eVertex},
+    			vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment}
+    		}
+    	);
+
+	}
+
     void stboxvk::cleanWindow() {
         //MY_LOG(INFO) << __func__ ;
         windowPtr.reset();
         //devicePtr.reset();
     }
+
+
 
 }

@@ -571,14 +571,7 @@ namespace tt {
         return renderFence;
     }
 
-    void Window::submitCmdBufferAndWait(Device &device,
-                                        std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers) {
-        auto imageAcquiredSemaphore = device->createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-        auto renderSemaphore = device->createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-        auto renderFence = submitCmdBuffer(device,drawcommandBuffers,imageAcquiredSemaphore.get(),renderSemaphore.get());
-        device.waitFence(renderFence.get());
-        //wait renderFence then free renderSemaphore imageAcquiredSemaphore
-    }
+
 
     ImageViewMemory Device::createImageAndMemory(vk::Format format, vk::Extent3D extent3D,
                                                          vk::ImageUsageFlags imageUsageFlags,
@@ -638,8 +631,21 @@ namespace tt {
         return BVM;
     }
 
+	Job& Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
+	                       std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings){
+		auto& job = jobs.emplace_back(*this,queueFamilyIndex,std::move(descriptorPoolSizes),std::move(descriptorSetLayoutBindings));
 
+		return job;
+	}
 
+	void Window::submitCmdBufferAndWait(Device &device,
+	                                    std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers) {
+		auto imageAcquiredSemaphore = device->createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+		auto renderSemaphore = device->createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+		auto renderFence = submitCmdBuffer(device,drawcommandBuffers,imageAcquiredSemaphore.get(),renderSemaphore.get());
+		device.waitFence(renderFence.get());
+		//wait renderFence then free renderSemaphore imageAcquiredSemaphore
+	}
 
     Window::Window(vk::UniqueSurfaceKHR &&sf, tt::Device &device,vk::Extent2D windowExtent)
             : surface{std::move(sf)} ,swapchainExtent{windowExtent}{

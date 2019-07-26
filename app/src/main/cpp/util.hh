@@ -66,32 +66,7 @@ namespace tt {
 
 	using BufferViewMemoryPtr = std::unique_ptr<void, std::function<void(void *)> >;
 
-	class Job :public vk::Device{
-        uint32_t queueFamilyIndex;
-
-        //memory using
-	    std::vector<BufferViewMemory> BVMs;
-	    std::vector<ImageViewMemory> IVMs;
-	    std::vector<ImageViewSamplerMemory> IVSMs;
-
-		vk::UniqueCommandPool commandPool = createCommandPoolUnique(vk::CommandPoolCreateInfo{vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueFamilyIndex});
-        std::vector<vk::UniqueCommandBuffer> cmdBuffers;
-
-        vk::UniqueRenderPass renderPass;
-
-        vk::UniquePipelineCache pipelineCache = createPipelineCacheUnique(vk::PipelineCacheCreateInfo{});
-        vk::UniquePipelineLayout pipelineLayout;
-        vk::UniquePipeline Pipeline;
-
-		vk::UniqueDescriptorPool descriptorPoll ;//= ttcreateDescriptorPoolUnique();
-		vk::UniqueDescriptorSetLayout descriptorSetLayout;
-        std::vector<vk::UniqueDescriptorSet> descriptorSets;//{createDescriptorSets()};
-
-	public:
-		auto submit(){
-
-		}
-	};
+	class Job;
 
     class Device : public vk::UniqueDevice {
     public:
@@ -99,7 +74,6 @@ namespace tt {
         BufferViewMemory mvpBuffer, vertexBuffer, indexBuffer;
         ImageViewMemory sampleImage;
         vk::UniqueSampler sampler;
-
     private:
 
         std::vector<Job> jobs;
@@ -155,6 +129,9 @@ namespace tt {
         auto runJob(Job j){
 
         }
+
+        Job& createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
+                       std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings);
 
         auto getCommandPool(){
             return commandPool.get();
@@ -303,6 +280,46 @@ namespace tt {
         }
 
     };
+
+	class Job {
+
+		vk::UniqueDescriptorPool descriptorPoll;
+		vk::UniqueDescriptorSetLayout descriptorSetLayout;//todo vector UniqueDescriptorSetLayout
+		std::vector<vk::UniqueDescriptorSet> descriptorSets;
+
+		//vk::UniqueRenderPass renderPass;
+
+		vk::UniquePipelineCache pipelineCache;
+		vk::UniquePipelineLayout pipelineLayout;//todo vector
+		vk::UniquePipeline Pipeline;//todo vector
+
+		vk::UniqueCommandPool commandPool;
+		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
+
+	public:
+		//memory using
+		std::vector<BufferViewMemory> BVMs;
+		std::vector<ImageViewMemory> IVMs;
+		std::vector<ImageViewSamplerMemory> IVSMs;
+
+		auto submit(){
+
+		}
+
+		Job(Device& device,uint32_t queueInxdex,
+				std::vector<vk::DescriptorPoolSize>&& descriptorPoolSizes,
+				std::vector<vk::DescriptorSetLayoutBinding>&& descriptorSetLayoutBindings/*vk::RenderPassCreateInfo &&renderPassCreateInfo,*/
+				):
+				descriptorPoll{device->createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo{vk::DescriptorPoolCreateFlags(), 3, descriptorPoolSizes.size(), descriptorPoolSizes.data()})},/*todo maxset unset*/
+				descriptorSetLayout{device->createDescriptorSetLayoutUnique(vk::DescriptorSetLayoutCreateInfo{vk::DescriptorSetLayoutCreateFlags(), descriptorSetLayoutBindings.size(),descriptorSetLayoutBindings.data()})},
+				descriptorSets{device->allocateDescriptorSetsUnique(vk::DescriptorSetAllocateInfo{descriptorPoll.get(),1,descriptorSetLayout.operator->()})},//todo multi descriptorSetLayout
+				/* renderPass{device->createRenderPassUnique(renderPassCreateInfo)},*/
+				pipelineCache{device->createPipelineCacheUnique(vk::PipelineCacheCreateInfo{})},
+				pipelineLayout{device->createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo{vk::PipelineLayoutCreateFlags(), 1,descriptorSetLayout.operator->(),0,nullptr})},
+				commandPool{device->createCommandPoolUnique(vk::CommandPoolCreateInfo{vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueInxdex})}
+				{
+		}
+	};
 
     class Window {
         vk::UniqueSurfaceKHR surface;

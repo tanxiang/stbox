@@ -21,6 +21,8 @@ namespace tt {
 
         void initWindow(android_app *app, tt::Instance &instance);
 
+        void initJobs(android_app *app,tt::Device &device,tt::Window &window);
+
         void cleanWindow();
 
         explicit operator bool() const {
