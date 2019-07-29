@@ -264,8 +264,17 @@ namespace tt {
     		}
     	);
 
+		auto Projection =glm::perspective(glm::radians(60.0f), static_cast<float>(window.getSwapchainExtent().width) / static_cast<float>(window.getSwapchainExtent().height), 0.1f, 256.0f);
+
+		auto View = glm::lookAt(
+				glm::vec3(8, 3, 10),  // Camera is at (-5,3,-10), in World Space
+				glm::vec3(0, 0, 0),     // and looks at the origin
+				glm::vec3(0, 1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
+		);
+
+		auto mvpMat4 =  Projection  * View ;
 		job.BVMs.emplace_back(
-				device.createBufferAndMemory(sizeof(glm::mat4), vk::BufferUsageFlagBits::eUniformBuffer,
+				device.createBufferAndMemoryFromMat(Projection  * View, vk::BufferUsageFlagBits::eUniformBuffer,
 						vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)
 						);
 
@@ -275,30 +284,16 @@ namespace tt {
 				{{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
 				{{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
 		};
+		job.BVMs.emplace_back(
+				device.createBufferAndMemoryFromVector(
+						vertices, vk::BufferUsageFlagBits::eVertexBuffer,
+						vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
 
 		job.BVMs.emplace_back(
-				device.createBufferAndMemory(
-						sizeof(decltype(vertices)::value_type) * vertices.size(), vk::BufferUsageFlagBits::eVertexBuffer,
-						vk::MemoryPropertyFlagBits::eHostVisible |
-						vk::MemoryPropertyFlagBits::eHostCoherent)
-						);
-		{
-			auto vertexBuffer_ptr = device.mapMemoryAndSize(job.BVMs[1]);
-			memcpy(vertexBuffer_ptr.get(),vertices.data(),std::get<size_t>(job.BVMs[1]));
-		}
+				device.createBufferAndMemoryFromVector(
+						std::vector<uint32_t>{0, 1, 2, 2, 3, 0}, vk::BufferUsageFlagBits::eIndexBuffer,
+						vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
 
-		std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
-
-		job.BVMs.emplace_back(
-				device.createBufferAndMemory(
-						sizeof(decltype(indices)::value_type) * indices.size(), vk::BufferUsageFlagBits::eIndexBuffer,
-						vk::MemoryPropertyFlagBits::eHostVisible |
-						vk::MemoryPropertyFlagBits::eHostCoherent)
-				);
-		{
-			auto indexBuffer_ptr = devicePtr->mapMemoryAndSize(job.BVMs[2]);
-			memcpy(indexBuffer_ptr.get(), indices.data(), std::get<size_t>(job.BVMs[2]));
-		}
 
 		job.uniquePipeline = device.createPipeline(sizeof(decltype(vertices)::value_type), app, job.pipelineLayout.get());
 
