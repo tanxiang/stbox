@@ -207,6 +207,9 @@ namespace tt {
 
         windowPtr = std::make_unique<tt::Window>(std::move(surface), *devicePtr, AndroidGetWindowSize(app));
 
+
+        initJobs(app,*devicePtr,*windowPtr);
+
         auto swapchainExtent = windowPtr->getSwapchainExtent();
 
         auto Projection =glm::perspective(glm::radians(60.0f), static_cast<float>(swapchainExtent.width) / static_cast<float>(swapchainExtent.height), 0.1f, 256.0f);
@@ -272,7 +275,7 @@ namespace tt {
 				glm::vec3(0, 1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
 		);
 
-		auto mvpMat4 =  Projection  * View ;
+		//auto mvpMat4 =  Projection  * View ;
 		job.BVMs.emplace_back(
 				device.createBufferAndMemoryFromMat(Projection  * View, vk::BufferUsageFlagBits::eUniformBuffer,
 						vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)
@@ -294,9 +297,31 @@ namespace tt {
 						std::vector<uint32_t>{0, 1, 2, 2, 3, 0}, vk::BufferUsageFlagBits::eIndexBuffer,
 						vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
 
-
 		job.uniquePipeline = device.createPipeline(sizeof(decltype(vertices)::value_type), app, job.pipelineLayout.get());
 
+
+		gli::texture2d tex2d;
+		{
+			auto fileContent = loadDataFromAssets("textures/vulkan_11_rgba.ktx", app);
+			tex2d = gli::texture2d{gli::load(fileContent.data(), fileContent.size())};
+		}
+
+		job.IVMs.emplace_back(device.createImageAndMemoryFromT2d(tex2d));
+		job.sampler = device.createSampler(tex2d.levels());
+		auto descriptorBufferInfo = device.getDescriptorBufferInfo(job.BVMs[0]);
+		auto descriptorImageInfo = device.getDescriptorImageInfo(job.IVMs[0],job.sampler.get());
+
+		std::array writeDes{
+				vk::WriteDescriptorSet{
+						job.descriptorSets[0].get(),0,0,1,vk::DescriptorType::eUniformBuffer,
+						nullptr,&descriptorBufferInfo
+				},
+				vk::WriteDescriptorSet{
+						job.descriptorSets[0].get(),1,0,1,vk::DescriptorType::eCombinedImageSampler,
+						&descriptorImageInfo
+				}
+		};
+		device.get().updateDescriptorSets(writeDes, nullptr);
 	}
 
     void stboxvk::cleanWindow() {

@@ -347,10 +347,11 @@ namespace tt {
 
 		vk::UniqueDescriptorPool descriptorPoll;
 		vk::UniqueDescriptorSetLayout descriptorSetLayout;//todo vector UniqueDescriptorSetLayout
+	public:
 		std::vector<vk::UniqueDescriptorSet> descriptorSets;
 
 		//vk::UniqueRenderPass renderPass;
-
+	private:
 		vk::UniquePipelineCache pipelineCache;
 	public:
 		vk::UniquePipelineLayout pipelineLayout;//todo vector
@@ -363,8 +364,7 @@ namespace tt {
 		//memory using
 		std::vector<BufferViewMemory> BVMs;
 		std::vector<ImageViewMemory> IVMs;
-		std::vector<ImageViewSamplerMemory> IVSMs;
-
+		vk::UniqueSampler sampler;
 		auto submit() {
 
 		}
