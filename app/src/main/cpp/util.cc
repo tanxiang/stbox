@@ -298,7 +298,7 @@ namespace tt {
 		}
 		return ShaderModules;
 	}
-
+/*
 	std::map<std::string, vk::UniquePipeline> Device::createComputePipeline(android_app *app) {
 		auto shaderModules = loadShaderFromAssetsDir("shaders", app);
 		std::map<std::string, vk::UniquePipeline> mapComputePipeline;
@@ -338,9 +338,9 @@ namespace tt {
 		}
 		return mapComputePipeline;
 	};
+*/
 
-
-	vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize, android_app *app,
+	vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize, android_app *app,Job& job,
 	                                          vk::PipelineLayout pipelineLayout) {
 		auto vertShaderModule = loadShaderFromAssets("shaders/mvp.vert.spv", app);
 		auto fargShaderModule = loadShaderFromAssets("shaders/copy.frag.spv", app);
@@ -434,7 +434,7 @@ namespace tt {
 				pipelineLayout,
 				renderPass.get()
 		};
-		return get().createGraphicsPipelineUnique(pipelineCache.get(), pipelineCreateInfo);
+		return get().createGraphicsPipelineUnique(job.pipelineCache.get(), pipelineCreateInfo);
 	}
 
 	vk::UniqueRenderPass Device::createRenderpass(vk::Format surfaceDefaultFormat) {
@@ -511,20 +511,20 @@ namespace tt {
 	}
 
 	std::vector<vk::UniqueCommandBuffer>
-	Device::createCmdBuffers(tt::Window &swapchain,
+	Device::createCmdBuffers(tt::Window &swapchain,vk::CommandPool pool,
 	                         std::function<void(RenderpassBeginHandle &)> functionRenderpassBegin,
 	                         std::function<void(CommandBufferBeginHandle &)> functionBegin) {
 		MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << swapchain.getFrameBufferNum();
 		std::vector commandBuffers = get().allocateCommandBuffersUnique(
 				vk::CommandBufferAllocateInfo{
-						commandPool.get(),
+						pool,
 						vk::CommandBufferLevel::ePrimary,
 						swapchain.getFrameBufferNum()
 				}
 		);
 
 		std::array clearValues{
-				vk::ClearValue{vk::ClearColorValue{std::array<float, 4>{0.5f, 0.2f, 0.2f, 0.2f}}},
+				vk::ClearValue{vk::ClearColorValue{std::array<float, 4>{0.1f, 0.2f, 0.2f, 0.2f}}},
 				vk::ClearValue{vk::ClearDepthStencilValue{1.0f, 0}},
 		};
 		uint32_t frameIndex = 0;
@@ -556,12 +556,11 @@ namespace tt {
 	}
 
 	std::vector<vk::UniqueCommandBuffer>
-	Device::createCmdBuffers(size_t cmdNum,
+	Device::createCmdBuffers(size_t cmdNum,vk::CommandPool pool,
 	                         std::function<void(CommandBufferBeginHandle &)> functionBegin) {
 		MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << cmdNum;
 		std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
-				vk::CommandBufferAllocateInfo{commandPool.get(),
-				                              vk::CommandBufferLevel::ePrimary, cmdNum});
+				vk::CommandBufferAllocateInfo{pool, vk::CommandBufferLevel::ePrimary, cmdNum});
 		for (auto &cmdBuffer : commandBuffers) {
 			CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
 			functionBegin(cmdBeginHandle);
@@ -683,7 +682,7 @@ namespace tt {
 			}
 
 			auto copyCmd = createCmdBuffers(
-					1,
+					1,copyCommandPool.get(),
 					[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
 						commandBufferBeginHandle.pipelineBarrier(
 								vk::PipelineStageFlagBits::eHost,
@@ -751,6 +750,14 @@ namespace tt {
 		                              std::move(descriptorSetLayoutBindings));
 
 		return job;
+	}
+
+	void Device::runJobOnWindow(Job& j, Window &win) {
+		auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+		auto renderSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+		auto renderFence = win.submitCmdBuffer(*this, j.cmdBuffers, imageAcquiredSemaphore.get(),
+		                                   renderSemaphore.get());
+		waitFence(renderFence.get());
 	}
 
 	void Window::submitCmdBufferAndWait(Device &device,
