@@ -31,33 +31,28 @@ namespace tt {
     void stboxvk::initData(android_app *app, tt::Instance &instance) {
         Onnx nf{"/storage/0123-4567/nw/mobilenetv2-1.0.onnx"};
     }
-    void stboxvk::initDevice(android_app *app,tt::Instance &instance,vk::PhysicalDevice &physicalDevice,int queueIndex,vk::Format rederPassFormat) {
-        devicePtr = instance.connectToDevice(physicalDevice,queueIndex);//reconnect
-	    devicePtr->renderPass = devicePtr->createRenderpass(rederPassFormat);
+    void stboxvk::initDevice(android_app *app,tt::Instance &instance,vk::PhysicalDevice &physicalDevice,vk::SurfaceKHR surface) {
+        devicePtr = instance.connectToDevice(physicalDevice,surface);//reconnect
+	    auto defaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
+	    for(auto&phdFormat:defaultDeviceFormats){
+		    MY_LOG(INFO) << vk::to_string(phdFormat.colorSpace)<<"@"<<vk::to_string(phdFormat.format);
+	    }
+	    devicePtr->renderPass = devicePtr->createRenderpass(defaultDeviceFormats[0].format);
     }
 
     void stboxvk::initWindow(android_app *app, tt::Instance &instance) {
         assert(instance);
         //initData(app,instance);
         auto surface = instance.connectToWSI(app->window);
-        if (!devicePtr){
+        if (!devicePtr || !devicePtr->checkSurfaceSupport(surface.get())){
             auto phyDevices = instance->enumeratePhysicalDevices();
             //phyDevices[0].getSurfaceCapabilities2KHR(vk::PhysicalDeviceSurfaceInfo2KHR{surface.get()});
-            auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevices[0],
-                                                                     vk::QueueFlagBits::eGraphics,
-                                                                     surface.get());
-            auto defaultDeviceFormats = phyDevices[0].getSurfaceFormatsKHR(surface.get());
-
-            for(auto&phdFormat:defaultDeviceFormats){
-                MY_LOG(INFO) << vk::to_string(phdFormat.colorSpace)<<"@"<<vk::to_string(phdFormat.format);
-            }
-            initDevice(app,instance,phyDevices[0],graphicsQueueIndex,defaultDeviceFormats[0].format);
-
+            //auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevices[0],
+            //                                                         vk::QueueFlagBits::eGraphics,
+            //                                                         surface.get());
+            initDevice(app,instance,phyDevices[0],surface.get());
         }
-
-
         windowPtr = std::make_unique<tt::Window>(std::move(surface), *devicePtr, AndroidGetWindowSize(app));
-
 
         auto& job = initJobs(app,*devicePtr,*windowPtr);
 

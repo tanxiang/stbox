@@ -164,14 +164,28 @@ namespace tt {
 	}
 
 	std::unique_ptr<tt::Device>
-	Instance::connectToDevice(vk::PhysicalDevice &phyDevice, int queueIndex) {
-		std::array<float, 1> queue_priorities{0.0};
-		std::array deviceQueueCreateInfos{
-				vk::DeviceQueueCreateInfo{vk::DeviceQueueCreateFlags(),
-				                          queueIndex,
-				                          queue_priorities.size(), queue_priorities.data()
-				}
-		};
+	Instance::connectToDevice(vk::PhysicalDevice &phyDevice,vk::SurfaceKHR& surface) {
+		std::array<float, 1> queuePriorities{0.0};
+		std::vector<vk::DeviceQueueCreateInfo> deviceQueueCreateInfos;
+		auto queueFamilyProperties = phyDevice.getQueueFamilyProperties();
+		for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {//fixme queue count priorities
+			MY_LOG(INFO) << "QueueFamilyProperties : " << i << "\tflags:"
+			             << vk::to_string(queueFamilyProperties[i].queueFlags);
+			if (phyDevice.getSurfaceSupportKHR(i, surface) &&
+			    (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics)) {
+				MY_LOG(INFO) << "default_queue_index :" << i
+				             << "\tgetSurfaceSupportKHR:true";
+				deviceQueueCreateInfos.emplace_back(
+						vk::DeviceQueueCreateFlags(),
+						i,
+						queueFamilyProperties[i].queueCount, queuePriorities.data()
+				);
+				continue;
+			}//todo multi queue
+			//if(queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eTransfer){}
+			//if(queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eCompute){ }
+		}
+
 
 		auto deviceLayerProperties = phyDevice.enumerateDeviceLayerProperties();
 		//auto deviceFeatures = phyDevice.getFeatures();
@@ -206,8 +220,7 @@ namespace tt {
 						deviceExtensionNames.size(),
 						deviceExtensionNames.data()
 				},
-				phyDevice,
-				queueIndex);
+				phyDevice);
 	}
 
 

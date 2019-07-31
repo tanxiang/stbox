@@ -31,15 +31,15 @@ namespace tt {
 
 	std::vector<char> loadDataFromAssets(const std::string &filePath, android_app *androidAppCtx);
 
-	inline uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
+	inline uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice phyDevice, vk::QueueFlags flags,
 	                                        vk::SurfaceKHR surface) {
-		auto queueFamilyProperties = PhyDevice.getQueueFamilyProperties();
+		auto queueFamilyProperties = phyDevice.getQueueFamilyProperties();
 		//MY_LOG(INFO) << "getQueueFamilyProperties size : "
 		//          << queueFamilyProperties.size() ;
 		for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {
 			//MY_LOG(INFO) << "QueueFamilyProperties : " << i << "\tflags:"
 			//          << vk::to_string(queueFamilyProperties[i].queueFlags) ;
-			if (PhyDevice.getSurfaceSupportKHR(i, surface) &&
+			if (phyDevice.getSurfaceSupportKHR(i, surface) &&
 			    (queueFamilyProperties[i].queueFlags & flags)) {
 				MY_LOG(INFO) << "default_queue_index :" << i << "\tgetSurfaceSupportKHR:true";
 				return i;
@@ -97,7 +97,7 @@ namespace tt {
 	class Device : public vk::UniqueDevice {
 		std::vector<Job> jobs;
 		vk::PhysicalDevice physicalDevice;
-		uint32_t queueFamilyIndex;
+		uint32_t queueFamilyIndex ;
 		vk::UniqueCommandPool gPoolUnique = get().createCommandPoolUnique(
 				vk::CommandPoolCreateInfo{
 						vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
@@ -124,8 +124,9 @@ namespace tt {
 	public:
 		//Device(){}
 
-		Device(vk::DeviceCreateInfo deviceCreateInfo, vk::PhysicalDevice &phy, uint32_t qidx) :
-				vk::UniqueDevice{phy.createDeviceUnique(deviceCreateInfo)}, physicalDevice{phy}, queueFamilyIndex{qidx} {
+		Device(vk::DeviceCreateInfo deviceCreateInfo, vk::PhysicalDevice &phy) :
+				vk::UniqueDevice{phy.createDeviceUnique(deviceCreateInfo)}, physicalDevice{phy},
+				queueFamilyIndex{deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex}{
 
 		}
 
@@ -179,7 +180,7 @@ namespace tt {
 
 		vk::UniqueRenderPass createRenderpass(vk::Format surfaceDefaultFormat);
 
-/*
+
 		bool checkSurfaceSupport(vk::SurfaceKHR &surface) {
 			auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(physicalDevice,
 			                                                         vk::QueueFlagBits::eGraphics,
@@ -188,7 +189,7 @@ namespace tt {
 				return true;
 			return false;
 		}
-*/
+
 		//vk::SurfaceFormatKHR getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR);
 
 		ImageViewMemory createImageAndMemory(
@@ -201,7 +202,8 @@ namespace tt {
 				vk::ImageSubresourceRange imageSubresourceRange = vk::ImageSubresourceRange{
 						vk::ImageAspectFlagBits::eDepth |
 						vk::ImageAspectFlagBits::eStencil,
-						0, 1, 0, 1}
+						0, 1, 0, 1
+				}
 		);
 
 		BufferViewMemory
@@ -451,7 +453,7 @@ namespace tt {
 					                                window});
 		}
 
-		std::unique_ptr<tt::Device> connectToDevice(vk::PhysicalDevice &phyDevice, int queueIndex);
+		std::unique_ptr<tt::Device> connectToDevice(vk::PhysicalDevice &phyDevice,vk::SurfaceKHR& surface);
 
 	};
 
