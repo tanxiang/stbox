@@ -31,8 +31,9 @@ namespace tt {
 
 	std::vector<char> loadDataFromAssets(const std::string &filePath, android_app *androidAppCtx);
 
-	inline uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice phyDevice, vk::QueueFlags flags,
-	                                        vk::SurfaceKHR surface) {
+	inline uint32_t
+	queueFamilyPropertiesFindFlags(vk::PhysicalDevice phyDevice, vk::QueueFlags flags,
+	                               vk::SurfaceKHR surface) {
 		auto queueFamilyProperties = phyDevice.getQueueFamilyProperties();
 		//MY_LOG(INFO) << "getQueueFamilyProperties size : "
 		//          << queueFamilyProperties.size() ;
@@ -97,25 +98,26 @@ namespace tt {
 	class Device : public vk::UniqueDevice {
 		std::vector<Job> jobs;
 		vk::PhysicalDevice physicalDevice;
-		uint32_t queueFamilyIndex ;
+		uint32_t gQueueFamilyIndex;
 		vk::UniqueCommandPool gPoolUnique = get().createCommandPoolUnique(
 				vk::CommandPoolCreateInfo{
 						vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-						queueFamilyIndex
+						gQueueFamilyIndex
 				}
 		);
 		vk::Format depthFormat = vk::Format::eD24UnormS8Uint;
 		vk::Format renderPassFormat;
 	public:
 		vk::UniqueRenderPass renderPass;
+
+		vk::UniqueShaderModule loadShaderFromAssets(const std::string &filePath,
+		                                            android_app *androidAppCtx);
 	private:
 
 		auto findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags) {
 			return tt::findMemoryTypeIndex(physicalDevice, memoryTypeBits, flags);
 		}
 
-		vk::UniqueShaderModule loadShaderFromAssets(const std::string &filePath,
-		                                            android_app *androidAppCtx);
 
 		std::vector<std::tuple<std::string, vk::UniqueShaderModule>>
 		loadShaderFromAssetsDir(const char *dirPath,
@@ -126,7 +128,7 @@ namespace tt {
 
 		Device(vk::DeviceCreateInfo deviceCreateInfo, vk::PhysicalDevice &phy) :
 				vk::UniqueDevice{phy.createDeviceUnique(deviceCreateInfo)}, physicalDevice{phy},
-				queueFamilyIndex{deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex}{
+				gQueueFamilyIndex{deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex} {
 
 		}
 
@@ -141,15 +143,15 @@ namespace tt {
 		               std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings);
 
 		auto transQueue() {
-			return get().getQueue(queueFamilyIndex, 0);
+			return get().getQueue(gQueueFamilyIndex, 0);
 		}
 
 		auto compQueue() {
-			return get().getQueue(queueFamilyIndex, 0);
+			return get().getQueue(gQueueFamilyIndex, 0);
 		}
 
 		auto graphsQueue() {
-			return get().getQueue(queueFamilyIndex, 0);
+			return get().getQueue(gQueueFamilyIndex, 0);
 		}
 
 		auto getDepthFormat() {
@@ -185,7 +187,7 @@ namespace tt {
 			auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(physicalDevice,
 			                                                         vk::QueueFlagBits::eGraphics,
 			                                                         surface);
-			if (graphicsQueueIndex == queueFamilyIndex)
+			if (graphicsQueueIndex == gQueueFamilyIndex)
 				return true;
 			return false;
 		}
@@ -289,8 +291,8 @@ namespace tt {
 
 		std::map<std::string, vk::UniquePipeline> createComputePipeline(android_app *app);
 
-		vk::UniquePipeline createPipeline(uint32_t dataStepSize, android_app *app, Job &job,
-		                                  vk::PipelineLayout pipelineLayout);
+		vk::UniquePipeline createPipeline(uint32_t dataStepSize, std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos, vk::PipelineCache& pipelineCache,
+				vk::PipelineLayout pipelineLayout);
 
 
 		std::vector<vk::UniqueCommandBuffer>
@@ -325,18 +327,15 @@ namespace tt {
 
 	};
 
-	class Job {
-	public:
+	struct Job {
 		vk::UniqueDescriptorPool descriptorPoll;
 		vk::UniqueDescriptorSetLayout descriptorSetLayout;//todo vector UniqueDescriptorSetLayout
 		std::vector<vk::UniqueDescriptorSet> descriptorSets;
 
 		//vk::UniqueRenderPass renderPass;
 		vk::UniquePipelineCache pipelineCache;
-	public:
 		vk::UniquePipelineLayout pipelineLayout;//todo vector
 		vk::UniqueCommandPool commandPool;
-	public:
 		vk::UniquePipeline uniquePipeline;//todo vector
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
 
@@ -345,29 +344,48 @@ namespace tt {
 		std::vector<ImageViewMemory> IVMs;
 		vk::UniqueSampler sampler;
 
-		Job(Device &device, uint32_t queueInxdex,
+		Job(Device &device, uint32_t queueIndex,
 		    std::vector<vk::DescriptorPoolSize> &&descriptorPoolSizes,
 		    std::vector<vk::DescriptorSetLayoutBinding> &&descriptorSetLayoutBindings/*vk::RenderPassCreateInfo &&renderPassCreateInfo,*/
 		) :
-				descriptorPoll{device->createDescriptorPoolUnique(
-						vk::DescriptorPoolCreateInfo{vk::DescriptorPoolCreateFlags(), 3,
-						                             descriptorPoolSizes.size(),
-						                             descriptorPoolSizes.data()})},/*todo maxset unset*/
-				descriptorSetLayout{device->createDescriptorSetLayoutUnique(
-						vk::DescriptorSetLayoutCreateInfo{vk::DescriptorSetLayoutCreateFlags(),
-						                                  descriptorSetLayoutBindings.size(),
-						                                  descriptorSetLayoutBindings.data()})},
-				descriptorSets{device->allocateDescriptorSetsUnique(
-						vk::DescriptorSetAllocateInfo{descriptorPoll.get(), 1,
-						                              descriptorSetLayout.operator->()})},//todo multi descriptorSetLayout
+				descriptorPoll{
+						device->createDescriptorPoolUnique(
+								vk::DescriptorPoolCreateInfo{
+										vk::DescriptorPoolCreateFlags(), 3,
+										descriptorPoolSizes.size(),
+										descriptorPoolSizes.data()
+								}
+						)
+				},/*todo maxset unset*/
+				descriptorSetLayout{
+						device->createDescriptorSetLayoutUnique(
+								vk::DescriptorSetLayoutCreateInfo{
+										vk::DescriptorSetLayoutCreateFlags(),
+										descriptorSetLayoutBindings.size(),
+										descriptorSetLayoutBindings.data()
+								}
+						)
+				},
+				descriptorSets{
+						device->allocateDescriptorSetsUnique(
+								vk::DescriptorSetAllocateInfo{descriptorPoll.get(), 1,
+								                              descriptorSetLayout.operator->()
+								}
+						)
+				},//todo multi descriptorSetLayout
 				/* renderPass{device->createRenderPassUnique(renderPassCreateInfo)},*/
 				pipelineCache{device->createPipelineCacheUnique(vk::PipelineCacheCreateInfo{})},
-				pipelineLayout{device->createPipelineLayoutUnique(
-						vk::PipelineLayoutCreateInfo{vk::PipelineLayoutCreateFlags(), 1,
-						                             descriptorSetLayout.operator->(), 0,
-						                             nullptr})},
+				pipelineLayout{
+						device->createPipelineLayoutUnique(
+								vk::PipelineLayoutCreateInfo{
+										vk::PipelineLayoutCreateFlags(), 1,
+										descriptorSetLayout.operator->(), 0,
+										nullptr
+								}
+						)
+				},
 				commandPool{device->createCommandPoolUnique(vk::CommandPoolCreateInfo{
-						vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueInxdex})} {
+						vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueIndex})} {
 		}
 	};
 
@@ -380,7 +398,7 @@ namespace tt {
 		std::vector<vk::UniqueFramebuffer> frameBuffers;
 
 	public:
-		std::vector<vk::UniqueCommandBuffer> mianBuffers;
+		//std::vector<vk::UniqueCommandBuffer> mianBuffers;
 
 		//Swapchain(){}
 
@@ -453,7 +471,8 @@ namespace tt {
 					                                window});
 		}
 
-		std::unique_ptr<tt::Device> connectToDevice(vk::PhysicalDevice &phyDevice,vk::SurfaceKHR& surface);
+		std::unique_ptr<tt::Device>
+		connectToDevice(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface);
 
 	};
 

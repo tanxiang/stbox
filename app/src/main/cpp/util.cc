@@ -99,11 +99,6 @@ VkDebugReportCallbackEXT debugReportCallback;
 
 namespace tt {
 	tt::Instance createInstance() {
-#ifdef __arm__
-		MY_LOG(INFO) << "__arm__";
-#elif defined __aarch64__
-		MY_LOG(INFO) << "__aarch64__";
-#endif
 		auto instanceLayerProperties = vk::enumerateInstanceLayerProperties();
 		MY_LOG(INFO) << "enumerateInstanceLayerProperties:" << instanceLayerProperties.size();
 		std::vector<const char *> instanceLayerPropertiesName;
@@ -164,17 +159,17 @@ namespace tt {
 	}
 
 	std::unique_ptr<tt::Device>
-	Instance::connectToDevice(vk::PhysicalDevice &phyDevice,vk::SurfaceKHR& surface) {
+	Instance::connectToDevice(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface) {
 		std::array<float, 1> queuePriorities{0.0};
 		std::vector<vk::DeviceQueueCreateInfo> deviceQueueCreateInfos;
 		auto queueFamilyProperties = phyDevice.getQueueFamilyProperties();
 		for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {//fixme queue count priorities
-			MY_LOG(INFO) << "QueueFamilyProperties : " << i << "\tflags:"
-			             << vk::to_string(queueFamilyProperties[i].queueFlags);
+			MY_LOG(ERROR) << "QueueFamilyProperties : " << i << "\tflags:"
+			              << vk::to_string(queueFamilyProperties[i].queueFlags);
 			if (phyDevice.getSurfaceSupportKHR(i, surface) &&
 			    (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics)) {
-				MY_LOG(INFO) << "default_queue_index :" << i
-				             << "\tgetSurfaceSupportKHR:true";
+				MY_LOG(ERROR) << "fixme default_queue_index :" << i
+				              << "\tgetSurfaceSupportKHR:true";
 				deviceQueueCreateInfos.emplace_back(
 						vk::DeviceQueueCreateFlags(),
 						i,
@@ -338,22 +333,8 @@ namespace tt {
 	};
 */
 
-	vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize, android_app *app, Job &job,
+	vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize, std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos, vk::PipelineCache& pipelineCache,
 	                                          vk::PipelineLayout pipelineLayout) {
-		auto vertShaderModule = loadShaderFromAssets("shaders/mvp.vert.spv", app);
-		auto fargShaderModule = loadShaderFromAssets("shaders/copy.frag.spv", app);
-		std::array shaderStageCreateInfos{
-				vk::PipelineShaderStageCreateInfo{
-						vk::PipelineShaderStageCreateFlags(),
-						vk::ShaderStageFlagBits::eVertex,
-						vertShaderModule.get(), "main"
-				},
-				vk::PipelineShaderStageCreateInfo{
-						vk::PipelineShaderStageCreateFlags(),
-						vk::ShaderStageFlagBits::eFragment,
-						fargShaderModule.get(), "main"
-				}
-		};
 
 		std::array vertexInputBindingDescriptions{
 				vk::VertexInputBindingDescription{
@@ -396,12 +377,18 @@ namespace tt {
 				0, 0, 0, 1.0f
 		};
 		vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{
-				vk::PipelineDepthStencilStateCreateFlags(), true, true, vk::CompareOp::eLessOrEqual,
+				vk::PipelineDepthStencilStateCreateFlags(),
+				true, true,
+				vk::CompareOp::eLessOrEqual,
 				false, false,
-				vk::StencilOpState{vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::StencilOp::eKeep,
-				                   vk::CompareOp::eNever},
-				vk::StencilOpState{vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::StencilOp::eKeep,
-				                   vk::CompareOp::eAlways},
+				vk::StencilOpState{
+						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
+						vk::StencilOp::eKeep, vk::CompareOp::eNever
+				},
+				vk::StencilOpState{
+						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
+						vk::StencilOp::eKeep, vk::CompareOp::eAlways
+				},
 				0, 0
 		};
 		vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{};
@@ -432,7 +419,7 @@ namespace tt {
 				pipelineLayout,
 				renderPass.get()
 		};
-		return get().createGraphicsPipelineUnique(job.pipelineCache.get(), pipelineCreateInfo);
+		return get().createGraphicsPipelineUnique(pipelineCache, pipelineCreateInfo);
 	}
 
 	vk::UniqueRenderPass Device::createRenderpass(vk::Format surfaceDefaultFormat) {
@@ -744,7 +731,7 @@ namespace tt {
 
 	Job &Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
 	                       std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings) {
-		auto &job = jobs.emplace_back(*this, queueFamilyIndex, std::move(descriptorPoolSizes),
+		auto &job = jobs.emplace_back(*this, gQueueFamilyIndex, std::move(descriptorPoolSizes),
 		                              std::move(descriptorSetLayoutBindings));
 
 		return job;
