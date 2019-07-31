@@ -40,7 +40,7 @@ namespace tt {
         assert(instance);
         //initData(app,instance);
         auto surface = instance.connectToWSI(app->window);
-        if (!devicePtr || !devicePtr->checkSurfaceSupport(surface.get())){
+        if (!devicePtr){
             auto phyDevices = instance->enumeratePhysicalDevices();
             //phyDevices[0].getSurfaceCapabilities2KHR(vk::PhysicalDeviceSurfaceInfo2KHR{surface.get()});
             auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevices[0],

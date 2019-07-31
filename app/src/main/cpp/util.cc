@@ -163,24 +163,6 @@ namespace tt {
 		return tt::Instance{std::move(ins)};
 	}
 
-	uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
-	                                        vk::SurfaceKHR surface) {
-		auto queueFamilyProperties = PhyDevice.getQueueFamilyProperties();
-		//MY_LOG(INFO) << "getQueueFamilyProperties size : "
-		//          << queueFamilyProperties.size() ;
-		for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {
-			//MY_LOG(INFO) << "QueueFamilyProperties : " << i << "\tflags:"
-			//          << vk::to_string(queueFamilyProperties[i].queueFlags) ;
-			if (PhyDevice.getSurfaceSupportKHR(i, surface) &&
-			    (queueFamilyProperties[i].queueFlags & flags)) {
-				MY_LOG(INFO) << "default_queue_index :" << i << "\tgetSurfaceSupportKHR:true";
-				return i;
-			}
-		}
-		throw std::logic_error{"queueFamilyPropertiesFindFlags Error"};
-	}
-
-
 	std::unique_ptr<tt::Device>
 	Instance::connectToDevice(vk::PhysicalDevice &phyDevice, int queueIndex) {
 		std::array<float, 1> queue_priorities{0.0};
@@ -214,16 +196,18 @@ namespace tt {
 				//VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME
 		};
 
-		return std::make_unique<Device>(phyDevice.createDeviceUnique(
-				vk::DeviceCreateInfo{vk::DeviceCreateFlags(),
-				                     deviceQueueCreateInfos.size(),
-				                     deviceQueueCreateInfos.data(),
-				                     deviceLayerPropertiesName.size(),
-				                     deviceLayerPropertiesName.data(),
-				                     deviceExtensionNames.size(),
-				                     deviceExtensionNames.data()}),
-		                                phyDevice,
-		                                queueIndex);
+		return std::make_unique<Device>(
+				vk::DeviceCreateInfo{
+						vk::DeviceCreateFlags(),
+						deviceQueueCreateInfos.size(),
+						deviceQueueCreateInfos.data(),
+						deviceLayerPropertiesName.size(),
+						deviceLayerPropertiesName.data(),
+						deviceExtensionNames.size(),
+						deviceExtensionNames.data()
+				},
+				phyDevice,
+				queueIndex);
 	}
 
 
@@ -298,6 +282,7 @@ namespace tt {
 		}
 		return ShaderModules;
 	}
+
 /*
 	std::map<std::string, vk::UniquePipeline> Device::createComputePipeline(android_app *app) {
 		auto shaderModules = loadShaderFromAssetsDir("shaders", app);
@@ -340,7 +325,7 @@ namespace tt {
 	};
 */
 
-	vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize, android_app *app,Job& job,
+	vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize, android_app *app, Job &job,
 	                                          vk::PipelineLayout pipelineLayout) {
 		auto vertShaderModule = loadShaderFromAssets("shaders/mvp.vert.spv", app);
 		auto fargShaderModule = loadShaderFromAssets("shaders/copy.frag.spv", app);
@@ -511,7 +496,7 @@ namespace tt {
 	}
 
 	std::vector<vk::UniqueCommandBuffer>
-	Device::createCmdBuffers(tt::Window &swapchain,vk::CommandPool pool,
+	Device::createCmdBuffers(tt::Window &swapchain, vk::CommandPool pool,
 	                         std::function<void(RenderpassBeginHandle &)> functionRenderpassBegin,
 	                         std::function<void(CommandBufferBeginHandle &)> functionBegin) {
 		MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << swapchain.getFrameBufferNum();
@@ -556,7 +541,7 @@ namespace tt {
 	}
 
 	std::vector<vk::UniqueCommandBuffer>
-	Device::createCmdBuffers(size_t cmdNum,vk::CommandPool pool,
+	Device::createCmdBuffers(size_t cmdNum, vk::CommandPool pool,
 	                         std::function<void(CommandBufferBeginHandle &)> functionBegin) {
 		MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << cmdNum;
 		std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
@@ -682,7 +667,7 @@ namespace tt {
 			}
 
 			auto copyCmd = createCmdBuffers(
-					1,copyCommandPool.get(),
+					1, gPoolUnique.get(),
 					[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
 						commandBufferBeginHandle.pipelineBarrier(
 								vk::PipelineStageFlagBits::eHost,
@@ -752,11 +737,11 @@ namespace tt {
 		return job;
 	}
 
-	void Device::runJobOnWindow(Job& j, Window &win) {
+	void Device::runJobOnWindow(Job &j, Window &win) {
 		auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
 		auto renderSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
 		auto renderFence = win.submitCmdBuffer(*this, j.cmdBuffers, imageAcquiredSemaphore.get(),
-		                                   renderSemaphore.get());
+		                                       renderSemaphore.get());
 		waitFence(renderFence.get());
 	}
 

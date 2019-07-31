@@ -31,8 +31,22 @@ namespace tt {
 
 	std::vector<char> loadDataFromAssets(const std::string &filePath, android_app *androidAppCtx);
 
-	uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
-	                                        vk::SurfaceKHR surface);
+	inline uint32_t queueFamilyPropertiesFindFlags(vk::PhysicalDevice PhyDevice, vk::QueueFlags flags,
+	                                        vk::SurfaceKHR surface) {
+		auto queueFamilyProperties = PhyDevice.getQueueFamilyProperties();
+		//MY_LOG(INFO) << "getQueueFamilyProperties size : "
+		//          << queueFamilyProperties.size() ;
+		for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {
+			//MY_LOG(INFO) << "QueueFamilyProperties : " << i << "\tflags:"
+			//          << vk::to_string(queueFamilyProperties[i].queueFlags) ;
+			if (PhyDevice.getSurfaceSupportKHR(i, surface) &&
+			    (queueFamilyProperties[i].queueFlags & flags)) {
+				MY_LOG(INFO) << "default_queue_index :" << i << "\tgetSurfaceSupportKHR:true";
+				return i;
+			}
+		}
+		throw std::logic_error{"queueFamilyPropertiesFindFlags Error"};
+	}
 
 	struct RenderpassBeginHandle : public vk::CommandBuffer {
 		RenderpassBeginHandle(vk::CommandBuffer commandBuffer,
@@ -84,9 +98,12 @@ namespace tt {
 		std::vector<Job> jobs;
 		vk::PhysicalDevice physicalDevice;
 		uint32_t queueFamilyIndex;
-
-		vk::UniqueCommandPool copyCommandPool = get().createCommandPoolUnique(vk::CommandPoolCreateInfo{
-				vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueFamilyIndex});
+		vk::UniqueCommandPool gPoolUnique = get().createCommandPoolUnique(
+				vk::CommandPoolCreateInfo{
+						vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+						queueFamilyIndex
+				}
+		);
 		vk::Format depthFormat = vk::Format::eD24UnormS8Uint;
 		vk::Format renderPassFormat;
 	public:
@@ -107,15 +124,17 @@ namespace tt {
 	public:
 		//Device(){}
 
-		Device(vk::UniqueDevice &&dev, vk::PhysicalDevice &phy, uint32_t qidx) :
-				vk::UniqueDevice{std::move(dev)}, physicalDevice{phy}, queueFamilyIndex{qidx} {}
+		Device(vk::DeviceCreateInfo deviceCreateInfo, vk::PhysicalDevice &phy, uint32_t qidx) :
+				vk::UniqueDevice{phy.createDeviceUnique(deviceCreateInfo)}, physicalDevice{phy}, queueFamilyIndex{qidx} {
+
+		}
 
 		auto phyDevice() {
 			return physicalDevice;
 		}
 
 		//template<typename Job>
-		void runJobOnWindow(Job& j,Window &win);
+		void runJobOnWindow(Job &j, Window &win);
 
 		Job &createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
 		               std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings);
@@ -160,7 +179,7 @@ namespace tt {
 
 		vk::UniqueRenderPass createRenderpass(vk::Format surfaceDefaultFormat);
 
-
+/*
 		bool checkSurfaceSupport(vk::SurfaceKHR &surface) {
 			auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(physicalDevice,
 			                                                         vk::QueueFlagBits::eGraphics,
@@ -169,7 +188,7 @@ namespace tt {
 				return true;
 			return false;
 		}
-
+*/
 		//vk::SurfaceFormatKHR getSurfaceDefaultFormat(vk::SurfaceKHR &surfaceKHR);
 
 		ImageViewMemory createImageAndMemory(
@@ -268,19 +287,19 @@ namespace tt {
 
 		std::map<std::string, vk::UniquePipeline> createComputePipeline(android_app *app);
 
-		vk::UniquePipeline createPipeline(uint32_t dataStepSize, android_app *app,Job& job,
+		vk::UniquePipeline createPipeline(uint32_t dataStepSize, android_app *app, Job &job,
 		                                  vk::PipelineLayout pipelineLayout);
 
 
 		std::vector<vk::UniqueCommandBuffer>
 		createCmdBuffers(
-				size_t cmdNum,vk::CommandPool pool,
+				size_t cmdNum, vk::CommandPool pool,
 				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {}
 		);
 
 		std::vector<vk::UniqueCommandBuffer>
 		createCmdBuffers(
-				tt::Window &swapchain,vk::CommandPool pool,
+				tt::Window &swapchain, vk::CommandPool pool,
 				std::function<void(RenderpassBeginHandle &)> = [](RenderpassBeginHandle &) {},
 				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {}
 		);
