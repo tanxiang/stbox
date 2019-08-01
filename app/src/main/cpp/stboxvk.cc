@@ -60,6 +60,47 @@ namespace tt {
 
 		auto &job = initJobs(app, *devicePtr, *windowPtr);
 
+		job.buildCmdBuffer(
+				*windowPtr,
+				[&](RenderpassBeginHandle &cmdHandleRenderpassBegin) {
+					std::array viewports{
+							vk::Viewport{
+									0, 0,
+									windowPtr->getSwapchainExtent().width,
+									windowPtr->getSwapchainExtent().height,
+									0.0f, 1.0f
+							}
+					};
+					cmdHandleRenderpassBegin.setViewport(0, viewports);
+					std::array scissors{
+							vk::Rect2D{vk::Offset2D{}, windowPtr->getSwapchainExtent()}
+					};
+					cmdHandleRenderpassBegin.setScissor(0, scissors);
+
+					cmdHandleRenderpassBegin.bindPipeline(
+							vk::PipelineBindPoint::eGraphics,
+							job.uniquePipeline.get());
+					std::array tmpDescriptorSets{job.descriptorSets[0].get()};
+					cmdHandleRenderpassBegin.bindDescriptorSets(
+							vk::PipelineBindPoint::eGraphics,
+							job.pipelineLayout.get(), 0,
+							tmpDescriptorSets,
+							std::vector<uint32_t>{}
+					);
+					vk::DeviceSize offsets[1] = {0};
+					cmdHandleRenderpassBegin.bindVertexBuffers(
+							0, 1,
+							&std::get<vk::UniqueBuffer>(
+									job.BVMs[1]).get(),
+							offsets
+					);
+					cmdHandleRenderpassBegin.bindIndexBuffer(
+							std::get<vk::UniqueBuffer>(job.BVMs[2]).get(),
+							0, vk::IndexType::eUint32
+					);
+					cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
+				});
+
 		return devicePtr->runJobOnWindow(job, *windowPtr);
 
 	}
@@ -72,8 +113,8 @@ namespace tt {
 						vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 2}
 				},
 				std::vector{
-						vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1,
-						                               vk::ShaderStageFlagBits::eVertex},
+						vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,
+						                               1, vk::ShaderStageFlagBits::eVertex},
 						vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler,
 						                               1, vk::ShaderStageFlagBits::eFragment}
 				}
@@ -165,49 +206,6 @@ namespace tt {
 		};
 		device.get().updateDescriptorSets(writeDes, nullptr);
 
-		job.cmdBuffers = device.createCmdBuffers(window, job.commandPool.get(),
-		                                         [&](RenderpassBeginHandle &cmdHandleRenderpassBegin) {
-			                                         std::array viewports{
-					                                         vk::Viewport{
-							                                         0, 0,
-							                                         window.getSwapchainExtent().width,
-							                                         window.getSwapchainExtent().height,
-							                                         0.0f, 1.0f
-					                                         }
-			                                         };
-			                                         cmdHandleRenderpassBegin.setViewport(0,
-			                                                                              viewports);
-			                                         std::array scissors{
-					                                         vk::Rect2D{vk::Offset2D{},
-					                                                    window.getSwapchainExtent()}
-			                                         };
-			                                         cmdHandleRenderpassBegin.setScissor(0,
-			                                                                             scissors);
-
-			                                         cmdHandleRenderpassBegin.bindPipeline(
-					                                         vk::PipelineBindPoint::eGraphics,
-					                                         job.uniquePipeline.get());
-			                                         std::array tmpDescriptorSets{
-					                                         job.descriptorSets[0].get()
-			                                         };
-			                                         cmdHandleRenderpassBegin.bindDescriptorSets(
-					                                         vk::PipelineBindPoint::eGraphics,
-					                                         job.pipelineLayout.get(), 0,
-					                                         tmpDescriptorSets,
-					                                         std::vector<uint32_t>{});
-			                                         vk::DeviceSize offsets[1] = {0};
-			                                         cmdHandleRenderpassBegin.bindVertexBuffers(0,
-			                                                                                    1,
-			                                                                                    &std::get<vk::UniqueBuffer>(
-					                                                                                    job.BVMs[1]).get(),
-			                                                                                    offsets);
-			                                         cmdHandleRenderpassBegin.bindIndexBuffer(
-					                                         std::get<vk::UniqueBuffer>(
-							                                         job.BVMs[2]).get(), 0,
-					                                         vk::IndexType::eUint32);
-			                                         cmdHandleRenderpassBegin.drawIndexed(6, 1, 0,
-			                                                                              0, 0);
-		                                         });
 		return job;
 	}
 

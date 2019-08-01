@@ -171,8 +171,7 @@ namespace tt {
 				MY_LOG(ERROR) << "fixme default_queue_index :" << i
 				              << "\tgetSurfaceSupportKHR:true";
 				deviceQueueCreateInfos.emplace_back(
-						vk::DeviceQueueCreateFlags(),
-						i,
+						vk::DeviceQueueCreateFlags(), i,
 						queueFamilyProperties[i].queueCount, queuePriorities.data()
 				);
 				continue;
@@ -333,7 +332,9 @@ namespace tt {
 	};
 */
 
-	vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize, std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos, vk::PipelineCache& pipelineCache,
+	vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize,
+	                                          std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos,
+	                                          vk::PipelineCache &pipelineCache,
 	                                          vk::PipelineLayout pipelineLayout) {
 
 		std::array vertexInputBindingDescriptions{
@@ -740,7 +741,8 @@ namespace tt {
 	void Device::runJobOnWindow(Job &j, Window &win) {
 		auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
 		auto renderSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-		auto renderFence = win.submitCmdBuffer(*this, j.cmdBuffers, imageAcquiredSemaphore.get(),
+		auto renderFence = win.submitCmdBuffer(*this, jobs[0].cmdBuffers,
+		                                       imageAcquiredSemaphore.get(),
 		                                       renderSemaphore.get());
 		waitFence(renderFence.get());
 	}
@@ -835,7 +837,7 @@ namespace tt {
 		auto swapChainImages = device->getSwapchainImagesKHR(swapchain.get());
 		MY_LOG(INFO) << "swapChainImages size : " << swapChainImages.size();
 
-		imageViews.clear();
+		//imageViews.clear();
 		for (auto &vkSwapChainImage : swapChainImages)
 			imageViews.emplace_back(device->createImageViewUnique(vk::ImageViewCreateInfo{
 					vk::ImageViewCreateFlags(),
@@ -857,17 +859,20 @@ namespace tt {
 		                                                 swapchainExtent.height, 1});
 
 
-		frameBuffers.clear();
+		//frameBuffers.clear();
 		for (auto &imageView : imageViews) {
-			std::array attachments{imageView.get(),
-			                       std::get<vk::UniqueImageView>(depth).get()};
-			frameBuffers.emplace_back(device->createFramebufferUnique(vk::FramebufferCreateInfo{
-					vk::FramebufferCreateFlags(),
-					device.renderPass.get(),
-					attachments.size(), attachments.data(),
-					swapchainExtent.width, swapchainExtent.height,
-					1
-			}));
+			std::array attachments{imageView.get(), std::get<vk::UniqueImageView>(depth).get()};
+			frameBuffers.emplace_back(
+					device->createFramebufferUnique(
+							vk::FramebufferCreateInfo{
+									vk::FramebufferCreateFlags(),
+									device.renderPass.get(),
+									attachments.size(), attachments.data(),
+									swapchainExtent.width, swapchainExtent.height,
+									1
+							}
+					)
+			);
 		}
 
 	}

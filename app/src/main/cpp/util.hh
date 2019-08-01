@@ -328,6 +328,7 @@ namespace tt {
 	};
 
 	struct Job {
+		Device &device;
 		vk::UniqueDescriptorPool descriptorPoll;
 		vk::UniqueDescriptorSetLayout descriptorSetLayout;//todo vector UniqueDescriptorSetLayout
 		std::vector<vk::UniqueDescriptorSet> descriptorSets;
@@ -338,9 +339,25 @@ namespace tt {
 		vk::UniqueCommandPool commandPool;
 		vk::UniquePipeline uniquePipeline;//todo vector
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
-
+		auto clearCmdBuffer(){
+			return cmdBuffers.clear();
+		}
+		void buildCmdBuffer(
+				tt::Window &swapchain,
+				std::function<void(RenderpassBeginHandle &)> functionRenderpassBegin = [](RenderpassBeginHandle &) {},
+				std::function<void(CommandBufferBeginHandle &)> functionBegin = [](CommandBufferBeginHandle &) {}){
+			cmdBuffers = device.createCmdBuffers(swapchain,*commandPool,functionRenderpassBegin,functionBegin);
+		}
 		//memory using
 		std::vector<BufferViewMemory> BVMs;
+		void writeBvm(uint32_t index,void* data,size_t writeSize,size_t offset=0){
+			//todo check index size
+			if(writeSize+offset > std::get<size_t>(BVMs[index]))
+				throw std::logic_error{"write buffer overflow!"};
+			auto pMemory = device.mapMemoryAndSize(BVMs[index],offset);
+			memcpy(pMemory.get(), data, writeSize);
+
+		}
 		std::vector<ImageViewMemory> IVMs;
 		vk::UniqueSampler sampler;
 
@@ -348,6 +365,7 @@ namespace tt {
 		    std::vector<vk::DescriptorPoolSize> &&descriptorPoolSizes,
 		    std::vector<vk::DescriptorSetLayoutBinding> &&descriptorSetLayoutBindings/*vk::RenderPassCreateInfo &&renderPassCreateInfo,*/
 		) :
+		device{device},
 				descriptorPoll{
 						device->createDescriptorPoolUnique(
 								vk::DescriptorPoolCreateInfo{
