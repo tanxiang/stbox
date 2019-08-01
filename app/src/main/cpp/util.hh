@@ -92,7 +92,21 @@ namespace tt {
 	using BufferViewMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>;
 
 	using BufferViewMemoryPtr = std::unique_ptr<void, std::function<void(void *)> >;
-
+	namespace helper {
+		template<typename Tuple>
+		auto mapMemoryAndSize(vk::Device device,Tuple &tupleMemoryAndSize, size_t offset = 0) {
+			return BufferViewMemoryPtr{
+					device.mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
+					                offset,
+					                std::get<size_t>(tupleMemoryAndSize),
+					                vk::MemoryMapFlagBits()),
+					[device, &tupleMemoryAndSize](void *pVoid) {
+						device.unmapMemory(
+								std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get());
+					}
+			};
+		}
+	}
 	class Job;
 
 	class Device : public vk::UniqueDevice {
@@ -113,6 +127,7 @@ namespace tt {
 
 		vk::UniqueShaderModule loadShaderFromAssets(const std::string &filePath,
 		                                            android_app *androidAppCtx);
+
 	private:
 
 		auto findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags) {
@@ -292,8 +307,10 @@ namespace tt {
 
 		std::map<std::string, vk::UniquePipeline> createComputePipeline(android_app *app);
 
-		vk::UniquePipeline createPipeline(uint32_t dataStepSize, std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos, vk::PipelineCache& pipelineCache,
-				vk::PipelineLayout pipelineLayout);
+		vk::UniquePipeline createPipeline(uint32_t dataStepSize,
+		                                  std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos,
+		                                  vk::PipelineCache &pipelineCache,
+		                                  vk::PipelineLayout pipelineLayout);
 
 
 		std::vector<vk::UniqueCommandBuffer>
@@ -340,25 +357,33 @@ namespace tt {
 		vk::UniqueCommandPool commandPool;
 		vk::UniquePipeline uniquePipeline;//todo vector
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
-		auto clearCmdBuffer(){
+
+		auto clearCmdBuffer() {
 			return cmdBuffers.clear();
 		}
+
 		void buildCmdBuffer(
 				tt::Window &swapchain,
-				std::function<void(RenderpassBeginHandle &)> functionRenderpassBegin = [](RenderpassBeginHandle &) {},
-				std::function<void(CommandBufferBeginHandle &)> functionBegin = [](CommandBufferBeginHandle &) {}){
-			cmdBuffers = device.createCmdBuffers(swapchain,*commandPool,functionRenderpassBegin,functionBegin);
+				std::function<void(RenderpassBeginHandle &)> functionRenderpassBegin = [](
+						RenderpassBeginHandle &) {},
+				std::function<void(CommandBufferBeginHandle &)> functionBegin = [](
+						CommandBufferBeginHandle &) {}) {
+			cmdBuffers = device.createCmdBuffers(swapchain, *commandPool, functionRenderpassBegin,
+			                                     functionBegin);
 		}
+
 		//memory using
 		std::vector<BufferViewMemory> BVMs;
-		void writeBvm(uint32_t index,void* data,size_t writeSize,size_t offset=0){
+
+		void writeBvm(uint32_t index, void *data, size_t writeSize, size_t offset = 0) {
 			//todo check index size
-			if(writeSize+offset > std::get<size_t>(BVMs[index]))
+			if (writeSize + offset > std::get<size_t>(BVMs[index]))
 				throw std::logic_error{"write buffer overflow!"};
-			auto pMemory = device.mapMemoryAndSize(BVMs[index],offset);
+			auto pMemory = helper::mapMemoryAndSize(descriptorPoll.getOwner(),BVMs[index], offset);
 			memcpy(pMemory.get(), data, writeSize);
 
 		}
+
 		std::vector<ImageViewMemory> IVMs;
 		vk::UniqueSampler sampler;
 
@@ -366,7 +391,7 @@ namespace tt {
 		    std::vector<vk::DescriptorPoolSize> &&descriptorPoolSizes,
 		    std::vector<vk::DescriptorSetLayoutBinding> &&descriptorSetLayoutBindings/*vk::RenderPassCreateInfo &&renderPassCreateInfo,*/
 		) :
-		device{device},
+				device{device},
 				descriptorPoll{
 						device->createDescriptorPoolUnique(
 								vk::DescriptorPoolCreateInfo{
