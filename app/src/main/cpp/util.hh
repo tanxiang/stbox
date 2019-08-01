@@ -96,7 +96,6 @@ namespace tt {
 	class Job;
 
 	class Device : public vk::UniqueDevice {
-		std::vector<Job> jobs;
 		vk::PhysicalDevice physicalDevice;
 		uint32_t gQueueFamilyIndex;
 		vk::UniqueCommandPool gPoolUnique = get().createCommandPoolUnique(
@@ -108,6 +107,8 @@ namespace tt {
 		vk::Format depthFormat = vk::Format::eD24UnormS8Uint;
 		vk::Format renderPassFormat;
 	public:
+		std::vector<Job> jobs;
+
 		vk::UniqueRenderPass renderPass;
 
 		vk::UniqueShaderModule loadShaderFromAssets(const std::string &filePath,

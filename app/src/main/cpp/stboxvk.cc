@@ -55,11 +55,22 @@ namespace tt {
 			//                                                         surface.get());
 			initDevice(app, instance, phyDevices[0], surface.get());
 		}
+		auto &job = initJobs(app, *devicePtr);
+
 		windowPtr = std::make_unique<tt::Window>(std::move(surface), *devicePtr,
 		                                         AndroidGetWindowSize(app));
 
-		auto &job = initJobs(app, *devicePtr, *windowPtr);
-
+		auto pv = glm::perspective(
+				glm::radians(60.0f),
+				static_cast<float>(windowPtr->getSwapchainExtent().width) /
+				static_cast<float>(windowPtr->getSwapchainExtent().height),
+				0.1f, 256.0f) *
+		          glm::lookAt(
+				          glm::vec3(8, 3, 10),  // Camera is at (-5,3,-10), in World Space
+				          glm::vec3(0, 0, 0),     // and looks at the origin
+				          glm::vec3(0, 1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
+		          );
+		job.writeBvm(0, &pv, sizeof(pv));
 		job.buildCmdBuffer(
 				*windowPtr,
 				[&](RenderpassBeginHandle &cmdHandleRenderpassBegin) {
@@ -105,7 +116,9 @@ namespace tt {
 
 	}
 
-	Job &stboxvk::initJobs(android_app *app, tt::Device &device, tt::Window &window) {
+	Job &stboxvk::initJobs(android_app *app, tt::Device &device) {
+		if(!device.jobs.empty())
+			return device.jobs[0];
 		auto &job = device.createJob(
 				std::vector{
 						vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 2},
@@ -120,24 +133,12 @@ namespace tt {
 				}
 		);
 
-		auto Projection = glm::perspective(glm::radians(60.0f),
-		                                   static_cast<float>(window.getSwapchainExtent().width) /
-		                                   static_cast<float>(window.getSwapchainExtent().height),
-		                                   0.1f, 256.0f);
-
-		auto View = glm::lookAt(
-				glm::vec3(8, 3, 10),  // Camera is at (-5,3,-10), in World Space
-				glm::vec3(0, 0, 0),     // and looks at the origin
-				glm::vec3(0, 1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
-		);
-
-		//auto mvpMat4 =  Projection  * View ;
 		job.BVMs.emplace_back(
-				device.createBufferAndMemoryFromMat(Projection * View,
-				                                    vk::BufferUsageFlagBits::eUniformBuffer,
-				                                    vk::MemoryPropertyFlagBits::eHostVisible |
-				                                    vk::MemoryPropertyFlagBits::eHostCoherent)
-		);
+				device.createBufferAndMemory(
+						sizeof(glm::mat4),
+						vk::BufferUsageFlagBits::eUniformBuffer,
+						vk::MemoryPropertyFlagBits::eHostVisible |
+						vk::MemoryPropertyFlagBits::eHostCoherent));
 
 		std::vector<VertexUV> vertices{
 				{{1.0f,  1.0f,  0.0f, 1.0f}, {1.0f, 1.0f}},
@@ -195,7 +196,8 @@ namespace tt {
 
 		std::array writeDes{
 				vk::WriteDescriptorSet{
-						job.descriptorSets[0].get(), 0, 0, 1, vk::DescriptorType::eUniformBuffer,
+						job.descriptorSets[0].get(), 0, 0, 1,
+						vk::DescriptorType::eUniformBuffer,
 						nullptr, &descriptorBufferInfo
 				},
 				vk::WriteDescriptorSet{
