@@ -13,32 +13,36 @@ cmake_minimum_required(VERSION 3.6)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 
-add_library( app-glue
+add_library(app-glue
         STATIC
-        ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c )
+        ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
 add_library( # Sets the name of the library.
-             stbox
-             # Sets the library as a shared library.
-             SHARED
-             # Provides a relative path to your source file(s).
-             src/main/cpp/util.cc
-             src/main/cpp/main.cc
-             src/main/cpp/stboxvk.cc
-             src/main/cpp/Blob.cc
-             src/main/cpp/Connecter.cc
-             src/main/cpp/Net.cc
-             src/main/cpp/Activation.cc
-             )
+        stbox
+        # Sets the library as a shared library.
+        SHARED
+        # Provides a relative path to your source file(s).
+        src/main/cpp/util.cc
+        src/main/cpp/main.cc
+        src/main/cpp/Device.cc
+        src/main/cpp/Window.cc
+        src/main/cpp/Job.cc
+        src/main/cpp/Instance.cc
+        src/main/cpp/stboxvk.cc
+        #src/main/cpp/Blob.cc
+        #src/main/cpp/Connecter.cc
+        #src/main/cpp/Net.cc
+        #src/main/cpp/Activation.cc
+        )
 
 target_compile_definitions(stbox PRIVATE VK_USE_PLATFORM_ANDROID_KHR)
 target_compile_options(stbox PRIVATE -fno-rtti)
 
 
 target_include_directories(stbox PRIVATE
-               src/main/include
-               ${ANDROID_NDK}/sources/android/native_app_glue
-               )
+        src/main/include
+        ${ANDROID_NDK}/sources/android/native_app_glue
+        )
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
@@ -47,32 +51,32 @@ target_include_directories(stbox PRIVATE
 # completing its build.
 
 #find_library( # Sets the name of the path variable.
-        # z-lib
+# z-lib
+# Specifies the name of the NDK library that
+# you want CMake to locate.
+# z )
+
+find_library( # Sets the name of the path variable.
+        log-lib
+
         # Specifies the name of the NDK library that
         # you want CMake to locate.
-        # z )
+        log)
 
 find_library( # Sets the name of the path variable.
-              log-lib
+        vulkan-lib
 
-              # Specifies the name of the NDK library that
-              # you want CMake to locate.
-              log )
-
-find_library( # Sets the name of the path variable.
-              vulkan-lib
-
-              # Specifies the name of the NDK library that
-              # you want CMake to locate.
-              vulkan)
+        # Specifies the name of the NDK library that
+        # you want CMake to locate.
+        vulkan)
 
 
 find_library( # Sets the name of the path variable.
-              android-lib
+        android-lib
 
-              # Specifies the name of the NDK library that
-              # you want CMake to locate.
-              android )
+        # Specifies the name of the NDK library that
+        # you want CMake to locate.
+        android)
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
@@ -95,21 +99,21 @@ find_library( # Sets the name of the path variable.
 #                      ${SHADERC_SRC}/libs/${ANDROID_STL}/${ANDROID_ABI}/libshaderc.a)
 
 set(CMAKE_SHARED_LINKER_FLAGS
-    "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
+        "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 
 target_link_libraries( # Specifies the target library.
-                       stbox
-                       # Links the target library to the log library
-                       # included in the NDK.
-                       ${log-lib}
+        stbox
+        # Links the target library to the log library
+        # included in the NDK.
+        ${log-lib}
         ${vulkan-lib}
-                       ${android-lib}
-                       onnxpb
+        ${android-lib}
+        onnxpb
         app-glue
-                       )
+        )
 
 
-set(protobuf_source_dir  .)
+set(protobuf_source_dir .)
 
 set(libprotobuf_lite_files
         ${protobuf_source_dir}/src/google/protobuf/arena.cc
@@ -267,7 +271,7 @@ add_library( # Sets the name of the library.
         # Sets the library as a shared library.
         SHARED
         src/main/cpp/onnx.cc
-        src/main/cpp/onnx.pb.cc )
+        src/main/cpp/onnx.pb.cc)
 
 target_compile_options(onnxpb PRIVATE -frtti)
 

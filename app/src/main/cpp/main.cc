@@ -10,20 +10,17 @@
 #include <chrono>
 
 #include "util.hh"
-
+#include "Instance.hh"
 // Header files.
 #include <android/choreographer.h>
 
 #include <cstring>
 //#include "shaderc/shaderc.hpp"
 #include "main.hh"
+#include "Job.hh"
+#include "Window.hh"
 #include "stboxvk.hh"
 #include "vertexdata.hh"
-
-
-
-
-
 
 /*
 void choreographerCallback(long frameTimeNanos, void* data) {

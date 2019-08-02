@@ -8,9 +8,10 @@
 #include "util.hh"
 #include "onnx.hh"
 #include "main.hh"
+
 //uint32_t draw_run(tt::Device &ttInstance,vk::SurfaceKHR &surfaceKHR);
 namespace tt {
-    class stboxvk {
+	class stboxvk {
         std::unique_ptr<tt::Device> devicePtr;
         std::unique_ptr<tt::Window> windowPtr;
 
