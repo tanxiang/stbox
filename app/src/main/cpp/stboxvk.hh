@@ -8,6 +8,8 @@
 #include "util.hh"
 #include "onnx.hh"
 #include "main.hh"
+#include "Job.hh"
+#include "Device.hh"
 //uint32_t draw_run(tt::Device &ttInstance,vk::SurfaceKHR &surfaceKHR);
 namespace tt {
     class stboxvk {

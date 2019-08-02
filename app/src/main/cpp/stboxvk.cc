@@ -16,8 +16,14 @@
 #include <gli/gli.hpp>
 
 #include "util.hh"
+#include "Instance.hh"
+#include "Job.hh"
+#include "Device.hh"
+#include "Window.hh"
 #include "vertexdata.hh"
 #include "onnx.hh"
+#include <functional>
+
 
 vk::Extent2D AndroidGetWindowSize(android_app *Android_application) {
 	// On Android, retrieve the window size from the native window.
@@ -71,53 +77,13 @@ namespace tt {
 				          glm::vec3(0, 1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
 		          );
 		job.writeBvm(0, &pv, sizeof(pv));
-		job.buildCmdBuffer(
-				*windowPtr,
-				[&](RenderpassBeginHandle &cmdHandleRenderpassBegin) {
-					std::array viewports{
-							vk::Viewport{
-									0, 0,
-									windowPtr->getSwapchainExtent().width,
-									windowPtr->getSwapchainExtent().height,
-									0.0f, 1.0f
-							}
-					};
-					cmdHandleRenderpassBegin.setViewport(0, viewports);
-					std::array scissors{
-							vk::Rect2D{vk::Offset2D{}, windowPtr->getSwapchainExtent()}
-					};
-					cmdHandleRenderpassBegin.setScissor(0, scissors);
-
-					cmdHandleRenderpassBegin.bindPipeline(
-							vk::PipelineBindPoint::eGraphics,
-							job.uniquePipeline.get());
-					std::array tmpDescriptorSets{job.descriptorSets[0].get()};
-					cmdHandleRenderpassBegin.bindDescriptorSets(
-							vk::PipelineBindPoint::eGraphics,
-							job.pipelineLayout.get(), 0,
-							tmpDescriptorSets,
-							std::vector<uint32_t>{}
-					);
-					vk::DeviceSize offsets[1] = {0};
-					cmdHandleRenderpassBegin.bindVertexBuffers(
-							0, 1,
-							&std::get<vk::UniqueBuffer>(
-									job.BVMs[1]).get(),
-							offsets
-					);
-					cmdHandleRenderpassBegin.bindIndexBuffer(
-							std::get<vk::UniqueBuffer>(job.BVMs[2]).get(),
-							0, vk::IndexType::eUint32
-					);
-					cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
-				});
-
+		job.buildCmdBuffer(*windowPtr,devicePtr->renderPass.get());
 		return devicePtr->runJobOnWindow(job, *windowPtr);
 
 	}
 
 	Job &stboxvk::initJobs(android_app *app, tt::Device &device) {
-		if(!device.jobs.empty())
+		if (!device.jobs.empty())
 			return device.jobs[0];
 		auto &job = device.createJob(
 				std::vector{
@@ -207,6 +173,48 @@ namespace tt {
 				}
 		};
 		device.get().updateDescriptorSets(writeDes, nullptr);
+
+		job.cmdbufferRenderpassBeginHandle = [&](RenderpassBeginHandle &cmdHandleRenderpassBegin,
+		                                         vk::Extent2D win) {
+			std::array viewports{
+					vk::Viewport{
+							0, 0,
+							win.width,
+							win.height,
+							0.0f, 1.0f
+					}
+			};
+			cmdHandleRenderpassBegin.setViewport(0, viewports);
+			std::array scissors{
+					vk::Rect2D{vk::Offset2D{}, win}
+			};
+			cmdHandleRenderpassBegin.setScissor(0, scissors);
+
+			cmdHandleRenderpassBegin.bindPipeline(
+					vk::PipelineBindPoint::eGraphics,
+					job.uniquePipeline.get());
+			std::array tmpDescriptorSets{job.descriptorSets[0].get()};
+			cmdHandleRenderpassBegin.bindDescriptorSets(
+					vk::PipelineBindPoint::eGraphics,
+					job.pipelineLayout.get(), 0,
+					tmpDescriptorSets,
+					std::vector<uint32_t>{}
+			);
+			vk::DeviceSize offsets[1] = {0};
+			cmdHandleRenderpassBegin.bindVertexBuffers(
+					0, 1,
+					&std::get<vk::UniqueBuffer>(
+							job.BVMs[1]).get(),
+					offsets
+			);
+			cmdHandleRenderpassBegin.bindIndexBuffer(
+					std::get<vk::UniqueBuffer>(job.BVMs[2]).get(),
+					0, vk::IndexType::eUint32
+			);
+			cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
+		};
+
+		job.cmdbufferCommandBufferBeginHandle = [](CommandBufferBeginHandle &, vk::Extent2D) {};
 
 		return job;
 	}
