@@ -29,8 +29,11 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
 namespace tt {
 
 	class Device;
+
 	class Window;
+
 	class Job;
+
 	class Instance;
 
 	std::vector<char> loadDataFromAssets(const std::string &filePath, android_app *androidAppCtx);
@@ -91,19 +94,28 @@ namespace tt {
 
 	using ImageViewMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueDeviceMemory>;
 
-	using ImageViewSamplerMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueSampler, vk::UniqueDeviceMemory>;
+	//using ImageViewSamplerMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueSampler, vk::UniqueDeviceMemory>;
 
 	using BufferViewMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>;
 
-	using BufferViewMemoryPtr = std::unique_ptr<void, std::function<void(void *)> >;
+	class BufferViewMemoryPtr : public std::unique_ptr<void, std::function<void(void *)> > {
+	public:
+		using std::unique_ptr<void, std::function<void(void *)> >::unique_ptr;
+
+		template<typename PodType>
+		PodType& PodTypeOnMemory(){
+			return *static_cast<PodType *>(get());
+		}
+
+	};
 	namespace helper {
 		template<typename Tuple>
-		auto mapMemoryAndSize(vk::Device device,Tuple &tupleMemoryAndSize, size_t offset = 0) {
+		auto mapMemoryAndSize(vk::Device device, Tuple &tupleMemoryAndSize, size_t offset = 0) {
 			return BufferViewMemoryPtr{
 					device.mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
-					                offset,
-					                std::get<size_t>(tupleMemoryAndSize),
-					                vk::MemoryMapFlagBits()),
+					                 offset,
+					                 std::get<size_t>(tupleMemoryAndSize),
+					                 vk::MemoryMapFlagBits()),
 					[device, &tupleMemoryAndSize](void *pVoid) {
 						device.unmapMemory(
 								std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get());
@@ -112,13 +124,12 @@ namespace tt {
 		}
 
 		std::vector<vk::UniqueCommandBuffer>
-		createCmdBuffers(vk::Device device,vk::RenderPass renderPass,std::vector<vk::UniqueFramebuffer>& framebuffers,vk::Extent2D extent2D, vk::CommandPool pool,
-		                         std::function<void(RenderpassBeginHandle &,vk::Extent2D)> functionRenderpassBegin,
-		                         std::function<void(CommandBufferBeginHandle &,vk::Extent2D)> functionBegin);
+		createCmdBuffers(vk::Device device, vk::RenderPass renderPass,
+		                 std::vector<vk::UniqueFramebuffer> &framebuffers, vk::Extent2D extent2D,
+		                 vk::CommandPool pool,
+		                 std::function<void(RenderpassBeginHandle &, vk::Extent2D)> functionRenderpassBegin,
+		                 std::function<void(CommandBufferBeginHandle &, vk::Extent2D)> functionBegin);
 	}
-
-
-
 };
 
 

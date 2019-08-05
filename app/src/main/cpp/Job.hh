@@ -40,7 +40,6 @@ namespace tt {
 				throw std::logic_error{"write buffer overflow!"};
 			auto pMemory = helper::mapMemoryAndSize(descriptorPoll.getOwner(), BVMs[index], offset);
 			memcpy(pMemory.get(), data, writeSize);
-
 		}
 
 		std::vector<ImageViewMemory> IVMs;
