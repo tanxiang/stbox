@@ -12,13 +12,14 @@
 //uint32_t draw_run(tt::Device &ttInstance,vk::SurfaceKHR &surfaceKHR);
 namespace tt {
 	class stboxvk {
-        std::unique_ptr<tt::Device> devicePtr;
-        std::unique_ptr<tt::Window> windowPtr;
+        std::vector<tt::Device> devices;
+		std::vector<tt::Job> jobs;
+		std::vector<tt::Window> windows;
 
     public:
         void initData(android_app *app, tt::Instance &instance);
 
-        void initDevice(android_app *app,tt::Instance &instance,vk::PhysicalDevice &physicalDevice,vk::SurfaceKHR surface);
+		Device& initDevice(android_app *app,tt::Instance &instance,vk::PhysicalDevice &physicalDevice,vk::SurfaceKHR surface);
 
         void initWindow(android_app *app, tt::Instance &instance);
 
@@ -26,9 +27,9 @@ namespace tt {
 
         void cleanWindow();
 
-        explicit operator bool() const {
-            return devicePtr && windowPtr;
-        }
+        //explicit operator bool() const {
+        //    return devices && windows;
+        //}
     };
 }
 #endif //STBOX_STBOXVK_HH

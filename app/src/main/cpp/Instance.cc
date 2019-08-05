@@ -106,7 +106,7 @@ namespace tt{
 		return tt::Instance{std::move(ins)};
 	}
 
-	std::unique_ptr<tt::Device>
+	tt::Device
 	Instance::connectToDevice(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface) {
 		std::array<float, 1> queuePriorities{0.0};
 		std::vector<vk::DeviceQueueCreateInfo> deviceQueueCreateInfos;
@@ -152,7 +152,7 @@ namespace tt{
 				//VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME
 		};
 
-		return std::make_unique<Device>(
+		return tt::Device(
 				vk::DeviceCreateInfo{
 						vk::DeviceCreateFlags(),
 						deviceQueueCreateInfos.size(),

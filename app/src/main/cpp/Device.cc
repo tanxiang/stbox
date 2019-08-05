@@ -455,11 +455,11 @@ namespace tt{
 		return BVM;
 	}
 
-	Job &Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
+	Job Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
 	                       std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings) {
-		auto &job = jobs.emplace_back(get(), gQueueFamilyIndex, std::move(descriptorPoolSizes),
-		                              std::move(descriptorSetLayoutBindings));
-		return job;
+
+		return tt::Job{get(), gQueueFamilyIndex, std::move(descriptorPoolSizes),
+		               std::move(descriptorSetLayoutBindings)};
 	}
 
 	void Device::runJobOnWindow(Job &j, Window &win) {
