@@ -67,21 +67,9 @@ namespace tt {
 		}
 
 		auto &window = windows.emplace_back(std::move(surface), devices[0], AndroidGetWindowSize(app));
-
-		auto pv = glm::perspective(
-				glm::radians(60.0f),
-				static_cast<float>(window.getSwapchainExtent().width) /
-				static_cast<float>(window.getSwapchainExtent().height),
-				0.1f, 256.0f) *
-		          glm::lookAt(
-				          glm::vec3(8, 3, 10),  // Camera is at (-5,3,-10), in World Space
-				          glm::vec3(0, 0, 0),     // and looks at the origin
-				          glm::vec3(0, 1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
-		          );
-		jobs[0].writeBvm(0, &pv, sizeof(pv));
 		jobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
-		return devices[0].runJobOnWindow(jobs[0], window);
 
+		return;
 	}
 
 	Job &stboxvk::initJobs(android_app *app, tt::Device &device) {
@@ -231,6 +219,17 @@ namespace tt {
 		job.cmdbufferCommandBufferBeginHandle = [](CommandBufferBeginHandle &, vk::Extent2D) {};
 
 		return job;
+	}
+
+	void stboxvk::draw(glm::mat4 &cam) {
+
+		auto pv = glm::perspective(
+				glm::radians(60.0f),
+				static_cast<float>(windows[0].getSwapchainExtent().width) /
+				static_cast<float>(windows[0].getSwapchainExtent().height),
+				0.1f, 256.0f) * cam;
+		jobs[0].writeBvm(0, &pv, sizeof(pv));
+		devices[0].runJobOnWindow(jobs[0], windows[0]);
 	}
 
 	void stboxvk::cleanWindow() {

@@ -27,6 +27,7 @@ namespace tt {
 
         void cleanWindow();
 
+        void draw(glm::mat4 &cam);
         //explicit operator bool() const {
         //    return devices && windows;
         //}

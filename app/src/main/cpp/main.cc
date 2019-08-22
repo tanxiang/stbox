@@ -22,6 +22,8 @@
 #include "stboxvk.hh"
 #include "vertexdata.hh"
 
+//#include <<glm/gtx/rotate_vector.hpp>
+
 /*
 void choreographerCallback(long frameTimeNanos, void* data) {
     assert(data);
@@ -43,13 +45,23 @@ void choreographerCallback(long frameTimeNanos, void* data) {
 void Android_handle_cmd(android_app *app, int32_t cmd) {
     static tt::Instance instance = tt::createInstance();
     static tt::stboxvk appbox;
+    app->userData = &appbox;
     try {
         switch (cmd) {
+            /*
+        	case APP_CMD_WINDOW_RESIZED:
+                MY_LOG(INFO) << "APP_CMD_WINDOW_RESIZED:" << cmd ;
+
+            case APP_CMD_WINDOW_REDRAW_NEEDED:
+                MY_LOG(INFO) << "APP_CMD_WINDOW_REDRAW_NEEDED:" << cmd ;
+                break;
+                */
             case APP_CMD_INIT_WINDOW:
                 // The window is being shown, get it ready.
                 MY_LOG(INFO) << "APP_CMD_INIT_WINDOW:" << cmd ;
                 appbox.initWindow(app, instance);
-                break;
+		        //appbox.draw(app);
+		        break;
 
             case APP_CMD_TERM_WINDOW:
                 MY_LOG(INFO) << "APP_CMD_TERM_WINDOW:" << cmd ;
@@ -98,6 +110,8 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
 
 int Android_handle_input(struct android_app *app, AInputEvent *event) {
 
+    static int64_t lastTapTime;
+	tt::stboxvk & appbox = *static_cast<tt::stboxvk*>(app->userData);
     //todo check window instance device state
     if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
         int32_t eventSource = AInputEvent_getSource(event);
@@ -108,25 +122,52 @@ int Android_handle_input(struct android_app *app, AInputEvent *event) {
             }
 
             case AINPUT_SOURCE_TOUCHSCREEN: {
-                int32_t action = AMotionEvent_getAction(event);
 
+	            static auto camPos = glm::vec3(8, 3, 10);
+	            static auto camTo = glm::vec3(0, 0, 0);
+	            static auto camUp = glm::vec3(0, 1, 0);
+
+                int32_t action = AMotionEvent_getAction(event);
+                auto thisTapTime = AMotionEvent_getEventTime(event);
+                static float xOrg;
+                static float yOrg;
+                float x = AMotionEvent_getX(event, 0);
+                float y = AMotionEvent_getY(event, 0);
                 switch (action) {
                     case AMOTION_EVENT_ACTION_UP: {
-
-                        return 1;
+                        auto downTapTime = AMotionEvent_getDownTime(event);
+                        if(thisTapTime - downTapTime < 180 * 1000000){
+                            MY_LOG(INFO) << "Tap event" << thisTapTime<<" x "<<x<<" y "<<y;
+                        }
+                        lastTapTime = thisTapTime;
+	                    break;
                     }
                     case AMOTION_EVENT_ACTION_DOWN: {
                         // Detect double tap
                         break;
                     }
                     case AMOTION_EVENT_ACTION_MOVE: {
-                        bool handled = false;
-
+                    	//
+                    	auto dtX = x - xOrg;
+                    	auto dtY = y - yOrg;
+                    	camPos[0] += dtX * 0.1;
+                    	camPos[1] += dtY * 0.1;
+                        auto cam = glm::lookAt(
+                                camPos,  // Camera is at (-5,3,-10), in World Space
+                                camTo,     // and looks at the origin
+                                camUp     // Head is up (set to 0,-1,0 to look upside-down)
+                        );
+	                    //cam = glm::rotate(cam,0.1,camUp);
+	                    appbox.draw(cam);
                         break;
                     }
                     default:
-                        return 1;
+                        ;
+
                 }
+	            xOrg = x;
+	            yOrg = y;
+	            return 1;
             }
 
             default:
