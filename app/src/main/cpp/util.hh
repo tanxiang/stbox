@@ -101,7 +101,6 @@ namespace tt {
 	class BufferViewMemoryPtr : public std::unique_ptr<void, std::function<void(void *)> > {
 	public:
 		using std::unique_ptr<void, std::function<void(void *)> >::unique_ptr;
-
 		template<typename PodType>
 		PodType& PodTypeOnMemory(){
 			return *static_cast<PodType *>(get());
