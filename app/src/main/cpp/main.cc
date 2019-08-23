@@ -123,7 +123,7 @@ int Android_handle_input(struct android_app *app, AInputEvent *event) {
 
             case AINPUT_SOURCE_TOUCHSCREEN: {
 
-	            static auto camPos = glm::vec3(8, 3, 10);
+	            static auto camPos = glm::vec3(8, 3, 5);
 	            static auto camTo = glm::vec3(0, 0, 0);
 	            static auto camUp = glm::vec3(0, 1, 0);
 
@@ -150,8 +150,8 @@ int Android_handle_input(struct android_app *app, AInputEvent *event) {
                     	//
                     	auto dtX = x - xOrg;
                     	auto dtY = y - yOrg;
-                    	camPos[0] += dtX * 0.1;
-                    	camPos[1] += dtY * 0.1;
+                    	camPos[0] -= dtX * 0.1;
+                    	camPos[1] -= dtY * 0.1;
                         auto cam = glm::lookAt(
                                 camPos,  // Camera is at (-5,3,-10), in World Space
                                 camTo,     // and looks at the origin
