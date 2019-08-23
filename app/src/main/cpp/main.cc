@@ -43,7 +43,6 @@ void choreographerCallback(long frameTimeNanos, void* data) {
 void Android_handle_cmd(android_app *app, int32_t cmd) {
     static tt::Instance instance = tt::createInstance();
     static tt::stboxvk appbox;
-    app->userData = &appbox;
     try {
         switch (cmd) {
             /*
@@ -58,12 +57,14 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 // The window is being shown, get it ready.
                 MY_LOG(INFO) << "APP_CMD_INIT_WINDOW:" << cmd ;
                 appbox.initWindow(app, instance);
-		        //appbox.draw(app);
+		        app->userData = &appbox;
+		        appbox.draw();
 		        break;
 
             case APP_CMD_TERM_WINDOW:
                 MY_LOG(INFO) << "APP_CMD_TERM_WINDOW:" << cmd ;
                 appbox.cleanWindow();
+		        app->userData = nullptr;
                 break;
             case APP_CMD_INPUT_CHANGED:
                 break;
@@ -148,15 +149,7 @@ int Android_handle_input(struct android_app *app, AInputEvent *event) {
                     	//
                     	auto dtX = x - xOrg;
                     	auto dtY = y - yOrg;
-                    	camPos[0] -= dtX * 0.1;
-                    	camPos[1] -= dtY * 0.1;
-                        auto cam = glm::lookAt(
-                                camPos,  // Camera is at (-5,3,-10), in World Space
-                                camTo,     // and looks at the origin
-                                camUp     // Head is up (set to 0,-1,0 to look upside-down)
-                        );
-	                    //cam = glm::rotate(cam,0.1,camUp);
-	                    appbox.draw(cam);
+	                    appbox.draw(dtX,dtY);
                         break;
                     }
                     default:

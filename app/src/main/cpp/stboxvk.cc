@@ -69,7 +69,7 @@ namespace tt {
 
 		auto &window = windows.emplace_back(std::move(surface), devices[0], AndroidGetWindowSize(app));
 		jobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
-
+		jobs[0].setPv();
 		return;
 	}
 
@@ -222,15 +222,21 @@ namespace tt {
 		return job;
 	}
 
-	void stboxvk::draw(glm::mat4 &cam) {
-
-		auto pv = glm::perspective(
-				glm::radians(60.0f),
-				static_cast<float>(windows[0].getSwapchainExtent().width) /
-				static_cast<float>(windows[0].getSwapchainExtent().height),
-				0.1f, 256.0f) * cam;
-		jobs[0].writeBvm(0, &pv, sizeof(pv));
+	void stboxvk::draw() {
 		devices[0].runJobOnWindow(jobs[0], windows[0]);
+	}
+
+
+	void stboxvk::draw(glm::mat4 &cam) {
+		jobs[0].bvmMemory(0).PodTypeOnMemory<glm::mat4>() = jobs[0].perspective * cam;
+		//jobs[0].writeBvm(0, pv, sizeof(pv));
+		draw();
+	}
+
+	void stboxvk::draw(float dx,float dy) {
+		jobs[0].setPv(dx,dy);
+		//jobs[0].writeBvm(0, pv, sizeof(pv));
+		draw();
 	}
 
 	void stboxvk::cleanWindow() {
