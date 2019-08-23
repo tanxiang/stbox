@@ -38,65 +38,68 @@ namespace tt {
 		Onnx nf{"/storage/0123-4567/nw/mobilenetv2-1.0.onnx"};
 	}
 
-	void stboxvk::initDevice(android_app *app, tt::Instance &instance,
+	Device& stboxvk::initDevice(android_app *app, tt::Instance &instance,
 	                         vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR surface) {
-		devicePtr = instance.connectToDevice(physicalDevice, surface);//reconnect
+		auto& device = devices.emplace_back(
+				instance.connectToDevice(physicalDevice, surface));//reconnect
 		auto defaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
 		for (auto &phdFormat:defaultDeviceFormats) {
 			MY_LOG(INFO) << vk::to_string(phdFormat.colorSpace) << "@"
 			             << vk::to_string(phdFormat.format);
 		}
-		devicePtr->renderPass = devicePtr->createRenderpass(defaultDeviceFormats[0].format);
+		device.renderPass = device.createRenderpass(defaultDeviceFormats[0].format);
+		return device;
 	}
 
 	void stboxvk::initWindow(android_app *app, tt::Instance &instance) {
 		assert(instance);
 		//initData(app,instance);
 		auto surface = instance.connectToWSI(app->window);
-		if (!devicePtr || !devicePtr->checkSurfaceSupport(surface.get())) {
+
+		if (devices.empty()) {
 			auto phyDevices = instance->enumeratePhysicalDevices();
 			//phyDevices[0].getSurfaceCapabilities2KHR(vk::PhysicalDeviceSurfaceInfo2KHR{surface.get()});
 			//auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevices[0],
 			//                                                         vk::QueueFlagBits::eGraphics,
 			//                                                         surface.get());
-			initDevice(app, instance, phyDevices[0], surface.get());
+			auto &device = initDevice(app, instance, phyDevices[0], surface.get());
+			auto &job = initJobs(app, device);
 		}
-		auto &job = initJobs(app, *devicePtr);
 
-		windowPtr = std::make_unique<tt::Window>(std::move(surface), *devicePtr,
-		                                         AndroidGetWindowSize(app));
 
-		auto pv = glm::perspective(
-				glm::radians(60.0f),
-				static_cast<float>(windowPtr->getSwapchainExtent().width) /
-				static_cast<float>(windowPtr->getSwapchainExtent().height),
-				0.1f, 256.0f) *
-		          glm::lookAt(
-				          glm::vec3(8, 3, 10),  // Camera is at (-5,3,-10), in World Space
-				          glm::vec3(0, 0, 0),     // and looks at the origin
-				          glm::vec3(0, 1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
-		          );
-		job.writeBvm(0, &pv, sizeof(pv));
-		job.buildCmdBuffer(*windowPtr,devicePtr->renderPass.get());
-		return devicePtr->runJobOnWindow(job, *windowPtr);
+		auto &window = windows.emplace_back(std::move(surface), devices[0], AndroidGetWindowSize(app));
+		jobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
 
+		return;
 	}
 
 	Job &stboxvk::initJobs(android_app *app, tt::Device &device) {
-		if (!device.jobs.empty())
-			return device.jobs[0];
-		auto &job = device.createJob(
-				std::vector{
-						vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 2},
-						vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 2},
-						vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 2}
-				},
-				std::vector{
-						vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,
-						                               1, vk::ShaderStageFlagBits::eVertex},
-						vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler,
-						                               1, vk::ShaderStageFlagBits::eFragment}
-				}
+		if (!jobs.empty())
+			return jobs[0];
+		auto& job=jobs.emplace_back(
+				device.createJob(
+						std::vector{
+								vk::DescriptorPoolSize{
+										vk::DescriptorType::eUniformBuffer, 2
+								},
+								vk::DescriptorPoolSize{
+										vk::DescriptorType::eCombinedImageSampler, 2
+								},
+								vk::DescriptorPoolSize{
+										vk::DescriptorType::eStorageImage, 2
+								}
+						},
+						std::vector{
+								vk::DescriptorSetLayoutBinding{
+										0, vk::DescriptorType::eUniformBuffer,
+										1, vk::ShaderStageFlagBits::eVertex
+								},
+								vk::DescriptorSetLayoutBinding{
+										1, vk::DescriptorType::eCombinedImageSampler,
+										1, vk::ShaderStageFlagBits::eFragment
+								}
+						}
+				)
 		);
 
 		job.BVMs.emplace_back(
@@ -219,10 +222,21 @@ namespace tt {
 		return job;
 	}
 
+	void stboxvk::draw(glm::mat4 &cam) {
+
+		auto pv = glm::perspective(
+				glm::radians(60.0f),
+				static_cast<float>(windows[0].getSwapchainExtent().width) /
+				static_cast<float>(windows[0].getSwapchainExtent().height),
+				0.1f, 256.0f) * cam;
+		jobs[0].writeBvm(0, &pv, sizeof(pv));
+		devices[0].runJobOnWindow(jobs[0], windows[0]);
+	}
+
 	void stboxvk::cleanWindow() {
 		//MY_LOG(INFO) << __func__ ;
-		windowPtr.reset();
-		//devicePtr.reset();
+		windows.clear();
+		//devices.reset();
 	}
 
 

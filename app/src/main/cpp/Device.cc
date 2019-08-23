@@ -142,7 +142,7 @@ namespace tt{
 		};
 		vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{};
 		pipelineColorBlendAttachmentState.setColorWriteMask(
-				vk::ColorComponentFlags{} | vk::ColorComponentFlagBits::eR |
+				vk::ColorComponentFlagBits::eR |
 				vk::ColorComponentFlagBits::eG |
 				vk::ColorComponentFlagBits::eB |
 				vk::ColorComponentFlagBits::eA);
@@ -454,11 +454,12 @@ namespace tt{
 		return BVM;
 	}
 
-	Job &Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
+
+	Job Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
 	                       std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings) {
-		auto &job = jobs.emplace_back(get(), gQueueFamilyIndex, std::move(descriptorPoolSizes),
-		                              std::move(descriptorSetLayoutBindings));
-		return job;
+
+		return tt::Job{get(), gQueueFamilyIndex, std::move(descriptorPoolSizes),
+		               std::move(descriptorSetLayoutBindings)};
 	}
 
 	void Device::runJobOnWindow(Job &j, Window &win) {

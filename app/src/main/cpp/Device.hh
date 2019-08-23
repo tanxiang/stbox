@@ -8,8 +8,6 @@
 #include "util.hh"
 
 namespace tt {
-	struct Job;
-	class Window;
 	class Device : public vk::UniqueDevice {
 		vk::PhysicalDevice physicalDevice;
 		uint32_t gQueueFamilyIndex;
@@ -22,7 +20,6 @@ namespace tt {
 		vk::Format depthFormat = vk::Format::eD24UnormS8Uint;
 		vk::Format renderPassFormat;
 	public:
-		std::vector<tt::Job> jobs;
 		vk::UniqueRenderPass renderPass;
 
 		vk::UniqueShaderModule loadShaderFromAssets(const std::string &filePath,
@@ -55,7 +52,7 @@ namespace tt {
 		//template<typename Job>
 		void runJobOnWindow(tt::Job &j, tt::Window &win);
 
-		Job &createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
+		Job createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
 		               std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings);
 
 		auto transQueue() {

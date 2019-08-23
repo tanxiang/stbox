@@ -19,27 +19,19 @@ namespace tt {
 
 		}
 
-/*
-        Instance(Instance &&i) : vk::UniqueInstance{std::move(i)} {
 
-        }
-
-        Instance & operator=(Instance && instance)
-        {
-            vk::UniqueInstance::operator=(std::move(instance));
-            return *this;
-        }
-*/
 		auto connectToWSI(ANativeWindow *window) {
 			return get().createAndroidSurfaceKHRUnique(
 					vk::AndroidSurfaceCreateInfoKHR{vk::AndroidSurfaceCreateFlagsKHR(),
 					                                window});
 		}
 
-		std::unique_ptr <tt::Device>
+
+		tt::Device
 		connectToDevice(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface);
 
 	};
+	Instance createInstance();
 }
 
 #endif //STBOX_INSTANCE_HH
