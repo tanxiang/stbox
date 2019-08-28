@@ -140,6 +140,8 @@ namespace tt {
 			};
 		}
 
+		ImageViewMemory createImageAndMemoryFromMemory(gli::texture2d t2d,
+		                                            vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 		ImageViewMemory createImageAndMemoryFromT2d(gli::texture2d t2d,
 		                                            vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 
@@ -152,7 +154,7 @@ namespace tt {
 					memoryPropertyFlags);
 
 			auto dataPtr = mapMemoryAndSize(BufferMemoryToWirte);
-			memcpy(dataPtr.get(), data.data(), std::get<size_t>(BufferMemoryToWirte));
+			std::memcpy(dataPtr.get(), data.data(), std::get<size_t>(BufferMemoryToWirte));
 			return BufferMemoryToWirte;
 		}
 

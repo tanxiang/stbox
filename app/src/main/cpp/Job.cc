@@ -8,7 +8,10 @@
 namespace tt {
 
 	void Job::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
+//		MY_LOG(INFO)<<"jobaddr:"<<(void const *)this<<std::endl;
+
 		cmdBuffers = helper::createCmdBuffers(descriptorPoll.getOwner(), renderPass,
+		                                      *this,
 		                                      swapchain.getFrameBuffer(),
 		                                      swapchain.getSwapchainExtent(),
 		                                      commandPool.get(),

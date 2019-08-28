@@ -23,7 +23,8 @@ namespace tt {
 
         void initWindow(android_app *app, tt::Instance &instance);
 
-        Job& initJobs(android_app *app,tt::Device &device);
+        void initJobs(android_app *app,tt::Device &device);
+		void initJobs2(android_app *app,tt::Device &device);
 
         void cleanWindow();
 

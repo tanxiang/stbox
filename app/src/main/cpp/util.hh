@@ -124,9 +124,10 @@ namespace tt {
 
 		std::vector<vk::UniqueCommandBuffer>
 		createCmdBuffers(vk::Device device, vk::RenderPass renderPass,
+		                 tt::Job &job,
 		                 std::vector<vk::UniqueFramebuffer> &framebuffers, vk::Extent2D extent2D,
 		                 vk::CommandPool pool,
-		                 std::function<void(RenderpassBeginHandle &, vk::Extent2D)> functionRenderpassBegin,
+		                 std::function<void(Job&,RenderpassBeginHandle &, vk::Extent2D)> functionRenderpassBegin,
 		                 std::function<void(CommandBufferBeginHandle &, vk::Extent2D)> functionBegin);
 	}
 };

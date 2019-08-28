@@ -59,15 +59,18 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
 #include <android/log.h>
 
 
-
 namespace tt {
 	namespace helper {
 		std::vector<vk::UniqueCommandBuffer>
-		createCmdBuffers(vk::Device device, vk::RenderPass renderPass,
-		                 std::vector<vk::UniqueFramebuffer>& framebuffers, vk::Extent2D extent2D,
+		createCmdBuffers(vk::Device device,
+		                 vk::RenderPass renderPass,
+		                 tt::Job &job,
+		                 std::vector<vk::UniqueFramebuffer> &framebuffers, vk::Extent2D extent2D,
 		                 vk::CommandPool pool,
-		                 std::function<void(RenderpassBeginHandle &,vk::Extent2D)> functionRenderpassBegin,
-		                 std::function<void(CommandBufferBeginHandle &,vk::Extent2D)> functionBegin) {
+		                 std::function<void(Job &, RenderpassBeginHandle &,
+		                                    vk::Extent2D)> functionRenderpassBegin,
+		                 std::function<void(CommandBufferBeginHandle &,
+		                                    vk::Extent2D)> functionBegin) {
 			MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << framebuffers.size();
 			std::vector commandBuffers = device.allocateCommandBuffersUnique(
 					vk::CommandBufferAllocateInfo{
@@ -87,7 +90,7 @@ namespace tt {
 				//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
 				{
 					CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
-					functionBegin(cmdBeginHandle,extent2D);
+					functionBegin(cmdBeginHandle, extent2D);
 					{
 						RenderpassBeginHandle cmdHandleRenderpassBegin{
 								cmdBeginHandle,
@@ -101,7 +104,7 @@ namespace tt {
 										clearValues.size(), clearValues.data()
 								}
 						};
-						functionRenderpassBegin(cmdHandleRenderpassBegin,extent2D);
+						functionRenderpassBegin(job,cmdHandleRenderpassBegin, extent2D);
 					}
 
 				}
@@ -110,7 +113,6 @@ namespace tt {
 			return commandBuffers;
 		}
 	}
-
 
 
 	uint32_t findMemoryTypeIndex(vk::PhysicalDevice physicalDevice, uint32_t memoryTypeBits,

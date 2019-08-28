@@ -23,11 +23,11 @@ namespace tt {
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
 		glm::mat4 perspective;
 
-		glm::vec3 camPos = glm::vec3(8, 3, 4);
+		glm::vec3 camPos = glm::vec3(1, 3, 4);
 		glm::vec3 camTo = glm::vec3(0, 0, 0);
 		glm::vec3 camUp = glm::vec3(0, 1, 0);
 
-		std::function<void(RenderpassBeginHandle &, vk::Extent2D)> cmdbufferRenderpassBeginHandle;
+		std::function<void(Job &,RenderpassBeginHandle &, vk::Extent2D)> cmdbufferRenderpassBeginHandle;
 		std::function<void(CommandBufferBeginHandle &, vk::Extent2D)> cmdbufferCommandBufferBeginHandle;
 
 		auto clearCmdBuffer() {

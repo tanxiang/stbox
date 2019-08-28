@@ -38,9 +38,9 @@ namespace tt {
 		Onnx nf{"/storage/0123-4567/nw/mobilenetv2-1.0.onnx"};
 	}
 
-	Device& stboxvk::initDevice(android_app *app, tt::Instance &instance,
-	                         vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR surface) {
-		auto& device = devices.emplace_back(
+	Device &stboxvk::initDevice(android_app *app, tt::Instance &instance,
+	                            vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR surface) {
+		auto &device = devices.emplace_back(
 				instance.connectToDevice(physicalDevice, surface));//reconnect
 		auto defaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
 		for (auto &phdFormat:defaultDeviceFormats) {
@@ -63,32 +63,49 @@ namespace tt {
 			//                                                         vk::QueueFlagBits::eGraphics,
 			//                                                         surface.get());
 			auto &device = initDevice(app, instance, phyDevices[0], surface.get());
-			auto &job = initJobs(app, device);
+			//
+
+			initJobs(app, device);
+			initJobs2(app, device);
 		}
 
-		auto &window = windows.emplace_back(std::move(surface), devices[0], AndroidGetWindowSize(app));
+		auto &window = windows.emplace_back(std::move(surface), devices[0],
+		                                    AndroidGetWindowSize(app));
 		jobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
 		jobs[0].setPv();
 		return;
 	}
 
-	Job &stboxvk::initJobs(android_app *app, tt::Device &device) {
-		if (!jobs.empty())
-			return jobs[0];
-		auto& job=jobs.emplace_back(
+	void stboxvk::initJobs2(android_app *app, tt::Device &device) {
+		jobs.emplace_back(
 				device.createJob(
-						std::vector{
+						{
 								vk::DescriptorPoolSize{
-										vk::DescriptorType::eUniformBuffer, 2
-								},
-								vk::DescriptorPoolSize{
-										vk::DescriptorType::eCombinedImageSampler, 2
-								},
-								vk::DescriptorPoolSize{
-										vk::DescriptorType::eStorageImage, 2
+										vk::DescriptorType::eCombinedImageSampler, 1
 								}
 						},
-						std::vector{
+						{
+								vk::DescriptorSetLayoutBinding{
+										0, vk::DescriptorType::eCombinedImageSampler,
+										1, vk::ShaderStageFlagBits::eFragment
+								}
+						}
+				)
+		);
+	}
+
+	void stboxvk::initJobs(android_app *app, tt::Device &device) {
+		auto &job = jobs.emplace_back(
+				device.createJob(
+						{
+								vk::DescriptorPoolSize{
+										vk::DescriptorType::eUniformBuffer, 1
+								},
+								vk::DescriptorPoolSize{
+										vk::DescriptorType::eCombinedImageSampler, 1
+								},
+						},
+						{
 								vk::DescriptorSetLayoutBinding{
 										0, vk::DescriptorType::eUniformBuffer,
 										1, vk::ShaderStageFlagBits::eVertex
@@ -175,9 +192,11 @@ namespace tt {
 				}
 		};
 		device.get().updateDescriptorSets(writeDes, nullptr);
+//		MY_LOG(INFO)<<"jobaddr:"<<job<<std::endl;
 
-		job.cmdbufferRenderpassBeginHandle = [&](RenderpassBeginHandle &cmdHandleRenderpassBegin,
+		job.cmdbufferRenderpassBeginHandle = [](Job& job,RenderpassBeginHandle &cmdHandleRenderpassBegin,
 		                                         vk::Extent2D win) {
+//			MY_LOG(INFO)<<"jobaddr:"<<&job<<std::endl;
 			std::array viewports{
 					vk::Viewport{
 							0, 0,
@@ -205,8 +224,7 @@ namespace tt {
 			vk::DeviceSize offsets[1] = {0};
 			cmdHandleRenderpassBegin.bindVertexBuffers(
 					0, 1,
-					&std::get<vk::UniqueBuffer>(
-							job.BVMs[1]).get(),
+					&std::get<vk::UniqueBuffer>(job.BVMs[1]).get(),
 					offsets
 			);
 			cmdHandleRenderpassBegin.bindIndexBuffer(
@@ -217,8 +235,6 @@ namespace tt {
 		};
 
 		job.cmdbufferCommandBufferBeginHandle = [](CommandBufferBeginHandle &, vk::Extent2D) {};
-
-		return job;
 	}
 
 	void stboxvk::draw() {
@@ -232,8 +248,8 @@ namespace tt {
 		draw();
 	}
 
-	void stboxvk::draw(float dx,float dy) {
-		jobs[0].setPv(dx,dy);
+	void stboxvk::draw(float dx, float dy) {
+		jobs[0].setPv(dx, dy);
 		//jobs[0].writeBvm(0, pv, sizeof(pv));
 		draw();
 	}

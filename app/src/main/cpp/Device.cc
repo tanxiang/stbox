@@ -342,6 +342,32 @@ namespace tt{
 	}
 
 
+
+	ImageViewMemory
+	Device::createImageAndMemoryFromMemory(gli::texture2d t2d, vk::ImageUsageFlags imageUsageFlags) {
+		vk::ImageSubresourceRange imageSubresourceRange{
+				vk::ImageAspectFlagBits::eColor,
+				0, t2d.levels(), 0, 1
+		};
+		//todo check t2d.format();
+		auto imageAndMemory = createImageAndMemory(
+				vk::Format::eR8G8B8A8Unorm, vk::Extent3D{
+						static_cast<uint32_t>(t2d[0].extent().x),
+						static_cast<uint32_t>(t2d[0].extent().y),
+						1
+				},
+				imageUsageFlags | vk::ImageUsageFlagBits::eTransferDst,
+				t2d.levels(),
+				vk::ComponentMapping{
+						vk::ComponentSwizzle::eR,
+						vk::ComponentSwizzle::eG,
+						vk::ComponentSwizzle::eB,
+						vk::ComponentSwizzle::eA
+				},
+				imageSubresourceRange);
+
+		return imageAndMemory;
+	}
 	ImageViewMemory
 	Device::createImageAndMemoryFromT2d(gli::texture2d t2d, vk::ImageUsageFlags imageUsageFlags) {
 		vk::ImageSubresourceRange imageSubresourceRange{

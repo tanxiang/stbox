@@ -12,7 +12,7 @@ namespace tt{
     class ss
     {
     private:
-        std::stringstream m_ss;
+        std::ostringstream m_ss;
         int m_logLevel;
     public:
 
