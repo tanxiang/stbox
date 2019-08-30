@@ -27,8 +27,12 @@ namespace tt {
 		glm::vec3 camTo = glm::vec3(0, 0, 0);
 		glm::vec3 camUp = glm::vec3(0, 1, 0);
 
-		std::function<void(Job &,RenderpassBeginHandle &, vk::Extent2D)> cmdbufferRenderpassBeginHandle;
-		std::function<void(CommandBufferBeginHandle &, vk::Extent2D)> cmdbufferCommandBufferBeginHandle;
+		std::function<void(Job &, RenderpassBeginHandle &,
+		                   vk::Extent2D)> cmdbufferRenderpassBeginHandle;
+		std::function<void(Job &, CommandBufferBeginHandle &,
+		                   vk::Extent2D)> cmdbufferCommandBufferBeginHandle = [](Job &,
+		                                                                         CommandBufferBeginHandle &,
+		                                                                         vk::Extent2D) {};
 
 		auto clearCmdBuffer() {
 			return cmdBuffers.clear();
@@ -38,7 +42,7 @@ namespace tt {
 
 		void setPerspective(tt::Window &swapchain);
 
-		void setPv(float dx=0.0, float dy=0.0);
+		void setPv(float dx = 0.0, float dy = 0.0);
 
 		//memory using
 		std::vector<BufferViewMemory> BVMs;

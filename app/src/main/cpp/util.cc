@@ -69,7 +69,7 @@ namespace tt {
 		                 vk::CommandPool pool,
 		                 std::function<void(Job &, RenderpassBeginHandle &,
 		                                    vk::Extent2D)> functionRenderpassBegin,
-		                 std::function<void(CommandBufferBeginHandle &,
+		                 std::function<void(Job &,CommandBufferBeginHandle &,
 		                                    vk::Extent2D)> functionBegin) {
 			MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << framebuffers.size();
 			std::vector commandBuffers = device.allocateCommandBuffersUnique(
@@ -90,7 +90,7 @@ namespace tt {
 				//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
 				{
 					CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
-					functionBegin(cmdBeginHandle, extent2D);
+					functionBegin(job,cmdBeginHandle, extent2D);
 					{
 						RenderpassBeginHandle cmdHandleRenderpassBegin{
 								cmdBeginHandle,

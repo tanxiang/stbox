@@ -234,7 +234,6 @@ namespace tt {
 			cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
 		};
 
-		job.cmdbufferCommandBufferBeginHandle = [](CommandBufferBeginHandle &, vk::Extent2D) {};
 	}
 
 	void stboxvk::draw() {

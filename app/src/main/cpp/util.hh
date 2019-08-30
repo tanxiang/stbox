@@ -128,7 +128,7 @@ namespace tt {
 		                 std::vector<vk::UniqueFramebuffer> &framebuffers, vk::Extent2D extent2D,
 		                 vk::CommandPool pool,
 		                 std::function<void(Job&,RenderpassBeginHandle &, vk::Extent2D)> functionRenderpassBegin,
-		                 std::function<void(CommandBufferBeginHandle &, vk::Extent2D)> functionBegin);
+		                 std::function<void(Job&,CommandBufferBeginHandle &, vk::Extent2D)> functionBegin);
 	}
 };
 
