@@ -368,6 +368,7 @@ namespace tt{
 
 		return imageAndMemory;
 	}
+
 	ImageViewMemory
 	Device::createImageAndMemoryFromT2d(gli::texture2d t2d, vk::ImageUsageFlags imageUsageFlags) {
 		vk::ImageSubresourceRange imageSubresourceRange{

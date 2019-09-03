@@ -77,7 +77,7 @@ namespace tt {
 	}
 
 	void stboxvk::initJobs2(android_app *app, tt::Device &device) {
-		jobs.emplace_back(
+		auto & job = jobs.emplace_back(
 				device.createJob(
 						{
 								vk::DescriptorPoolSize{
@@ -92,6 +92,7 @@ namespace tt {
 						}
 				)
 		);
+		job.IVMs.emplace_back(device.createImageAndMemoryFromMemory());
 	}
 
 	void stboxvk::initJobs(android_app *app, tt::Device &device) {
@@ -144,6 +145,13 @@ namespace tt {
 						vk::MemoryPropertyFlagBits::eHostVisible |
 						vk::MemoryPropertyFlagBits::eHostCoherent));
 
+		{
+			auto fileContent = loadDataFromAssets("textures/vulkan_11_rgba.ktx", app);
+			gli::texture2d tex2d;
+			tex2d = gli::texture2d{gli::load(fileContent.data(), fileContent.size())};
+			job.sampler = device.createSampler(tex2d.levels());
+			job.IVMs.emplace_back(device.createImageAndMemoryFromT2d(tex2d));
+		}
 
 		auto vertShaderModule = device.loadShaderFromAssets("shaders/mvp.vert.spv", app);
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/copy.frag.spv", app);
@@ -165,16 +173,6 @@ namespace tt {
 				job.pipelineCache.get(),
 				job.pipelineLayout.get()
 		);
-
-
-		{
-			auto fileContent = loadDataFromAssets("textures/vulkan_11_rgba.ktx", app);
-			gli::texture2d tex2d;
-			tex2d = gli::texture2d{gli::load(fileContent.data(), fileContent.size())};
-			job.sampler = device.createSampler(tex2d.levels());
-			job.IVMs.emplace_back(device.createImageAndMemoryFromT2d(tex2d));
-
-		}
 
 		auto descriptorBufferInfo = device.getDescriptorBufferInfo(job.BVMs[0]);
 		auto descriptorImageInfo = device.getDescriptorImageInfo(job.IVMs[0], job.sampler.get());
