@@ -92,7 +92,7 @@ namespace tt {
 						}
 				)
 		);
-		job.IVMs.emplace_back(device.createImageAndMemoryFromMemory());
+		//job.IVMs.emplace_back(device.createImageAndMemoryFromMemory());
 	}
 
 	void stboxvk::initJobs(android_app *app, tt::Device &device) {
@@ -146,7 +146,7 @@ namespace tt {
 						vk::MemoryPropertyFlagBits::eHostCoherent));
 
 		{
-			auto fileContent = loadDataFromAssets("textures/vulkan_11_rgba.ktx", app);
+			auto fileContent = loadDataFromAssets("textures/ic_launcher-web.ktx", app);
 			gli::texture2d tex2d;
 			tex2d = gli::texture2d{gli::load(fileContent.data(), fileContent.size())};
 			job.sampler = device.createSampler(tex2d.levels());

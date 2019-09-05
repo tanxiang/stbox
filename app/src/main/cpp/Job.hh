@@ -6,11 +6,13 @@
 #define STBOX_JOB_HH
 
 #include "util.hh"
+#include "Device.hh"
 
 namespace tt {
 
 	struct Job {
 		//tt::Device &device;
+		vk::PhysicalDevice physicalDevice;
 		vk::UniqueDescriptorPool descriptorPoll;
 		vk::UniqueDescriptorSetLayout descriptorSetLayout;//todo vector UniqueDescriptorSetLayout
 		std::vector<vk::UniqueDescriptorSet> descriptorSets;
@@ -62,11 +64,12 @@ namespace tt {
 		std::vector<ImageViewMemory> IVMs;
 		vk::UniqueSampler sampler;
 
-		Job(vk::Device device, uint32_t queueIndex,
+		Job(tt::Device &device, uint32_t queueIndex,
 		    std::vector<vk::DescriptorPoolSize> &&descriptorPoolSizes,
 		    std::vector<vk::DescriptorSetLayoutBinding> &&descriptorSetLayoutBindings) :
+				physicalDevice{device.phyDevice()},
 				descriptorPoll{
-						device.createDescriptorPoolUnique(
+						device->createDescriptorPoolUnique(
 								vk::DescriptorPoolCreateInfo{
 										vk::DescriptorPoolCreateFlags(), 3,
 										descriptorPoolSizes.size(),
@@ -75,7 +78,7 @@ namespace tt {
 						)
 				},/*todo maxset unset*/
 				descriptorSetLayout{
-						device.createDescriptorSetLayoutUnique(
+						device->createDescriptorSetLayoutUnique(
 								vk::DescriptorSetLayoutCreateInfo{
 										vk::DescriptorSetLayoutCreateFlags(),
 										descriptorSetLayoutBindings.size(),
@@ -84,16 +87,16 @@ namespace tt {
 						)
 				},
 				descriptorSets{
-						device.allocateDescriptorSetsUnique(
+						device->allocateDescriptorSetsUnique(
 								vk::DescriptorSetAllocateInfo{descriptorPoll.get(), 1,
 								                              descriptorSetLayout.operator->()
 								}
 						)
 				},//todo multi descriptorSetLayout
 				/* renderPass{device->createRenderPassUnique(renderPassCreateInfo)},*/
-				pipelineCache{device.createPipelineCacheUnique(vk::PipelineCacheCreateInfo{})},
+				pipelineCache{device->createPipelineCacheUnique(vk::PipelineCacheCreateInfo{})},
 				pipelineLayout{
-						device.createPipelineLayoutUnique(
+						device->createPipelineLayoutUnique(
 								vk::PipelineLayoutCreateInfo{
 										vk::PipelineLayoutCreateFlags(), 1,
 										descriptorSetLayout.operator->(), 0,
@@ -101,9 +104,11 @@ namespace tt {
 								}
 						)
 				},
-				commandPool{device.createCommandPoolUnique(vk::CommandPoolCreateInfo{
+				commandPool{device->createCommandPoolUnique(vk::CommandPoolCreateInfo{
 						vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueIndex})} {
-		}
+					//auto phycompressFmts = device.phyDevice().getFormatProperties(vk::Format::eAstc4x4UnormBlock);
+					//MY_LOG(INFO)<<"vk::Format::eAstc4x4UnormBlock"<<vk::to_string(phycompressFmts.optimalTilingFeatures);
+				}
 	};
 }
 

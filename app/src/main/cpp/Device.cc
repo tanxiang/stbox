@@ -376,8 +376,9 @@ namespace tt{
 				0, t2d.levels(), 0, 1
 		};
 		//todo check t2d.format();
+		MY_LOG(INFO)<<"t2d Format:"<<vk::to_string(static_cast<vk::Format >(t2d.format()));
 		auto imageAndMemory = createImageAndMemory(
-				vk::Format::eR8G8B8A8Unorm, vk::Extent3D{
+				static_cast<vk::Format >(t2d.format()), vk::Extent3D{
 						static_cast<uint32_t>(t2d[0].extent().x),
 						static_cast<uint32_t>(t2d[0].extent().y),
 						1
@@ -485,7 +486,7 @@ namespace tt{
 	Job Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
 	                       std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings) {
 
-		return tt::Job{get(), gQueueFamilyIndex, std::move(descriptorPoolSizes),
+		return tt::Job{*this, gQueueFamilyIndex, std::move(descriptorPoolSizes),
 		               std::move(descriptorSetLayoutBindings)};
 	}
 
