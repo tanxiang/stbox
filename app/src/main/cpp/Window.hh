@@ -6,7 +6,7 @@
 #define STBOX_WINDOW_HH
 
 #include "util.hh"
-#include "Device.hh"
+//#include "Device.hh"
 
 namespace tt {
 	class Window {
@@ -36,10 +36,11 @@ namespace tt {
 			return frameBuffers;
 		}
 
-		auto acquireNextImage(Device &device, vk::Semaphore imageAcquiredSemaphore) {
-			return device->acquireNextImageKHR(swapchain.get(), UINT64_MAX, imageAcquiredSemaphore,
-			                                   vk::Fence{});
-		}
+		vk::ResultValue<uint32_t> acquireNextImage(Device &device, vk::Semaphore imageAcquiredSemaphore) ;
+		//{
+		//	return device->acquireNextImageKHR(swapchain.get(), UINT64_MAX, imageAcquiredSemaphore,
+//			                                   vk::Fence{});
+//		}
 
 		vk::UniqueFence submitCmdBuffer(Device &device,
 		                                std::vector<vk::UniqueCommandBuffer> &drawcommandBuffers,

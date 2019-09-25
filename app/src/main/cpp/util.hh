@@ -12,7 +12,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <unistd.h>
 #include <vulkan.hpp>
-#include "main.hh"
 #include <thread>
 #include <queue>
 #include <condition_variable>
@@ -21,6 +20,7 @@
 #include <memory>
 #include <map>
 #include <gli/texture2d.hpp>
+#include "main.hh"
 
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);
 

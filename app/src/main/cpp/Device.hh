@@ -6,7 +6,7 @@
 #define STBOX_DEVICE_HH
 
 #include "util.hh"
-
+#include "Window.hh"
 namespace tt {
 	class Device : public vk::UniqueDevice {
 		vk::PhysicalDevice physicalDevice;
@@ -48,9 +48,6 @@ namespace tt {
 		auto phyDevice() {
 			return physicalDevice;
 		}
-
-		//template<typename Job>
-		void runJobOnWindow(tt::Job &j, tt::Window &win);
 
 		Job createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
 		               std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings);
@@ -248,6 +245,15 @@ namespace tt {
 			return get().waitForFences(1, &Fence, true, 10000000);
 		}
 
+		template<typename Tjob>
+		void runJobOnWindow(Tjob &j, tt::Window &win) {
+			auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+			auto renderSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+			auto renderFence = win.submitCmdBuffer(*this, j.cmdBuffers,
+			                                       imageAcquiredSemaphore.get(),
+			                                       renderSemaphore.get());
+			waitFence(renderFence.get());
+		}
 	};
 
 }

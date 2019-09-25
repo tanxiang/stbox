@@ -494,6 +494,8 @@ namespace tt{
 		std::vector <std::tuple<AAssetHander,off_t ,off_t >> fileHanders;
 		for(auto&name:names){
 			auto file = AAssetManagerFileOpen(androidAppCtx->activity->assetManager,name);
+			if(!file)
+				throw std::runtime_error{"asset not found"};
 			auto length =  AAsset_getLength(file.get());
 			fileHanders.emplace_back(std::move(file),bufferLength,length);
 			length += (alignment - 1) - ((length - 1) % alignment) ;
@@ -534,14 +536,4 @@ namespace tt{
 		return tt::Job{*this, gQueueFamilyIndex, std::move(descriptorPoolSizes),
 		               std::move(descriptorSetLayoutBindings)};
 	}
-
-	void Device::runJobOnWindow(Job &j, Window &win) {
-		auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-		auto renderSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-		auto renderFence = win.submitCmdBuffer(*this, j.cmdBuffers,
-		                                       imageAcquiredSemaphore.get(),
-		                                       renderSemaphore.get());
-		waitFence(renderFence.get());
-	}
-
 }

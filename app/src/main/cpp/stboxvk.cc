@@ -92,13 +92,11 @@ namespace tt {
 						}
 				)
 		);
-		{
-			auto fileContent = loadDataFromAssets("textures/1280px-ASCII_full.ktx", app);
-			//gli::texture2d tex2d;
-			auto tex2d = gli::texture2d{gli::load_ktx(fileContent.data(), fileContent.size())};
-			job.sampler = device.createSampler(tex2d.levels());
-			job.IVMs.emplace_back(device.createImageAndMemoryFromT2d(tex2d));
-		}
+		job.BVMs.emplace_back(
+				device.createBufferAndMemoryFromAssets(
+						app, {"glyhps/glyphy_3072.bin","glyhps/cell_21576.bin","glyhps/point_47440.bin"},
+						vk::BufferUsageFlagBits::eStorageBuffer,
+						vk::MemoryPropertyFlagBits::eDeviceLocal));
 		//job.IVMs.emplace_back(device.createImageAndMemoryFromMemory());
 	}
 
