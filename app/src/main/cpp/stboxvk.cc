@@ -92,6 +92,13 @@ namespace tt {
 						}
 				)
 		);
+		{
+			auto fileContent = loadDataFromAssets("textures/1280px-ASCII_full.ktx", app);
+			//gli::texture2d tex2d;
+			auto tex2d = gli::texture2d{gli::load_ktx(fileContent.data(), fileContent.size())};
+			job.sampler = device.createSampler(tex2d.levels());
+			job.IVMs.emplace_back(device.createImageAndMemoryFromT2d(tex2d));
+		}
 		//job.IVMs.emplace_back(device.createImageAndMemoryFromMemory());
 	}
 
@@ -147,8 +154,8 @@ namespace tt {
 
 		{
 			auto fileContent = loadDataFromAssets("textures/ic_launcher-web.ktx", app);
-			gli::texture2d tex2d;
-			tex2d = gli::texture2d{gli::load(fileContent.data(), fileContent.size())};
+			//gli::texture2d tex2d;
+			auto tex2d = gli::texture2d{gli::load_ktx(fileContent.data(), fileContent.size())};
 			job.sampler = device.createSampler(tex2d.levels());
 			job.IVMs.emplace_back(device.createImageAndMemoryFromT2d(tex2d));
 		}

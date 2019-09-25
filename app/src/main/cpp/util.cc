@@ -138,16 +138,9 @@ namespace tt {
 	                                     android_app *androidAppCtx) {
 		// Read the file
 		assert(androidAppCtx);
-		std::unique_ptr<AAsset, std::function<void(AAsset *)> > file{
-				AAssetManager_open(androidAppCtx->activity->assetManager, filePath.c_str(),
-				                   AASSET_MODE_STREAMING),
-				[](AAsset *AAsset) {
-					AAsset_close(AAsset);
-				}
-		};
+		auto file = AAssetManagerFileOpen(androidAppCtx->activity->assetManager,filePath);
 		std::vector<char> fileContent;
 		fileContent.resize(AAsset_getLength(file.get()));
-
 		AAsset_read(file.get(), reinterpret_cast<void *>(fileContent.data()), fileContent.size());
 		return fileContent;
 	}

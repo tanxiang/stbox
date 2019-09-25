@@ -121,14 +121,19 @@ namespace tt {
 				}
 		);
 
-		BufferViewMemory
+		BufferMemory
 		createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
+		                      vk::MemoryPropertyFlags memoryPropertyFlags);
+
+
+		BufferMemory
+		createBufferAndMemoryFromAssets(android_app *androidAppCtx,std::vector<std::string> names, vk::BufferUsageFlags bufferUsageFlags,
 		                      vk::MemoryPropertyFlags memoryPropertyFlags);
 
 
 		template<typename Tuple>
 		auto mapMemoryAndSize(Tuple &tupleMemoryAndSize, size_t offset = 0) {
-			return BufferViewMemoryPtr{
+			return BufferMemoryPtr{
 					get().mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
 					                offset,
 					                std::get<size_t>(tupleMemoryAndSize),
@@ -146,7 +151,7 @@ namespace tt {
 		                                            vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 
 		template<typename VectorType>
-		BufferViewMemory
+		BufferMemory
 		createBufferAndMemoryFromVector(VectorType data, vk::BufferUsageFlags bufferUsageFlags,
 		                                vk::MemoryPropertyFlags memoryPropertyFlags) {
 			auto BufferMemoryToWirte = createBufferAndMemory(
@@ -159,7 +164,7 @@ namespace tt {
 		}
 
 		template<typename MatType>
-		BufferViewMemory
+		BufferMemory
 		createBufferAndMemoryFromMat(MatType data, vk::BufferUsageFlags bufferUsageFlags,
 		                             vk::MemoryPropertyFlags memoryPropertyFlags) {
 			auto BufferMemoryToWirte = createBufferAndMemory(sizeof(MatType), bufferUsageFlags,
@@ -215,7 +220,8 @@ namespace tt {
 		std::vector<vk::UniqueCommandBuffer>
 		createCmdBuffers(
 				size_t cmdNum, vk::CommandPool pool,
-				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {}
+				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {},
+				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits {}
 		);
 
 		std::vector<vk::UniqueCommandBuffer>

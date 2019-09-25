@@ -47,7 +47,7 @@ namespace tt {
 		void setPv(float dx = 0.0, float dy = 0.0);
 
 		//memory using
-		std::vector<BufferViewMemory> BVMs;
+		std::vector<BufferMemory> BVMs;
 
 		void writeBvm(uint32_t index, void *data, size_t writeSize, size_t offset = 0) {
 			//todo check index size

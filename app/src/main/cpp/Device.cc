@@ -292,12 +292,13 @@ namespace tt{
 
 	std::vector<vk::UniqueCommandBuffer>
 	Device::createCmdBuffers(size_t cmdNum, vk::CommandPool pool,
-	                         std::function<void(CommandBufferBeginHandle &)> functionBegin) {
+	                         std::function<void(CommandBufferBeginHandle &)> functionBegin,
+	                         vk::CommandBufferUsageFlags commandBufferUsageFlags) {
 		MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << cmdNum;
 		std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
 				vk::CommandBufferAllocateInfo{pool, vk::CommandBufferLevel::ePrimary, cmdNum});
 		for (auto &cmdBuffer : commandBuffers) {
-			CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
+			CommandBufferBeginHandle cmdBeginHandle{cmdBuffer,commandBufferUsageFlags};
 			functionBegin(cmdBeginHandle);
 		}
 		return commandBuffers;
@@ -451,7 +452,9 @@ namespace tt{
 								0, nullptr,
 								0, nullptr,
 								1, &imageMemoryBarrierToGeneral);
-					});
+					},
+					vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+					);
 
 			auto copyFence = submitCmdBuffer(copyCmd[0].get());
 			waitFence(copyFence.get());
@@ -459,28 +462,70 @@ namespace tt{
 		return imageAndMemory;
 	}
 
-	BufferViewMemory
+	BufferMemory
 	Device::createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
 	                              vk::MemoryPropertyFlags memoryPropertyFlags) {
 
-		BufferViewMemory BVM{};
-		std::get<vk::UniqueBuffer>(BVM) = get().createBufferUnique(
+		BufferMemory BM{};
+		std::get<vk::UniqueBuffer>(BM) = get().createBufferUnique(
 				vk::BufferCreateInfo{
 						vk::BufferCreateFlags(),
 						dataSize,
 						bufferUsageFlags}
 		);
 		auto memoryRequirements = get().getBufferMemoryRequirements(
-				std::get<vk::UniqueBuffer>(BVM).get());
+				std::get<vk::UniqueBuffer>(BM).get());
 		auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits,
 		                                     memoryPropertyFlags);
-		std::get<vk::UniqueDeviceMemory>(BVM) = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
+		std::get<vk::UniqueDeviceMemory>(BM) = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
 				memoryRequirements.size, typeIndex
 		});
-		std::get<size_t>(BVM) = memoryRequirements.size;
-		get().bindBufferMemory(std::get<vk::UniqueBuffer>(BVM).get(),
-		                       std::get<vk::UniqueDeviceMemory>(BVM).get(), 0);
-		return BVM;
+		std::get<size_t>(BM) = memoryRequirements.size;
+		get().bindBufferMemory(std::get<vk::UniqueBuffer>(BM).get(),
+		                       std::get<vk::UniqueDeviceMemory>(BM).get(), 0);
+		return BM;
+	}
+
+	BufferMemory Device::createBufferAndMemoryFromAssets(android_app *androidAppCtx,std::vector<std::string> names,
+	                                                     vk::BufferUsageFlags bufferUsageFlags,
+	                                                     vk::MemoryPropertyFlags memoryPropertyFlags) {
+		auto alignment = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+		off_t bufferLength = 0;
+		std::vector <std::tuple<AAssetHander,off_t ,off_t >> fileHanders;
+		for(auto&name:names){
+			auto file = AAssetManagerFileOpen(androidAppCtx->activity->assetManager,name);
+			auto length =  AAsset_getLength(file.get());
+			fileHanders.emplace_back(std::move(file),bufferLength,length);
+			length += (alignment - 1) - ((length - 1) % alignment) ;
+			bufferLength += length;
+		}
+		if(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
+			auto BAM = createBufferAndMemory(bufferLength,vk::BufferUsageFlagBits::eTransferSrc,vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
+			auto bufferPtr = mapMemoryAndSize(BAM);
+			for(auto&file:fileHanders){
+				AAsset_read(std::get<0>(file).get(),(char*)bufferPtr.get()+std::get<1>(file),std::get<2>(file));
+			}
+			auto BAM2 = createBufferAndMemory(bufferLength,bufferUsageFlags,memoryPropertyFlags);
+			auto copyCmd = createCmdBuffers(
+					1, gPoolUnique.get(),
+					[&](CommandBufferBeginHandle &commandBufferBeginHandle){
+						commandBufferBeginHandle.copyBuffer(std::get<vk::UniqueBuffer>(BAM).get(),
+								std::get<vk::UniqueBuffer>(BAM2).get(),
+								{vk::BufferCopy{0,0,bufferLength}});
+					},
+					vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+
+			auto copyFence = submitCmdBuffer(copyCmd[0].get());
+			waitFence(copyFence.get());
+			return BAM2;
+		}
+
+		auto BAM = createBufferAndMemory(bufferLength,bufferUsageFlags,memoryPropertyFlags);
+		auto bufferPtr = mapMemoryAndSize(BAM);
+		for(auto&file:fileHanders){
+			AAsset_read(std::get<0>(file).get(),(char*)bufferPtr.get()+std::get<1>(file),std::get<2>(file));
+		}
+		return BAM;
 	}
 
 	Job Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,

@@ -56,6 +56,17 @@ namespace tt {
 		throw std::logic_error{"queueFamilyPropertiesFindFlags Error"};
 	}
 
+	using AAssetHander = std::unique_ptr<AAsset, std::function<void(AAsset *)>>;
+	inline auto AAssetManagerFileOpen(AAssetManager* assetManager,const std::string &filePath){
+		return AAssetHander {
+				AAssetManager_open(assetManager, filePath.c_str(),
+				                   AASSET_MODE_STREAMING),
+				[](AAsset *AAsset) {
+					AAsset_close(AAsset);
+				}
+		};
+	}
+
 	struct RenderpassBeginHandle : public vk::CommandBuffer {
 		RenderpassBeginHandle(vk::CommandBuffer commandBuffer,
 		                      vk::RenderPassBeginInfo renderPassBeginInfo)
@@ -73,9 +84,9 @@ namespace tt {
 
 	struct CommandBufferBeginHandle : public vk::CommandBuffer {
 		CommandBufferBeginHandle(
-				vk::UniqueCommandBuffer &uniqueCommandBuffer) :
+				vk::UniqueCommandBuffer &uniqueCommandBuffer,vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits {}) :
 				vk::CommandBuffer{uniqueCommandBuffer.get()} {
-			begin(vk::CommandBufferBeginInfo{});
+			begin(vk::CommandBufferBeginInfo{commandBufferUsageFlags});
 		}
 
 		~CommandBufferBeginHandle() {
@@ -96,9 +107,9 @@ namespace tt {
 
 	//using ImageViewSamplerMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueSampler, vk::UniqueDeviceMemory>;
 
-	using BufferViewMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>;
+	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>;
 
-	class BufferViewMemoryPtr : public std::unique_ptr<void, std::function<void(void *)> > {
+	class BufferMemoryPtr : public std::unique_ptr<void, std::function<void(void *)> > {
 	public:
 		using std::unique_ptr<void, std::function<void(void *)> >::unique_ptr;
 		template<typename PodType>
@@ -110,7 +121,7 @@ namespace tt {
 	namespace helper {
 		template<typename Tuple>
 		auto mapMemoryAndSize(vk::Device device, Tuple &tupleMemoryAndSize, size_t offset = 0) {
-			return BufferViewMemoryPtr{
+			return BufferMemoryPtr{
 					device.mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
 					                 offset,
 					                 std::get<size_t>(tupleMemoryAndSize),
