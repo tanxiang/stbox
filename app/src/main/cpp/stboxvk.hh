@@ -8,11 +8,12 @@
 #include "util.hh"
 #include "onnx.hh"
 #include "main.hh"
+#include "Jobdraw.hh"
 //uint32_t draw_run(tt::Device &ttInstance,vk::SurfaceKHR &surfaceKHR);
 namespace tt {
 	class stboxvk {
         std::vector<tt::Device> devices;
-		std::vector<tt::Job> jobs;
+		std::vector<tt::Jobdraw> jobs;
 		std::vector<tt::Window> windows;
 
     public:
@@ -22,7 +23,8 @@ namespace tt {
 
         void initWindow(android_app *app, tt::Instance &instance);
 
-        Job& initJobs(android_app *app,tt::Device &device);
+        void initJobs(android_app *app,tt::Device &device);
+		void initJobs2(android_app *app,tt::Device &device);
 
         void cleanWindow();
 

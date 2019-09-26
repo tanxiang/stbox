@@ -6,7 +6,7 @@
 #define STBOX_DEVICE_HH
 
 #include "util.hh"
-
+#include "Window.hh"
 namespace tt {
 	class Device : public vk::UniqueDevice {
 		vk::PhysicalDevice physicalDevice;
@@ -48,9 +48,6 @@ namespace tt {
 		auto phyDevice() {
 			return physicalDevice;
 		}
-
-		//template<typename Job>
-		void runJobOnWindow(tt::Job &j, tt::Window &win);
 
 		Job createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
 		               std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings);
@@ -121,14 +118,19 @@ namespace tt {
 				}
 		);
 
-		BufferViewMemory
+		BufferMemory
 		createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
+		                      vk::MemoryPropertyFlags memoryPropertyFlags);
+
+
+		BufferMemory
+		createBufferAndMemoryFromAssets(android_app *androidAppCtx,std::vector<std::string> names, vk::BufferUsageFlags bufferUsageFlags,
 		                      vk::MemoryPropertyFlags memoryPropertyFlags);
 
 
 		template<typename Tuple>
 		auto mapMemoryAndSize(Tuple &tupleMemoryAndSize, size_t offset = 0) {
-			return BufferViewMemoryPtr{
+			return BufferMemoryPtr{
 					get().mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
 					                offset,
 					                std::get<size_t>(tupleMemoryAndSize),
@@ -140,11 +142,13 @@ namespace tt {
 			};
 		}
 
+		ImageViewMemory createImageAndMemoryFromMemory(gli::texture2d t2d,
+		                                            vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 		ImageViewMemory createImageAndMemoryFromT2d(gli::texture2d t2d,
 		                                            vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 
 		template<typename VectorType>
-		BufferViewMemory
+		BufferMemory
 		createBufferAndMemoryFromVector(VectorType data, vk::BufferUsageFlags bufferUsageFlags,
 		                                vk::MemoryPropertyFlags memoryPropertyFlags) {
 			auto BufferMemoryToWirte = createBufferAndMemory(
@@ -152,12 +156,12 @@ namespace tt {
 					memoryPropertyFlags);
 
 			auto dataPtr = mapMemoryAndSize(BufferMemoryToWirte);
-			memcpy(dataPtr.get(), data.data(), std::get<size_t>(BufferMemoryToWirte));
+			std::memcpy(dataPtr.get(), data.data(), std::get<size_t>(BufferMemoryToWirte));
 			return BufferMemoryToWirte;
 		}
 
 		template<typename MatType>
-		BufferViewMemory
+		BufferMemory
 		createBufferAndMemoryFromMat(MatType data, vk::BufferUsageFlags bufferUsageFlags,
 		                             vk::MemoryPropertyFlags memoryPropertyFlags) {
 			auto BufferMemoryToWirte = createBufferAndMemory(sizeof(MatType), bufferUsageFlags,
@@ -213,7 +217,8 @@ namespace tt {
 		std::vector<vk::UniqueCommandBuffer>
 		createCmdBuffers(
 				size_t cmdNum, vk::CommandPool pool,
-				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {}
+				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {},
+				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits {}
 		);
 
 		std::vector<vk::UniqueCommandBuffer>
@@ -240,6 +245,15 @@ namespace tt {
 			return get().waitForFences(1, &Fence, true, 10000000);
 		}
 
+		template<typename Tjob>
+		void runJobOnWindow(Tjob &j, tt::Window &win) {
+			auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+			auto renderSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
+			auto renderFence = win.submitCmdBuffer(*this, j.cmdBuffers,
+			                                       imageAcquiredSemaphore.get(),
+			                                       renderSemaphore.get());
+			waitFence(renderFence.get());
+		}
 	};
 
 }

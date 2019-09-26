@@ -59,59 +59,9 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
 #include <android/log.h>
 
 
-
 namespace tt {
 	namespace helper {
-		std::vector<vk::UniqueCommandBuffer>
-		createCmdBuffers(vk::Device device, vk::RenderPass renderPass,
-		                 std::vector<vk::UniqueFramebuffer>& framebuffers, vk::Extent2D extent2D,
-		                 vk::CommandPool pool,
-		                 std::function<void(RenderpassBeginHandle &,vk::Extent2D)> functionRenderpassBegin,
-		                 std::function<void(CommandBufferBeginHandle &,vk::Extent2D)> functionBegin) {
-			MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << framebuffers.size();
-			std::vector commandBuffers = device.allocateCommandBuffersUnique(
-					vk::CommandBufferAllocateInfo{
-							pool,
-							vk::CommandBufferLevel::ePrimary,
-							framebuffers.size()
-					}
-			);
-
-			std::array clearValues{
-					vk::ClearValue{
-							vk::ClearColorValue{std::array<float, 4>{0.1f, 0.2f, 0.2f, 0.2f}}},
-					vk::ClearValue{vk::ClearDepthStencilValue{1.0f, 0}},
-			};
-			uint32_t frameIndex = 0;
-			for (auto &cmdBuffer : commandBuffers) {
-				//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
-				{
-					CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
-					functionBegin(cmdBeginHandle,extent2D);
-					{
-						RenderpassBeginHandle cmdHandleRenderpassBegin{
-								cmdBeginHandle,
-								vk::RenderPassBeginInfo{
-										renderPass,
-										framebuffers[frameIndex].get(),
-										vk::Rect2D{
-												vk::Offset2D{},
-												extent2D
-										},
-										clearValues.size(), clearValues.data()
-								}
-						};
-						functionRenderpassBegin(cmdHandleRenderpassBegin,extent2D);
-					}
-
-				}
-				++frameIndex;
-			}
-			return commandBuffers;
-		}
 	}
-
-
 
 	uint32_t findMemoryTypeIndex(vk::PhysicalDevice physicalDevice, uint32_t memoryTypeBits,
 	                             vk::MemoryPropertyFlags flags) {
@@ -136,16 +86,9 @@ namespace tt {
 	                                     android_app *androidAppCtx) {
 		// Read the file
 		assert(androidAppCtx);
-		std::unique_ptr<AAsset, std::function<void(AAsset *)> > file{
-				AAssetManager_open(androidAppCtx->activity->assetManager, filePath.c_str(),
-				                   AASSET_MODE_STREAMING),
-				[](AAsset *AAsset) {
-					AAsset_close(AAsset);
-				}
-		};
+		auto file = AAssetManagerFileOpen(androidAppCtx->activity->assetManager,filePath);
 		std::vector<char> fileContent;
 		fileContent.resize(AAsset_getLength(file.get()));
-
 		AAsset_read(file.get(), reinterpret_cast<void *>(fileContent.data()), fileContent.size());
 		return fileContent;
 	}

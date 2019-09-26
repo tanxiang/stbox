@@ -9,16 +9,17 @@
 #include <unordered_map>
 #include <chrono>
 
-#include "util.hh"
-#include "Instance.hh"
 // Header files.
 #include <android/choreographer.h>
 
 #include <cstring>
 //#include "shaderc/shaderc.hpp"
+
+#include "util.hh"
+#include "Instance.hh"
 #include "main.hh"
 #include "Job.hh"
-#include "Window.hh"
+#include "Device.hh"
 #include "stboxvk.hh"
 #include "vertexdata.hh"
 
@@ -45,14 +46,6 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
     static tt::stboxvk appbox;
     try {
         switch (cmd) {
-            /*
-        	case APP_CMD_WINDOW_RESIZED:
-                MY_LOG(INFO) << "APP_CMD_WINDOW_RESIZED:" << cmd ;
-
-            case APP_CMD_WINDOW_REDRAW_NEEDED:
-                MY_LOG(INFO) << "APP_CMD_WINDOW_REDRAW_NEEDED:" << cmd ;
-                break;
-                */
             case APP_CMD_INIT_WINDOW:
                 // The window is being shown, get it ready.
                 MY_LOG(INFO) << "APP_CMD_INIT_WINDOW:" << cmd ;
@@ -99,12 +92,16 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 MY_LOG(INFO) << "event not handled:" << cmd ;
         }
     }
+    catch (std::runtime_error runtimeError) {
+        MY_LOG(ERROR) << "got system error:" << runtimeError.what() << "!#"  ;
+    }
+    /*
     catch (std::system_error systemError) {
         MY_LOG(ERROR) << "got system error:" << systemError.what() << "!#" << systemError.code() ;
     }
     catch (std::logic_error logicError) {
         MY_LOG(ERROR) << "got logic error:" << logicError.what() ;
-    }
+    }*/
 }
 
 int Android_handle_input(struct android_app *app, AInputEvent *event) {
@@ -121,11 +118,6 @@ int Android_handle_input(struct android_app *app, AInputEvent *event) {
             }
 
             case AINPUT_SOURCE_TOUCHSCREEN: {
-
-	            static auto camPos = glm::vec3(8, 3, 5);
-	            static auto camTo = glm::vec3(0, 0, 0);
-	            static auto camUp = glm::vec3(0, 1, 0);
-
                 int32_t action = AMotionEvent_getAction(event);
                 auto thisTapTime = AMotionEvent_getEventTime(event);
                 static float xOrg;

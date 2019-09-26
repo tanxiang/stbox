@@ -3,7 +3,7 @@
 //
 
 #include "Job.hh"
-#include "Window.hh"
+#include "Device.hh"
 namespace tt{
 
 	vk::UniqueFence Window::submitCmdBuffer(Device &device,
@@ -157,5 +157,10 @@ namespace tt{
 			);
 		}
 
+	}
+	vk::ResultValue<uint32_t> Window::acquireNextImage(Device &device, vk::Semaphore imageAcquiredSemaphore)
+	{
+		return device->acquireNextImageKHR(swapchain.get(), UINT64_MAX, imageAcquiredSemaphore,
+		                                   vk::Fence{});
 	}
 }
