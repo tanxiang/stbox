@@ -7,10 +7,10 @@
 
 #include "util.hh"
 #include "Device.hh"
-#include "Job.hh"
+#include "JobBase.hh"
 
 namespace tt {
-	struct Jobdraw : public Job{
+	struct JobDraw : public JobBase{
 
 		vk::UniquePipeline uniquePipeline;//todo vector
 
@@ -21,10 +21,10 @@ namespace tt {
 		glm::vec3 camTo = glm::vec3(0, 0, 0);
 		glm::vec3 camUp = glm::vec3(0, 1, 0);
 
-		std::function<void(Jobdraw &, RenderpassBeginHandle &,
+		std::function<void(JobDraw &, RenderpassBeginHandle &,
 		                   vk::Extent2D)> cmdbufferRenderpassBeginHandle;
-		std::function<void(Jobdraw &, CommandBufferBeginHandle &,
-		                   vk::Extent2D)> cmdbufferCommandBufferBeginHandle = [](Jobdraw &,
+		std::function<void(JobDraw &, CommandBufferBeginHandle &,
+		                   vk::Extent2D)> cmdbufferCommandBufferBeginHandle = [](JobDraw &,
 		                                                                         CommandBufferBeginHandle &,
 		                                                                         vk::Extent2D) {};
 
@@ -57,7 +57,7 @@ namespace tt {
 		vk::UniqueSampler sampler;
 
 
-		Jobdraw(Job&& j):Job{std::move(j)}{}
+		JobDraw(JobBase&& j):JobBase{std::move(j)}{}
 	};
 }
 

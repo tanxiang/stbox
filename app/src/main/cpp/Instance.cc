@@ -3,7 +3,7 @@
 //
 
 #include "Instance.hh"
-#include "Job.hh"
+#include "JobBase.hh"
 #include "Device.hh"
 
 

@@ -32,7 +32,7 @@ namespace tt {
 
 	class Window;
 
-	class Job;
+	class JobBase;
 
 	class Instance;
 

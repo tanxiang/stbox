@@ -49,7 +49,7 @@ namespace tt {
 			return physicalDevice;
 		}
 
-		Job createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
+		JobBase createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
 		               std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings);
 
 		auto transQueue() {

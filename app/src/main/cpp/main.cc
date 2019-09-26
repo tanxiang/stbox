@@ -18,7 +18,7 @@
 #include "util.hh"
 #include "Instance.hh"
 #include "main.hh"
-#include "Job.hh"
+#include "JobBase.hh"
 #include "Device.hh"
 #include "stboxvk.hh"
 #include "vertexdata.hh"

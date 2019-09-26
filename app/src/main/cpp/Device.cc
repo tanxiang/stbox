@@ -2,7 +2,7 @@
 // Created by ttand on 19-8-2.
 //
 
-#include "Job.hh"
+#include "JobBase.hh"
 #include "Device.hh"
 #include "Window.hh"
 
@@ -530,10 +530,10 @@ namespace tt{
 		return BAM;
 	}
 
-	Job Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
+	JobBase Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
 	                       std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings) {
 
-		return tt::Job{*this, gQueueFamilyIndex, std::move(descriptorPoolSizes),
+		return tt::JobBase{*this, gQueueFamilyIndex, std::move(descriptorPoolSizes),
 		               std::move(descriptorSetLayoutBindings)};
 	}
 }

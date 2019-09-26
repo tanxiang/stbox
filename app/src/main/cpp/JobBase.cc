@@ -2,11 +2,11 @@
 // Created by ttand on 19-8-2.
 //
 
-#include "Job.hh"
+#include "JobBase.hh"
 #include "Device.hh"
 namespace tt {
 
-	Job::Job(tt::Device
+	JobBase::JobBase(tt::Device
 	         &device,
 	         uint32_t queueIndex,
 	         std::vector<vk::DescriptorPoolSize>

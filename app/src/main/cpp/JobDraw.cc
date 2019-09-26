@@ -2,19 +2,20 @@
 // Created by ttand on 19-9-25.
 //
 
-#include "Jobdraw.hh"
+#include "JobDraw.hh"
 
 namespace tt{
 
+	static
 	std::vector<vk::UniqueCommandBuffer>
 	createCmdBuffers(vk::Device device,
 	                 vk::RenderPass renderPass,
-	                 tt::Jobdraw &job,
+	                 tt::JobDraw &job,
 	                 std::vector<vk::UniqueFramebuffer> &framebuffers, vk::Extent2D extent2D,
 	                 vk::CommandPool pool,
-	                 std::function<void(Jobdraw &, RenderpassBeginHandle &,
+	                 std::function<void(JobDraw &, RenderpassBeginHandle &,
 	                                    vk::Extent2D)> functionRenderpassBegin,
-	                 std::function<void(Jobdraw &,CommandBufferBeginHandle &,
+	                 std::function<void(JobDraw &,CommandBufferBeginHandle &,
 	                                    vk::Extent2D)> functionBegin) {
 		MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << framebuffers.size();
 		std::vector commandBuffers = device.allocateCommandBuffersUnique(
@@ -58,7 +59,7 @@ namespace tt{
 		return commandBuffers;
 	}
 
-	void Jobdraw::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
+	void JobDraw::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
 //		MY_LOG(INFO)<<"jobaddr:"<<(void const *)this<<std::endl;
 
 		cmdBuffers = createCmdBuffers(descriptorPoll.getOwner(), renderPass,
@@ -73,7 +74,7 @@ namespace tt{
 		//                                     cmdbufferCommandBufferBeginHandle);
 	}
 
-	void Jobdraw::setPerspective(tt::Window &swapchain) {
+	void JobDraw::setPerspective(tt::Window &swapchain) {
 		perspective = glm::perspective(
 				glm::radians(60.0f),
 				static_cast<float>(swapchain.getSwapchainExtent().width) /
@@ -82,7 +83,7 @@ namespace tt{
 		);
 	}
 
-	void Jobdraw::setPv(float dx, float dy) {
+	void JobDraw::setPv(float dx, float dy) {
 		camPos[0] -= dx * 0.1;
 		camPos[1] -= dy * 0.1;
 		bvmMemory(0).PodTypeOnMemory<glm::mat4>() = perspective * glm::lookAt(

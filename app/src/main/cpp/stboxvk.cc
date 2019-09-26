@@ -17,7 +17,7 @@
 
 #include "util.hh"
 #include "Instance.hh"
-#include "Job.hh"
+#include "JobBase.hh"
 #include "Device.hh"
 #include "Window.hh"
 #include "vertexdata.hh"
@@ -197,7 +197,7 @@ namespace tt {
 		device.get().updateDescriptorSets(writeDes, nullptr);
 //		MY_LOG(INFO)<<"jobaddr:"<<job<<std::endl;
 
-		job.cmdbufferRenderpassBeginHandle = [](Jobdraw& job,RenderpassBeginHandle &cmdHandleRenderpassBegin,
+		job.cmdbufferRenderpassBeginHandle = [](JobDraw& job,RenderpassBeginHandle &cmdHandleRenderpassBegin,
 		                                         vk::Extent2D win) {
 //			MY_LOG(INFO)<<"jobaddr:"<<&job<<std::endl;
 			std::array viewports{
