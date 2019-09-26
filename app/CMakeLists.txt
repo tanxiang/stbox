@@ -27,6 +27,7 @@ add_library( # Sets the name of the library.
         src/main/cpp/Device.cc
         src/main/cpp/Window.cc
         src/main/cpp/Job.cc
+        src/main/cpp/Jobdraw.cc
         src/main/cpp/Instance.cc
         src/main/cpp/stboxvk.cc
         #src/main/cpp/Blob.cc

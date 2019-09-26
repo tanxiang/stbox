@@ -8,12 +8,12 @@
 #include "util.hh"
 #include "onnx.hh"
 #include "main.hh"
-
+#include "Jobdraw.hh"
 //uint32_t draw_run(tt::Device &ttInstance,vk::SurfaceKHR &surfaceKHR);
 namespace tt {
 	class stboxvk {
         std::vector<tt::Device> devices;
-		std::vector<tt::Job> jobs;
+		std::vector<tt::Jobdraw> jobs;
 		std::vector<tt::Window> windows;
 
     public:

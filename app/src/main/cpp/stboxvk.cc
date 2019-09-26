@@ -197,7 +197,7 @@ namespace tt {
 		device.get().updateDescriptorSets(writeDes, nullptr);
 //		MY_LOG(INFO)<<"jobaddr:"<<job<<std::endl;
 
-		job.cmdbufferRenderpassBeginHandle = [](Job& job,RenderpassBeginHandle &cmdHandleRenderpassBegin,
+		job.cmdbufferRenderpassBeginHandle = [](Jobdraw& job,RenderpassBeginHandle &cmdHandleRenderpassBegin,
 		                                         vk::Extent2D win) {
 //			MY_LOG(INFO)<<"jobaddr:"<<&job<<std::endl;
 			std::array viewports{
