@@ -221,13 +221,12 @@ namespace tt {
 				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits {}
 		);
 
-		std::vector<vk::UniqueCommandBuffer>
-		createCmdBuffers(
-				tt::Window &swapchain, vk::CommandPool pool,
-				std::function<void(RenderpassBeginHandle &)> = [](RenderpassBeginHandle &) {},
-				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {}
-		);
-
+//		std::vector<vk::UniqueCommandBuffer>
+//		createCmdBuffers(
+//				tt::Window &swapchain, vk::CommandPool pool,
+//				std::function<void(RenderpassBeginHandle &)> = [](RenderpassBeginHandle &) {},
+//				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {}
+//		);
 
 		vk::UniqueFence submitCmdBuffer(vk::CommandBuffer &commandBuffer) {
 			auto fence = get().createFenceUnique(vk::FenceCreateInfo{});

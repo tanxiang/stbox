@@ -11,9 +11,7 @@
 
 namespace tt {
 	struct JobDraw : public JobBase{
-
 		vk::UniquePipeline uniquePipeline;//todo vector
-
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
 		glm::mat4 perspective;
 
@@ -56,6 +54,7 @@ namespace tt {
 		std::vector<ImageViewMemory> IVMs;
 		vk::UniqueSampler sampler;
 
+		static JobDraw create(android_app *app, tt::Device &device);
 
 		JobDraw(JobBase&& j):JobBase{std::move(j)}{}
 	};

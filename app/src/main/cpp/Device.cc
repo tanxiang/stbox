@@ -244,7 +244,7 @@ namespace tt{
 				subpassDeps.size(), subpassDeps.data()
 		});
 	}
-
+/*
 	std::vector<vk::UniqueCommandBuffer>
 	Device::createCmdBuffers(tt::Window &swapchain, vk::CommandPool pool,
 	                         std::function<void(RenderpassBeginHandle &)> functionRenderpassBegin,
@@ -289,7 +289,7 @@ namespace tt{
 		}
 		return commandBuffers;
 	}
-
+*/
 	std::vector<vk::UniqueCommandBuffer>
 	Device::createCmdBuffers(size_t cmdNum, vk::CommandPool pool,
 	                         std::function<void(CommandBufferBeginHandle &)> functionBegin,
