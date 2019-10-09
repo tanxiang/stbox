@@ -65,7 +65,7 @@ namespace tt {
 			//
 
 			drawJobs.emplace_back(JobDraw::create(app, device));
-			//fontJobs.emplace_back(JobFont::create(app, device));
+			fontJobs.emplace_back(JobFont::create(app, device));
 		}
 
 		auto &window = windows.emplace_back(std::move(surface), devices[0],

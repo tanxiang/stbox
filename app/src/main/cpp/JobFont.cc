@@ -24,12 +24,20 @@ namespace tt{
 				device.createJob(
 						{
 								vk::DescriptorPoolSize{
-										vk::DescriptorType::eCombinedImageSampler, 1
+										vk::DescriptorType::eStorageBuffer, 3
 								}
 						},
 						{
 								vk::DescriptorSetLayoutBinding{
-										0, vk::DescriptorType::eCombinedImageSampler,
+										0, vk::DescriptorType::eStorageBuffer,
+										1, vk::ShaderStageFlagBits::eVertex
+								},
+								vk::DescriptorSetLayoutBinding{
+										1, vk::DescriptorType::eStorageBuffer,
+										1, vk::ShaderStageFlagBits::eFragment
+								},
+								vk::DescriptorSetLayoutBinding{
+										2, vk::DescriptorType::eStorageBuffer,
 										1, vk::ShaderStageFlagBits::eFragment
 								}
 						}
@@ -219,7 +227,7 @@ namespace tt{
 				pipelineLayout.get(),
 				renderPass.get()
 		};
-
+		//return vk::UniquePipeline{};
 		return device->createGraphicsPipelineUnique(pipelineCache.get(),pipelineCreateInfo);
 	}
 
