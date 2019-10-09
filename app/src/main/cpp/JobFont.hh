@@ -12,13 +12,17 @@
 namespace tt {
 
 	struct JobFont : public JobBase{
+		vk::UniqueRenderPass createRenderpass(tt::Device&);
 		vk::UniqueRenderPass renderPass;
+		vk::UniquePipeline createPipeline(tt::Device&,android_app* app);
 		vk::UniquePipeline uniquePipeline;//todo vector
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
 		std::vector<BufferMemory> BVMs;
 		static JobFont create(android_app *app, tt::Device &device);
 
-		JobFont(JobBase&& j):JobBase{std::move(j)}{}
+		JobFont(JobBase&& j,Device& device,android_app* app):JobBase{std::move(j)},
+		renderPass{createRenderpass(device)},
+		uniquePipeline{createPipeline(device,app)}{}
 	};
 }
 

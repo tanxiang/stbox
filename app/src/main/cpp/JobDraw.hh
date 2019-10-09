@@ -11,6 +11,7 @@
 
 namespace tt {
 	struct JobDraw : public JobBase{
+		vk::UniquePipeline createPipeline(tt::Device&,android_app* app);
 		vk::UniquePipeline uniquePipeline;//todo vector
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
 		glm::mat4 perspective;

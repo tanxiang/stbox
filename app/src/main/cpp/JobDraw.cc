@@ -4,7 +4,7 @@
 
 #include "JobDraw.hh"
 #include "vertexdata.hh"
-
+#include "Device.hh"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <gli/gli.hpp>
@@ -122,26 +122,8 @@ namespace tt{
 			job.IVMs.emplace_back(device.createImageAndMemoryFromT2d(tex2d));
 		}
 
-		auto vertShaderModule = device.loadShaderFromAssets("shaders/mvp.vert.spv", app);
-		auto fargShaderModule = device.loadShaderFromAssets("shaders/copy.frag.spv", app);
 
-		job.uniquePipeline = device.createPipeline(
-				sizeof(decltype(vertices)::value_type),
-				std::vector{
-						vk::PipelineShaderStageCreateInfo{
-								vk::PipelineShaderStageCreateFlags(),
-								vk::ShaderStageFlagBits::eVertex,
-								vertShaderModule.get(), "main"
-						},
-						vk::PipelineShaderStageCreateInfo{
-								vk::PipelineShaderStageCreateFlags(),
-								vk::ShaderStageFlagBits::eFragment,
-								fargShaderModule.get(), "main"
-						}
-				},
-				job.pipelineCache.get(),
-				job.pipelineLayout.get()
-		);
+		job.uniquePipeline = job.createPipeline(device,app);
 
 		auto descriptorBufferInfo = device.getDescriptorBufferInfo(job.BVMs[0]);
 		auto descriptorImageInfo = device.getDescriptorImageInfo(job.IVMs[0], job.sampler.get());
@@ -203,6 +185,112 @@ namespace tt{
 		return job;
 	}
 
+	vk::UniquePipeline JobDraw::createPipeline(Device& device,android_app* app) {
+
+		auto vertShaderModule = device.loadShaderFromAssets("shaders/mvp.vert.spv", app);
+		auto fargShaderModule = device.loadShaderFromAssets("shaders/copy.frag.spv", app);
+		std::array shaderStageCreateInfos
+		{
+			vk::PipelineShaderStageCreateInfo{
+				vk::PipelineShaderStageCreateFlags(),
+				vk::ShaderStageFlagBits::eVertex,
+				vertShaderModule.get(),
+				"main"
+			},
+			vk::PipelineShaderStageCreateInfo{
+				vk::PipelineShaderStageCreateFlags(),
+				vk::ShaderStageFlagBits::eFragment,
+				fargShaderModule.get(),
+				"main"
+			}
+		};
+
+
+		std::array vertexInputBindingDescriptions{
+				vk::VertexInputBindingDescription{
+						0, sizeof(VertexUV),
+						vk::VertexInputRate::eVertex
+				}
+		};
+		std::array vertexInputAttributeDescriptions{
+				vk::VertexInputAttributeDescription{
+						0, 0, vk::Format::eR32G32B32A32Sfloat, 0
+				},
+				vk::VertexInputAttributeDescription{
+						1, 0, vk::Format::eR32G32Sfloat, 16
+				}//VK_FORMAT_R32G32_SFLOAT
+		};
+		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
+				vk::PipelineVertexInputStateCreateFlags(),
+				vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
+				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
+
+		};
+
+		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo{
+				vk::PipelineInputAssemblyStateCreateFlags(), vk::PrimitiveTopology::eTriangleList
+		};
+		//vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{};
+
+		vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo{
+				vk::PipelineViewportStateCreateFlags(),
+				1, nullptr, 1, nullptr
+		};
+		std::array dynamicStates{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+		vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{
+				vk::PipelineDynamicStateCreateFlags(), dynamicStates.size(), dynamicStates.data()};
+
+		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo{
+				vk::PipelineRasterizationStateCreateFlags(),
+				0, 0, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
+				vk::FrontFace::eClockwise, 0,
+				0, 0, 0, 1.0f
+		};
+		vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{
+				vk::PipelineDepthStencilStateCreateFlags(),
+				true, true,
+				vk::CompareOp::eLessOrEqual,
+				false, false,
+				vk::StencilOpState{
+						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
+						vk::StencilOp::eKeep, vk::CompareOp::eNever
+				},
+				vk::StencilOpState{
+						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
+						vk::StencilOp::eKeep, vk::CompareOp::eAlways
+				},
+				0, 0
+		};
+		vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{};
+		pipelineColorBlendAttachmentState.setColorWriteMask(
+				vk::ColorComponentFlagBits::eR |
+				vk::ColorComponentFlagBits::eG |
+				vk::ColorComponentFlagBits::eB |
+				vk::ColorComponentFlagBits::eA);
+		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo{
+				vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eClear, 1,
+				&pipelineColorBlendAttachmentState
+		};
+		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{
+				vk::PipelineMultisampleStateCreateFlags(), vk::SampleCountFlagBits::e1};
+
+		vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
+				vk::PipelineCreateFlags(),
+				shaderStageCreateInfos.size(), shaderStageCreateInfos.data(),
+				&pipelineVertexInputStateCreateInfo,
+				&pipelineInputAssemblyStateCreateInfo,
+				nullptr,
+				&pipelineViewportStateCreateInfo,
+				&pipelineRasterizationStateCreateInfo,
+				&pipelineMultisampleStateCreateInfo,
+				&pipelineDepthStencilStateCreateInfo,
+				&pipelineColorBlendStateCreateInfo,
+				&pipelineDynamicStateCreateInfo,
+				pipelineLayout.get(),
+				device.renderPass.get()
+		};
+		return device->createGraphicsPipelineUnique(pipelineCache.get(), pipelineCreateInfo);
+	}
 	void JobDraw::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
 //		MY_LOG(INFO)<<"jobaddr:"<<(void const *)this<<std::endl;
 

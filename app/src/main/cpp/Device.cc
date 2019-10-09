@@ -79,7 +79,7 @@ namespace tt{
 		}
 		return mapComputePipeline;
 	};
-*/
+
 
 	vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize,
 	                                          std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos,
@@ -171,7 +171,7 @@ namespace tt{
 		};
 		return get().createGraphicsPipelineUnique(pipelineCache, pipelineCreateInfo);
 	}
-
+*/
 	vk::UniqueRenderPass Device::createRenderpass(vk::Format surfaceDefaultFormat) {
 		//auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
 		renderPassFormat = surfaceDefaultFormat;
