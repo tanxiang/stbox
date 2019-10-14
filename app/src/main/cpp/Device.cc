@@ -429,6 +429,9 @@ namespace tt{
 
 			auto copyFence = submitCmdBuffer(copyCmd[0].get());
 			waitFence(copyFence.get());
+			for(auto&file:fileHanders){
+				std::get<std::vector<vk::DescriptorBufferInfo>>(BAM2).emplace_back(std::get<vk::UniqueBuffer>(BAM2).get(),std::get<1>(file),std::get<2>(file));
+			}
 			return BAM2;
 		}
 

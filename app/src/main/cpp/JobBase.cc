@@ -40,8 +40,8 @@ namespace tt {
 			},//todo multi descriptorSetLayout
 /* renderPass{device->createRenderPassUnique(renderPassCreateInfo)},*/
 			pipelineCache{
-					device->createPipelineCacheUnique(vk::PipelineCacheCreateInfo{}
-					)},
+					device->createPipelineCacheUnique(vk::PipelineCacheCreateInfo{})
+					},
 			pipelineLayout{
 					device->createPipelineLayoutUnique(
 							vk::PipelineLayoutCreateInfo{
@@ -54,9 +54,6 @@ namespace tt {
 			commandPool{
 					device->createCommandPoolUnique(vk::CommandPoolCreateInfo{
 							vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueIndex}
-					)} {
-//auto phycompressFmts = device.phyDevice().getFormatProperties(vk::Format::eAstc4x4UnormBlock);
-//MY_LOG(INFO)<<"vk::Format::eAstc4x4UnormBlock"<<vk::to_string(phycompressFmts.optimalTilingFeatures);
-	}
+					)} {}
 
 }

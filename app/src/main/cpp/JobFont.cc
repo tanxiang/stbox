@@ -32,11 +32,11 @@ namespace tt{
 										0, vk::DescriptorType::eStorageBuffer,
 										1, vk::ShaderStageFlagBits::eVertex
 								},
-								vk::DescriptorSetLayoutBinding{
+								{
 										1, vk::DescriptorType::eStorageBuffer,
 										1, vk::ShaderStageFlagBits::eFragment
 								},
-								vk::DescriptorSetLayoutBinding{
+								{
 										2, vk::DescriptorType::eStorageBuffer,
 										1, vk::ShaderStageFlagBits::eFragment
 								}
@@ -44,11 +44,27 @@ namespace tt{
 				),
 				device,app
 		};
-		job.BVMs.emplace_back(
+		auto& fontBVM = job.BVMs.emplace_back(
 				device.createBufferAndMemoryFromAssets(
 						app, {"glyhps/glyphy_3072.bin","glyhps/cell_21576.bin","glyhps/point_47440.bin"},
 						vk::BufferUsageFlagBits::eStorageBuffer,
 						vk::MemoryPropertyFlagBits::eDeviceLocal));
+
+		std::array descriptorWriteInfos{
+			vk::WriteDescriptorSet{
+				job.descriptorSets[0].get(),0,0,1,vk::DescriptorType::eStorageBuffer,
+				nullptr,&std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[0]
+			},
+			vk::WriteDescriptorSet{
+				job.descriptorSets[0].get(),1,0,1,vk::DescriptorType::eStorageBuffer,
+				nullptr,&std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[1]
+			},
+			vk::WriteDescriptorSet{
+				job.descriptorSets[0].get(),2,0,1,vk::DescriptorType::eStorageBuffer,
+				nullptr,&std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[2]
+			}
+		};
+		device.get().updateDescriptorSets(descriptorWriteInfos, nullptr);
 
 		return job;
 	}

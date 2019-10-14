@@ -14,6 +14,7 @@
 #include <vulkan.hpp>
 #include <thread>
 #include <queue>
+#include <optional>
 #include <condition_variable>
 #include <android_native_app_glue.h>
 #include <iostream>
@@ -107,7 +108,7 @@ namespace tt {
 
 	//using ImageViewSamplerMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueSampler, vk::UniqueDeviceMemory>;
 
-	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>;
+	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t ,std::vector<vk::DescriptorBufferInfo> >;
 
 	class BufferMemoryPtr : public std::unique_ptr<void, std::function<void(void *)> > {
 	public:
