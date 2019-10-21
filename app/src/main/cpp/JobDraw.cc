@@ -88,7 +88,7 @@ namespace tt{
 				)
 		};
 
-		job.BVMs.emplace_back(
+		job.BAMs.emplace_back(
 				device.createBufferAndMemory(
 						sizeof(glm::mat4),
 						vk::BufferUsageFlagBits::eUniformBuffer,
@@ -101,13 +101,13 @@ namespace tt{
 				{{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
 				{{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
 		};
-		job.BVMs.emplace_back(
+		job.BAMs.emplace_back(
 				device.createBufferAndMemoryFromVector(
 						vertices, vk::BufferUsageFlagBits::eVertexBuffer,
 						vk::MemoryPropertyFlagBits::eHostVisible |
 						vk::MemoryPropertyFlagBits::eHostCoherent));
 
-		job.BVMs.emplace_back(
+		job.BAMs.emplace_back(
 				device.createBufferAndMemoryFromVector(
 						std::vector<uint32_t>{0, 1, 2, 2, 3, 0},
 						vk::BufferUsageFlagBits::eIndexBuffer,
@@ -125,7 +125,7 @@ namespace tt{
 
 		job.uniquePipeline = job.createPipeline(device,app);
 
-		auto descriptorBufferInfo = device.getDescriptorBufferInfo(job.BVMs[0]);
+		auto descriptorBufferInfo = device.getDescriptorBufferInfo(job.BAMs[0]);
 		auto descriptorImageInfo = device.getDescriptorImageInfo(job.IVMs[0], job.sampler.get());
 
 		std::array writeDes{
@@ -173,11 +173,11 @@ namespace tt{
 			vk::DeviceSize offsets[1] = {0};
 			cmdHandleRenderpassBegin.bindVertexBuffers(
 					0, 1,
-					&std::get<vk::UniqueBuffer>(job.BVMs[1]).get(),
+					&std::get<vk::UniqueBuffer>(job.BAMs[1]).get(),
 					offsets
 			);
 			cmdHandleRenderpassBegin.bindIndexBuffer(
-					std::get<vk::UniqueBuffer>(job.BVMs[2]).get(),
+					std::get<vk::UniqueBuffer>(job.BAMs[2]).get(),
 					0, vk::IndexType::eUint32
 			);
 			cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);

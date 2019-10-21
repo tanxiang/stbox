@@ -17,7 +17,15 @@ namespace tt {
 		vk::UniquePipeline createPipeline(tt::Device&,android_app* app);
 		vk::UniquePipeline uniquePipeline;//todo vector
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
-		std::vector<BufferMemory> BVMs;
+		std::vector<BufferMemory> BAMs;
+
+		void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D);
+
+		void CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D);
+
+
+		void buildCmdBuffer(tt::Window &swapchain);
+
 		static JobFont create(android_app *app, tt::Device &device);
 
 		JobFont(JobBase&& j,Device& device,android_app* app):JobBase{std::move(j)},

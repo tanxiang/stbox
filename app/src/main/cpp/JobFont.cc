@@ -19,6 +19,7 @@ namespace tt{
 		float sharpness;
 	} ;
 
+
 	JobFont JobFont::create(android_app *app, tt::Device &device) {
 		JobFont job{
 				device.createJob(
@@ -44,7 +45,7 @@ namespace tt{
 				),
 				device,app
 		};
-		auto& fontBVM = job.BVMs.emplace_back(
+		auto& fontBVM = job.BAMs.emplace_back(
 				device.createBufferAndMemoryFromAssets(
 						app, {"glyhps/glyphy_3072.bin","glyhps/cell_21576.bin","glyhps/point_47440.bin"},
 						vk::BufferUsageFlagBits::eStorageBuffer,
@@ -65,6 +66,19 @@ namespace tt{
 			}
 		};
 		device.get().updateDescriptorSets(descriptorWriteInfos, nullptr);
+		auto& inputBM = job.BAMs.emplace_back(
+				device.createBufferAndMemory(
+						sizeof(fd_GlyphInstance)*128, vk::BufferUsageFlagBits::eVertexBuffer,
+						vk::MemoryPropertyFlagBits::eHostVisible |
+						vk::MemoryPropertyFlagBits::eHostCoherent
+				)
+		);
+		auto& devcharBM = job.BAMs.emplace_back(
+				device.createBufferAndMemory(
+						sizeof(fd_GlyphInstance)*128, vk::BufferUsageFlagBits::eVertexBuffer,
+						vk::MemoryPropertyFlagBits::eDeviceLocal
+				)
+		);
 
 		return job;
 	}
@@ -247,4 +261,42 @@ namespace tt{
 		return device->createGraphicsPipelineUnique(pipelineCache.get(),pipelineCreateInfo);
 	}
 
+
+	void JobFont::buildCmdBuffer(tt::Window &swapchain){
+		helper::createCmdBuffers(ownerDevice(),renderPass.get(),*this,swapchain.getFrameBuffer(),swapchain.getSwapchainExtent(),commandPool.get());
+	}
+
+	void JobFont::CmdBufferRenderpassBegin(RenderpassBeginHandle &handle, vk::Extent2D win) {
+		std::array viewports{
+				vk::Viewport{
+						0, 0,
+						win.width,
+						win.height,
+						0.0f, 1.0f
+				}
+		};
+		std::array offsets { vk::DeviceSize{0} };
+		handle.setViewport(0,viewports);
+
+		std::array scissors{
+				vk::Rect2D{vk::Offset2D{}, win}
+		};
+		handle.setScissor(0, scissors);
+		handle.bindPipeline(vk::PipelineBindPoint::eGraphics,uniquePipeline.get());
+		std::array tmpDescriptorSets{descriptorSets[0].get()};
+		handle.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,pipelineLayout.get(),0,tmpDescriptorSets,std::vector<uint32_t>{});
+		handle.bindVertexBuffers(1,std::get<vk::UniqueBuffer>(BAMs[2]).get(),offsets);
+		handle.draw(4,10,0,0);
+	}
+
+	void JobFont::CmdBufferBegin(CommandBufferBeginHandle & handle, vk::Extent2D) {
+		handle.pipelineBarrier(vk::PipelineStageFlagBits::eVertexInput,
+				vk::PipelineStageFlagBits::eTransfer,
+				vk::DependencyFlagBits::eByRegion,
+				{},
+				std::vector<vk::BufferMemoryBarrier>{},
+				{});
+		handle.copyBuffer(std::get<vk::UniqueBuffer>(BAMs[1]).get(),std::get<vk::UniqueBuffer>(BAMs[2]).get(),{vk::BufferCopy{0,0,128}});
+
+	}
 }

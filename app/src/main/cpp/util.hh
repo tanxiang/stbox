@@ -94,10 +94,8 @@ namespace tt {
 			end();
 		}
 
-		CommandBufferBeginHandle(
-				const CommandBufferBeginHandle &) = delete; // non construction-copyable
-		CommandBufferBeginHandle &
-		operator=(const CommandBufferBeginHandle &) = delete; // non copyable
+		CommandBufferBeginHandle(const CommandBufferBeginHandle &) = delete; // non construction-copyable
+		CommandBufferBeginHandle &operator=(const CommandBufferBeginHandle &) = delete; // non copyable
 	};
 
 	uint32_t findMemoryTypeIndex(vk::PhysicalDevice physicalDevice, uint32_t memoryTypeBits,
@@ -132,6 +130,55 @@ namespace tt {
 								std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get());
 					}
 			};
+		}
+
+		template <typename JobType>
+		auto createCmdBuffers(vk::Device device,
+		                 vk::RenderPass renderPass,
+		                 JobType &job,
+		                 std::vector<vk::UniqueFramebuffer> &framebuffers,
+		                 vk::Extent2D extent2D,
+		                 vk::CommandPool pool){
+			MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << framebuffers.size();
+			std::vector commandBuffers = device.allocateCommandBuffersUnique(
+					vk::CommandBufferAllocateInfo{
+							pool,
+							vk::CommandBufferLevel::ePrimary,
+							framebuffers.size()
+					}
+			);
+
+			std::array clearValues{
+					vk::ClearValue{vk::ClearColorValue{std::array<float, 4>{0.1f, 0.2f, 0.2f, 0.2f}}},
+					vk::ClearValue{vk::ClearDepthStencilValue{1.0f, 0}},
+			};
+
+			uint32_t frameIndex = 0;
+			for (auto &cmdBuffer : commandBuffers) {
+				//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+				{
+					CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
+					job.CmdBufferBegin(cmdBeginHandle, extent2D);
+					{
+						RenderpassBeginHandle cmdHandleRenderpassBegin{
+								cmdBeginHandle,
+								vk::RenderPassBeginInfo{
+										renderPass,
+										framebuffers[frameIndex].get(),
+										vk::Rect2D{
+												vk::Offset2D{},
+												extent2D
+										},
+										clearValues.size(), clearValues.data()
+								}
+						};
+						job.CmdBufferRenderpassBegin(cmdHandleRenderpassBegin, extent2D);
+					}
+
+				}
+				++frameIndex;
+			}
+			return commandBuffers;
 		}
 	}
 }
