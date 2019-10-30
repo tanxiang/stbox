@@ -45,53 +45,6 @@ namespace tt{
 				),
 				device,app
 		};
-		auto& fontBVM = job.BAMs.emplace_back(
-				device.createBufferAndMemoryFromAssets(
-						app, {"glyhps/glyphy_3072.bin","glyhps/cell_21576.bin","glyhps/point_47440.bin"},
-						vk::BufferUsageFlagBits::eStorageBuffer,
-						vk::MemoryPropertyFlagBits::eDeviceLocal));
-
-		std::array descriptorWriteInfos{
-			vk::WriteDescriptorSet{
-				job.descriptorSets[0].get(),0,0,1,vk::DescriptorType::eStorageBuffer,
-				nullptr,&std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[0]
-			},
-			vk::WriteDescriptorSet{
-				job.descriptorSets[0].get(),1,0,1,vk::DescriptorType::eStorageBuffer,
-				nullptr,&std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[1]
-			},
-			vk::WriteDescriptorSet{
-				job.descriptorSets[0].get(),2,0,1,vk::DescriptorType::eStorageBuffer,
-				nullptr,&std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[2]
-			}
-		};
-		device->updateDescriptorSets(descriptorWriteInfos, nullptr);
-		{
-			auto &inputBM = job.BAMs.emplace_back(
-					device.createBufferAndMemory(
-							sizeof(fd_GlyphInstance) * 128, vk::BufferUsageFlagBits::eVertexBuffer,
-							vk::MemoryPropertyFlagBits::eHostVisible |
-							vk::MemoryPropertyFlagBits::eHostCoherent
-					)
-			);
-
-			auto inputPtr = helper::mapTypeMemoryAndSize<fd_GlyphInstance>(job.ownerDevice(), inputBM);
-
-			std::string c {"GLLLDE45"};
-			for(int i=0;i<c.size();i++){
-				inputPtr[i].glyph_index = c[i]-32;
-				inputPtr[i].rect = {-0.942422,-0.759358,-0.869379,-0.912940};
-				inputPtr[i].sharpness=0.8;
-			}
-
-		}
-		auto& devcharBM = job.BAMs.emplace_back(
-				device.createBufferAndMemory(
-						sizeof(fd_GlyphInstance)*128, vk::BufferUsageFlagBits::eVertexBuffer,
-						vk::MemoryPropertyFlagBits::eDeviceLocal
-				)
-		);
-
 		return job;
 	}
 
@@ -346,5 +299,56 @@ namespace tt{
 				{}
 		);
 
+	}
+
+	JobFont::JobFont(JobBase &&j, Device &device, android_app *app) :JobBase{std::move(j)},
+	                                                                 renderPass{createRenderpass(device)},
+	                                                                 uniquePipeline{createPipeline(device,app)}{
+		auto& fontBVM = BAMs.emplace_back(
+				device.createBufferAndMemoryFromAssets(
+						app, {"glyhps/glyphy_3072.bin","glyhps/cell_21576.bin","glyhps/point_47440.bin"},
+						vk::BufferUsageFlagBits::eStorageBuffer,
+						vk::MemoryPropertyFlagBits::eDeviceLocal));
+
+		std::array descriptorWriteInfos{
+				vk::WriteDescriptorSet{
+						descriptorSets[0].get(),0,0,1,vk::DescriptorType::eStorageBuffer,
+						nullptr,&std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[0]
+				},
+				vk::WriteDescriptorSet{
+						descriptorSets[0].get(),1,0,1,vk::DescriptorType::eStorageBuffer,
+						nullptr,&std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[1]
+				},
+				vk::WriteDescriptorSet{
+						descriptorSets[0].get(),2,0,1,vk::DescriptorType::eStorageBuffer,
+						nullptr,&std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[2]
+				}
+		};
+		device->updateDescriptorSets(descriptorWriteInfos, nullptr);
+		{
+			auto &inputBM = BAMs.emplace_back(
+					device.createBufferAndMemory(
+							sizeof(fd_GlyphInstance) * 128, vk::BufferUsageFlagBits::eVertexBuffer,
+							vk::MemoryPropertyFlagBits::eHostVisible |
+							vk::MemoryPropertyFlagBits::eHostCoherent
+					)
+			);
+
+			auto inputPtr = helper::mapTypeMemoryAndSize<fd_GlyphInstance>(ownerDevice(), inputBM);
+
+			std::string c {"GLLLDE45"};
+			for(int i=0;i<c.size();i++){
+				inputPtr[i].glyph_index = c[i]-32;
+				inputPtr[i].rect = {-0.942422,-0.759358,-0.869379,-0.912940};
+				inputPtr[i].sharpness=0.8;
+			}
+
+		}
+		auto& devcharBM = BAMs.emplace_back(
+				device.createBufferAndMemory(
+						sizeof(fd_GlyphInstance)*128, vk::BufferUsageFlagBits::eVertexBuffer,
+						vk::MemoryPropertyFlagBits::eDeviceLocal
+				)
+		);
 	}
 }

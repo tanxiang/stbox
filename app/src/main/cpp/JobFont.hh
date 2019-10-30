@@ -35,9 +35,7 @@ namespace tt {
 
 		static JobFont create(android_app *app, tt::Device &device);
 
-		JobFont(JobBase&& j,Device& device,android_app* app):JobBase{std::move(j)},
-		renderPass{createRenderpass(device)},
-		uniquePipeline{createPipeline(device,app)}{}
+		JobFont(JobBase&& j,Device& device,android_app* app);
 	};
 }
 
