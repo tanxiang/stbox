@@ -169,15 +169,14 @@ namespace tt{
 	void JobDraw::setPv(float dx, float dy) {
 		camPos[0] -= dx * 0.1;
 		camPos[1] -= dy * 0.1;
-		bvmMemory(0).PodTypeOnMemory<glm::mat4>() = perspective * glm::lookAt(
+		helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(),BAMs[0])[0] = perspective * glm::lookAt(
 				camPos,  // Camera is at (-5,3,-10), in World Space
 				camTo,     // and looks at the origin
 				camUp     // Head is up (set to 0,-1,0 to look upside-down)
 		);
 	}
 
-	void JobDraw::CmdBufferRenderpassBegin(RenderpassBeginHandle &cmdHandleRenderpassBegin,
-			vk::Extent2D win) {
+	void JobDraw::CmdBufferRenderpassBegin(RenderpassBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win) {
 		std::array viewports{
 			vk::Viewport{
 					0, 0,
@@ -265,8 +264,5 @@ JobDraw::JobDraw(JobBase &&j,android_app *app,tt::Device &device) :JobBase{std::
 				}
 		};
 		device->updateDescriptorSets(writeDes, nullptr);
-//		MY_LOG(INFO)<<"jobaddr:"<<job<<std::endl;
-
-
 	}
 };

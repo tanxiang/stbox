@@ -52,9 +52,9 @@ namespace tt {
 			memcpy(pMemory.get(), data, writeSize);
 		}
 
-		auto bvmMemory(uint32_t index, size_t offset = 0) {
-			return helper::mapMemoryAndSize(descriptorPoll.getOwner(), BAMs[index], offset);
-		}
+		//auto bvmMemory(uint32_t index, size_t offset = 0) {
+		//	return helper::mapMemoryAndSize(descriptorPoll.getOwner(), BAMs[index], offset);
+		//}
 
 		std::vector<ImageViewMemory> IVMs;
 		vk::UniqueSampler sampler;
