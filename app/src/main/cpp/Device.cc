@@ -400,30 +400,31 @@ namespace tt{
 	                                                     vk::BufferUsageFlags bufferUsageFlags,
 	                                                     vk::MemoryPropertyFlags memoryPropertyFlags) {
 		auto alignment = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
-		off_t bufferLength = 0;
+		off_t offset = 0;
 		std::vector <std::tuple<AAssetHander,off_t ,off_t >> fileHanders;
 		for(auto&name:names){
 			auto file = AAssetManagerFileOpen(androidAppCtx->activity->assetManager,name);
 			if(!file)
 				throw std::runtime_error{"asset not found"};
 			auto length =  AAsset_getLength(file.get());
-			fileHanders.emplace_back(std::move(file),bufferLength,length);
+			fileHanders.emplace_back(std::move(file),offset,length);
 			length += (alignment - 1) - ((length - 1) % alignment) ;
-			bufferLength += length;
+			offset += length;
 		}
 		if(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
-			auto BAM = createBufferAndMemory(bufferLength,vk::BufferUsageFlagBits::eTransferSrc,vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
+			auto BAM = createBufferAndMemory(offset,vk::BufferUsageFlagBits::eTransferSrc,vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
 			auto bufferPtr = mapMemoryAndSize(BAM);
 			for(auto&file:fileHanders){
 				AAsset_read(std::get<0>(file).get(),(char*)bufferPtr.get()+std::get<1>(file),std::get<2>(file));
+				MY_LOG(INFO) << "off "<< std::get<1>(file) <<" size "<< std::get<2>(file) <<" Align" << alignment;
 			}
-			auto BAM2 = createBufferAndMemory(bufferLength,bufferUsageFlags,memoryPropertyFlags);
+			auto BAM2 = createBufferAndMemory(offset,bufferUsageFlags,memoryPropertyFlags);
 			auto copyCmd = createCmdBuffers(
 					1, gPoolUnique.get(),
 					[&](CommandBufferBeginHandle &commandBufferBeginHandle){
 						commandBufferBeginHandle.copyBuffer(std::get<vk::UniqueBuffer>(BAM).get(),
 								std::get<vk::UniqueBuffer>(BAM2).get(),
-								{vk::BufferCopy{0,0,bufferLength}});
+								{vk::BufferCopy{0,0,offset}});
 					},
 					vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 
@@ -435,10 +436,11 @@ namespace tt{
 			return BAM2;
 		}
 
-		auto BAM = createBufferAndMemory(bufferLength,bufferUsageFlags,memoryPropertyFlags);
+		auto BAM = createBufferAndMemory(offset,bufferUsageFlags,memoryPropertyFlags);
 		auto bufferPtr = mapMemoryAndSize(BAM);
 		for(auto&file:fileHanders){
 			AAsset_read(std::get<0>(file).get(),(char*)bufferPtr.get()+std::get<1>(file),std::get<2>(file));
+			std::get<std::vector<vk::DescriptorBufferInfo>>(BAM).emplace_back(std::get<vk::UniqueBuffer>(BAM).get(),std::get<1>(file),std::get<2>(file));
 		}
 		return BAM;
 	}

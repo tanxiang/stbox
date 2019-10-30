@@ -117,6 +117,13 @@ namespace tt {
 		}
 
 	};
+
+	template<typename PodType>
+	struct BufferTypePtr : public std::unique_ptr<PodType[], std::function<void(PodType*)> > {
+		using std::unique_ptr<PodType[], std::function<void(PodType *)> >::unique_ptr;
+
+	};
+
 	namespace helper {
 		template<typename Tuple>
 		auto mapMemoryAndSize(vk::Device device, Tuple &tupleMemoryAndSize, size_t offset = 0) {
@@ -126,6 +133,21 @@ namespace tt {
 					                 std::get<size_t>(tupleMemoryAndSize),
 					                 vk::MemoryMapFlagBits()),
 					[device, &tupleMemoryAndSize](void *pVoid) {
+						device.unmapMemory(
+								std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get());
+					}
+			};
+		}
+
+		template<typename PodType,typename Tuple>
+		auto mapTypeMemoryAndSize(vk::Device device, Tuple &tupleMemoryAndSize, size_t offset = 0) {
+			return BufferTypePtr<PodType>{
+					static_cast<PodType*>(device.mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
+					                 offset,
+					                 std::get<size_t>(tupleMemoryAndSize),
+					                 vk::MemoryMapFlagBits())),
+					[device, &tupleMemoryAndSize](PodType *pVoid) {
+						//FIXME call ~PodType in array
 						device.unmapMemory(
 								std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get());
 					}
@@ -148,11 +170,6 @@ namespace tt {
 					}
 			);
 
-			std::array clearValues{
-					vk::ClearValue{vk::ClearColorValue{std::array<float, 4>{0.1f, 0.2f, 0.2f, 0.2f}}},
-					vk::ClearValue{vk::ClearDepthStencilValue{1.0f, 0}},
-			};
-
 			uint32_t frameIndex = 0;
 			for (auto &cmdBuffer : commandBuffers) {
 				//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
@@ -169,7 +186,7 @@ namespace tt {
 												vk::Offset2D{},
 												extent2D
 										},
-										clearValues.size(), clearValues.data()
+										job.clearValues.size(), job.clearValues.data()
 								}
 						};
 						job.CmdBufferRenderpassBegin(cmdHandleRenderpassBegin, extent2D);

@@ -20,12 +20,16 @@ namespace tt {
 		glm::vec3 camTo = glm::vec3(0, 0, 0);
 		glm::vec3 camUp = glm::vec3(0, 1, 0);
 
-		std::function<void(JobDraw &, RenderpassBeginHandle &,
-		                   vk::Extent2D)> cmdbufferRenderpassBeginHandle;
-		std::function<void(JobDraw &, CommandBufferBeginHandle &,
-		                   vk::Extent2D)> cmdbufferCommandBufferBeginHandle = [](JobDraw &,
-		                                                                         CommandBufferBeginHandle &,
-		                                                                         vk::Extent2D) {};
+		std::array<vk::ClearValue,2> clearValues{
+				vk::ClearColorValue{std::array<float, 4>{0.1f, 0.2f, 0.2f, 0.2f}},
+				vk::ClearDepthStencilValue{1.0f, 0},
+		};
+
+		void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D);
+		std::function<void(CommandBufferBeginHandle &,
+		                   vk::Extent2D)> CmdBufferBegin = [](
+		                   		CommandBufferBeginHandle &,
+		                   		vk::Extent2D) {};
 
 		auto clearCmdBuffer() {
 			return cmdBuffers.clear();
@@ -57,7 +61,7 @@ namespace tt {
 
 		static JobDraw create(android_app *app, tt::Device &device);
 
-		JobDraw(JobBase&& j):JobBase{std::move(j)}{}
+		JobDraw(JobBase&& j,android_app *app,tt::Device &device);
 	};
 }
 

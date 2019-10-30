@@ -65,14 +65,26 @@ namespace tt{
 				nullptr,&std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[2]
 			}
 		};
-		device.get().updateDescriptorSets(descriptorWriteInfos, nullptr);
-		auto& inputBM = job.BAMs.emplace_back(
-				device.createBufferAndMemory(
-						sizeof(fd_GlyphInstance)*128, vk::BufferUsageFlagBits::eVertexBuffer,
-						vk::MemoryPropertyFlagBits::eHostVisible |
-						vk::MemoryPropertyFlagBits::eHostCoherent
-				)
-		);
+		device->updateDescriptorSets(descriptorWriteInfos, nullptr);
+		{
+			auto &inputBM = job.BAMs.emplace_back(
+					device.createBufferAndMemory(
+							sizeof(fd_GlyphInstance) * 128, vk::BufferUsageFlagBits::eVertexBuffer,
+							vk::MemoryPropertyFlagBits::eHostVisible |
+							vk::MemoryPropertyFlagBits::eHostCoherent
+					)
+			);
+
+			auto inputPtr = helper::mapTypeMemoryAndSize<fd_GlyphInstance>(job.ownerDevice(), inputBM);
+
+			std::string c {"GLLLDE45"};
+			for(int i=0;i<c.size();i++){
+				inputPtr[i].glyph_index = c[i]-32;
+				inputPtr[i].rect = {-0.942422,-0.759358,-0.869379,-0.912940};
+				inputPtr[i].sharpness=0.8;
+			}
+
+		}
 		auto& devcharBM = job.BAMs.emplace_back(
 				device.createBufferAndMemory(
 						sizeof(fd_GlyphInstance)*128, vk::BufferUsageFlagBits::eVertexBuffer,
@@ -263,7 +275,11 @@ namespace tt{
 
 
 	void JobFont::buildCmdBuffer(tt::Window &swapchain){
-		helper::createCmdBuffers(ownerDevice(),renderPass.get(),*this,swapchain.getFrameBuffer(),swapchain.getSwapchainExtent(),commandPool.get());
+		cmdBuffers = helper::createCmdBuffers(ownerDevice(),renderPass.get(),*this,swapchain.getFrameBuffer(),swapchain.getSwapchainExtent(),commandPool.get());
+	}
+
+	void JobFont::buildCmdBuffer(tt::Window &swapchain,vk::RenderPass cmdrenderPass){
+		cmdBuffers = helper::createCmdBuffers(ownerDevice(),cmdrenderPass,*this,swapchain.getFrameBuffer(),swapchain.getSwapchainExtent(),commandPool.get());
 	}
 
 	void JobFont::CmdBufferRenderpassBegin(RenderpassBeginHandle &handle, vk::Extent2D win) {
@@ -284,19 +300,51 @@ namespace tt{
 		handle.setScissor(0, scissors);
 		handle.bindPipeline(vk::PipelineBindPoint::eGraphics,uniquePipeline.get());
 		std::array tmpDescriptorSets{descriptorSets[0].get()};
-		handle.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,pipelineLayout.get(),0,tmpDescriptorSets,std::vector<uint32_t>{});
-		handle.bindVertexBuffers(1,std::get<vk::UniqueBuffer>(BAMs[2]).get(),offsets);
-		handle.draw(4,10,0,0);
+		handle.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,pipelineLayout.get(),0,tmpDescriptorSets,{});
+		handle.bindVertexBuffers(1,std::get<vk::UniqueBuffer>(BAMs[1]).get(),offsets);
+		handle.draw(4,1,0,0);
 	}
 
 	void JobFont::CmdBufferBegin(CommandBufferBeginHandle & handle, vk::Extent2D) {
-		handle.pipelineBarrier(vk::PipelineStageFlagBits::eVertexInput,
+		handle.pipelineBarrier(
+				vk::PipelineStageFlagBits::eVertexInput,
 				vk::PipelineStageFlagBits::eTransfer,
 				vk::DependencyFlagBits::eByRegion,
 				{},
-				std::vector<vk::BufferMemoryBarrier>{},
-				{});
-		handle.copyBuffer(std::get<vk::UniqueBuffer>(BAMs[1]).get(),std::get<vk::UniqueBuffer>(BAMs[2]).get(),{vk::BufferCopy{0,0,128}});
+				std::array{
+						vk::BufferMemoryBarrier{
+								vk::AccessFlagBits::eVertexAttributeRead,
+								vk::AccessFlagBits::eTransferWrite,
+								0,0,//FIXME QueueFamilyIndex undefine
+								std::get<vk::UniqueBuffer>(BAMs[2]).get(),
+								0,128*sizeof(fd_GlyphInstance)
+						}
+				},
+				{}
+		);
+
+		//handle.copyBuffer(
+		//		std::get<vk::UniqueBuffer>(BAMs[1]).get(),
+		//		std::get<vk::UniqueBuffer>(BAMs[2]).get(),
+		//		{vk::BufferCopy{0,0,128*sizeof(fd_GlyphInstance)}}
+		//);
+
+		handle.pipelineBarrier(
+				vk::PipelineStageFlagBits::eTransfer,
+				vk::PipelineStageFlagBits::eVertexInput,
+				vk::DependencyFlagBits::eByRegion,
+				{},
+				std::array{
+						vk::BufferMemoryBarrier{
+								vk::AccessFlagBits::eTransferWrite,
+								vk::AccessFlagBits::eVertexAttributeRead,
+								0,0,//FIXME QueueFamilyIndex undefine
+								std::get<vk::UniqueBuffer>(BAMs[2]).get(),
+								0,128*sizeof(fd_GlyphInstance)
+						}
+				},
+				{}
+		);
 
 	}
 }

@@ -66,10 +66,10 @@ namespace tt{
 		};
 		auto instanceExts = vk::enumerateInstanceExtensionProperties();
 		for (auto &Ext: instanceExts) {
-			MY_LOG(INFO) << "instanceExt" << Ext.extensionName;
+			MY_LOG(INFO) << "instanceExt:" << Ext.extensionName;
 			if (!std::strcmp(Ext.extensionName, VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
-				MY_LOG(INFO) << "push " << Ext.extensionName;
-				instanceEtensionNames.emplace_back(Ext.extensionName);
+				//MY_LOG(INFO) << "push " << Ext.extensionName;
+				//instanceEtensionNames.emplace_back(Ext.extensionName);
 			}
 		}
 
@@ -112,8 +112,8 @@ namespace tt{
 		std::vector<vk::DeviceQueueCreateInfo> deviceQueueCreateInfos;
 		auto queueFamilyProperties = phyDevice.getQueueFamilyProperties();
 		for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {//fixme queue count priorities
-			MY_LOG(ERROR) << "QueueFamilyProperties : " << i << "\tflags:"
-			              << vk::to_string(queueFamilyProperties[i].queueFlags);
+			//MY_LOG(INFO) << "QueueFamilyProperties : " << i << "\tflags:"
+			//              << vk::to_string(queueFamilyProperties[i].queueFlags);
 			if (phyDevice.getSurfaceSupportKHR(i, surface) &&
 			    (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics)) {
 				MY_LOG(ERROR) << "fixme default_queue_index :" << i

@@ -11,61 +11,8 @@
 
 namespace tt{
 
-	static
-	std::vector<vk::UniqueCommandBuffer>
-	createCmdBuffers(vk::Device device,
-	                 vk::RenderPass renderPass,
-	                 tt::JobDraw &job,
-	                 std::vector<vk::UniqueFramebuffer> &framebuffers, vk::Extent2D extent2D,
-	                 vk::CommandPool pool,
-	                 std::function<void(JobDraw &, RenderpassBeginHandle &,
-	                                    vk::Extent2D)> functionRenderpassBegin,
-	                 std::function<void(JobDraw &,CommandBufferBeginHandle &,
-	                                    vk::Extent2D)> functionBegin) {
-		MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << framebuffers.size();
-		std::vector commandBuffers = device.allocateCommandBuffersUnique(
-				vk::CommandBufferAllocateInfo{
-						pool,
-						vk::CommandBufferLevel::ePrimary,
-						framebuffers.size()
-				}
-		);
-
-		std::array clearValues{
-				vk::ClearValue{
-						vk::ClearColorValue{std::array<float, 4>{0.1f, 0.2f, 0.2f, 0.2f}}},
-				vk::ClearValue{vk::ClearDepthStencilValue{1.0f, 0}},
-		};
-		uint32_t frameIndex = 0;
-		for (auto &cmdBuffer : commandBuffers) {
-			//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
-			{
-				CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
-				functionBegin(job,cmdBeginHandle, extent2D);
-				{
-					RenderpassBeginHandle cmdHandleRenderpassBegin{
-							cmdBeginHandle,
-							vk::RenderPassBeginInfo{
-									renderPass,
-									framebuffers[frameIndex].get(),
-									vk::Rect2D{
-											vk::Offset2D{},
-											extent2D
-									},
-									clearValues.size(), clearValues.data()
-							}
-					};
-					functionRenderpassBegin(job,cmdHandleRenderpassBegin, extent2D);
-				}
-
-			}
-			++frameIndex;
-		}
-		return commandBuffers;
-	}
-
 	JobDraw JobDraw::create(android_app *app, tt::Device &device) {
-		JobDraw job{
+		return JobDraw {
 				device.createJob(
 						{
 								vk::DescriptorPoolSize{
@@ -85,104 +32,10 @@ namespace tt{
 										1, vk::ShaderStageFlagBits::eFragment
 								}
 						}
-				)
+				),
+				app,
+				device
 		};
-
-		job.BAMs.emplace_back(
-				device.createBufferAndMemory(
-						sizeof(glm::mat4),
-						vk::BufferUsageFlagBits::eUniformBuffer,
-						vk::MemoryPropertyFlagBits::eHostVisible |
-						vk::MemoryPropertyFlagBits::eHostCoherent));
-
-		std::vector<VertexUV> vertices{
-				{{1.0f,  1.0f,  0.0f, 1.0f}, {1.0f, 1.0f}},
-				{{-1.0f, 1.0f,  0.0f, 1.0f}, {0.0f, 1.0f}},
-				{{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-				{{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
-		};
-		job.BAMs.emplace_back(
-				device.createBufferAndMemoryFromVector(
-						vertices, vk::BufferUsageFlagBits::eVertexBuffer,
-						vk::MemoryPropertyFlagBits::eHostVisible |
-						vk::MemoryPropertyFlagBits::eHostCoherent));
-
-		job.BAMs.emplace_back(
-				device.createBufferAndMemoryFromVector(
-						std::vector<uint32_t>{0, 1, 2, 2, 3, 0},
-						vk::BufferUsageFlagBits::eIndexBuffer,
-						vk::MemoryPropertyFlagBits::eHostVisible |
-						vk::MemoryPropertyFlagBits::eHostCoherent));
-
-		{
-			auto fileContent = loadDataFromAssets("textures/ic_launcher-web.ktx", app);
-			//gli::texture2d tex2d;
-			auto tex2d = gli::texture2d{gli::load_ktx(fileContent.data(), fileContent.size())};
-			job.sampler = device.createSampler(tex2d.levels());
-			job.IVMs.emplace_back(device.createImageAndMemoryFromT2d(tex2d));
-		}
-
-
-		job.uniquePipeline = job.createPipeline(device,app);
-
-		auto descriptorBufferInfo = device.getDescriptorBufferInfo(job.BAMs[0]);
-		auto descriptorImageInfo = device.getDescriptorImageInfo(job.IVMs[0], job.sampler.get());
-
-		std::array writeDes{
-				vk::WriteDescriptorSet{
-						job.descriptorSets[0].get(), 0, 0, 1,
-						vk::DescriptorType::eUniformBuffer,
-						nullptr, &descriptorBufferInfo
-				},
-				vk::WriteDescriptorSet{
-						job.descriptorSets[0].get(), 1, 0, 1,
-						vk::DescriptorType::eCombinedImageSampler,
-						&descriptorImageInfo
-				}
-		};
-		device.get().updateDescriptorSets(writeDes, nullptr);
-//		MY_LOG(INFO)<<"jobaddr:"<<job<<std::endl;
-
-		job.cmdbufferRenderpassBeginHandle = [](JobDraw& job,RenderpassBeginHandle &cmdHandleRenderpassBegin,
-		                                        vk::Extent2D win) {
-//			MY_LOG(INFO)<<"jobaddr:"<<&job<<std::endl;
-			std::array viewports{
-					vk::Viewport{
-							0, 0,
-							win.width,
-							win.height,
-							0.0f, 1.0f
-					}
-			};
-			cmdHandleRenderpassBegin.setViewport(0, viewports);
-			std::array scissors{
-					vk::Rect2D{vk::Offset2D{}, win}
-			};
-			cmdHandleRenderpassBegin.setScissor(0, scissors);
-
-			cmdHandleRenderpassBegin.bindPipeline(
-					vk::PipelineBindPoint::eGraphics,
-					job.uniquePipeline.get());
-			std::array tmpDescriptorSets{job.descriptorSets[0].get()};
-			cmdHandleRenderpassBegin.bindDescriptorSets(
-					vk::PipelineBindPoint::eGraphics,
-					job.pipelineLayout.get(), 0,
-					tmpDescriptorSets,
-					std::vector<uint32_t>{}
-			);
-			vk::DeviceSize offsets[1] = {0};
-			cmdHandleRenderpassBegin.bindVertexBuffers(
-					0, 1,
-					&std::get<vk::UniqueBuffer>(job.BAMs[1]).get(),
-					offsets
-			);
-			cmdHandleRenderpassBegin.bindIndexBuffer(
-					std::get<vk::UniqueBuffer>(job.BAMs[2]).get(),
-					0, vk::IndexType::eUint32
-			);
-			cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
-		};
-		return job;
 	}
 
 	vk::UniquePipeline JobDraw::createPipeline(Device& device,android_app* app) {
@@ -294,13 +147,11 @@ namespace tt{
 	void JobDraw::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
 //		MY_LOG(INFO)<<"jobaddr:"<<(void const *)this<<std::endl;
 
-		cmdBuffers = createCmdBuffers(descriptorPoll.getOwner(), renderPass,
+		cmdBuffers = helper::createCmdBuffers(descriptorPoll.getOwner(), renderPass,
 		                                      *this,
 		                                      swapchain.getFrameBuffer(),
 		                                      swapchain.getSwapchainExtent(),
-		                                      commandPool.get(),
-		                                      cmdbufferRenderpassBeginHandle,
-		                                      cmdbufferCommandBufferBeginHandle);
+		                                      commandPool.get());
 		setPerspective(swapchain);
 		//cmdBuffers = device.createCmdBuffers(swapchain, *commandPool, cmdbufferRenderpassBeginHandle,
 		//                                     cmdbufferCommandBufferBeginHandle);
@@ -323,5 +174,99 @@ namespace tt{
 				camTo,     // and looks at the origin
 				camUp     // Head is up (set to 0,-1,0 to look upside-down)
 		);
+	}
+
+	void JobDraw::CmdBufferRenderpassBegin(RenderpassBeginHandle &cmdHandleRenderpassBegin,
+			vk::Extent2D win) {
+		std::array viewports{
+			vk::Viewport{
+					0, 0,
+					win.width,
+					win.height,
+					0.0f, 1.0f
+			}
+		};
+		cmdHandleRenderpassBegin.setViewport(0, viewports);
+		std::array scissors{
+			vk::Rect2D{vk::Offset2D{}, win}
+		};
+		cmdHandleRenderpassBegin.setScissor(0, scissors);
+
+		cmdHandleRenderpassBegin.bindPipeline(
+			vk::PipelineBindPoint::eGraphics,
+			uniquePipeline.get());
+		std::array tmpDescriptorSets{descriptorSets[0].get()};
+		cmdHandleRenderpassBegin.bindDescriptorSets(
+			vk::PipelineBindPoint::eGraphics,
+			pipelineLayout.get(), 0,
+			tmpDescriptorSets,
+			{});
+		vk::DeviceSize offsets[1] = {0};
+		cmdHandleRenderpassBegin.bindVertexBuffers(0, 1,
+				&std::get<vk::UniqueBuffer>(BAMs[1]).get(),
+				offsets);
+		cmdHandleRenderpassBegin.bindIndexBuffer(
+				std::get<vk::UniqueBuffer>(BAMs[2]).get(),
+				0, vk::IndexType::eUint32);
+		cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
+	}
+
+JobDraw::JobDraw(JobBase &&j,android_app *app,tt::Device &device) :JobBase{std::move(j)}{
+		BAMs.emplace_back(
+				device.createBufferAndMemory(
+						sizeof(glm::mat4),
+						vk::BufferUsageFlagBits::eUniformBuffer,
+						vk::MemoryPropertyFlagBits::eHostVisible |
+						vk::MemoryPropertyFlagBits::eHostCoherent));
+
+		std::vector<VertexUV> vertices{
+				{{1.0f,  1.0f,  0.0f, 1.0f}, {1.0f, 1.0f}},
+				{{-1.0f, 1.0f,  0.0f, 1.0f}, {0.0f, 1.0f}},
+				{{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+				{{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
+		};
+		BAMs.emplace_back(
+				device.createBufferAndMemoryFromVector(
+						vertices, vk::BufferUsageFlagBits::eVertexBuffer,
+						vk::MemoryPropertyFlagBits::eHostVisible |
+						vk::MemoryPropertyFlagBits::eHostCoherent));
+
+		BAMs.emplace_back(
+				device.createBufferAndMemoryFromVector(
+						std::vector<uint32_t>{0, 1, 2, 2, 3, 0},
+						vk::BufferUsageFlagBits::eIndexBuffer,
+						vk::MemoryPropertyFlagBits::eHostVisible |
+						vk::MemoryPropertyFlagBits::eHostCoherent));
+
+		{
+			auto fileContent = loadDataFromAssets("textures/ic_launcher-web.ktx", app);
+			//gli::texture2d tex2d;
+			auto tex2d = gli::texture2d{gli::load_ktx(fileContent.data(), fileContent.size())};
+			sampler = device.createSampler(tex2d.levels());
+			IVMs.emplace_back(device.createImageAndMemoryFromT2d(tex2d));
+		}
+
+
+		uniquePipeline = createPipeline(device,app);
+
+		auto descriptorBufferInfo = device.getDescriptorBufferInfo(BAMs[0]);
+		auto descriptorImageInfo = device.getDescriptorImageInfo(IVMs[0], sampler.get());
+
+		std::array writeDes{
+				vk::WriteDescriptorSet{
+						descriptorSets[0].get(), 0, 0, 1,
+						vk::DescriptorType::eUniformBuffer,
+						nullptr, &descriptorBufferInfo
+				},
+				vk::WriteDescriptorSet{
+						descriptorSets[0].get(), 1, 0, 1,
+						vk::DescriptorType::eCombinedImageSampler,
+						&descriptorImageInfo
+				}
+		};
+		device->updateDescriptorSets(writeDes, nullptr);
+//		MY_LOG(INFO)<<"jobaddr:"<<job<<std::endl;
+
+
 	}
 };

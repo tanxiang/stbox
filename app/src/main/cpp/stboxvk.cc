@@ -72,23 +72,19 @@ namespace tt {
 		                                    AndroidGetWindowSize(app));
 		drawJobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
 		drawJobs[0].setPv();
+		fontJobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
 		return;
 	}
 
 	void stboxvk::draw() {
 		devices[0].runJobOnWindow(drawJobs[0], windows[0]);
+		//devices[0].runJobOnWindow(fontJobs[0], windows[0]);
 	}
 
 
-	void stboxvk::draw(glm::mat4 &cam) {
-		drawJobs[0].bvmMemory(0).PodTypeOnMemory<glm::mat4>() = drawJobs[0].perspective * cam;
-		//drawJobs[0].writeBvm(0, pv, sizeof(pv));
-		draw();
-	}
 
 	void stboxvk::draw(float dx, float dy) {
 		drawJobs[0].setPv(dx, dy);
-		//drawJobs[0].writeBvm(0, pv, sizeof(pv));
 		draw();
 	}
 
