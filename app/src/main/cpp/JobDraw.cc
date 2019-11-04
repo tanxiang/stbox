@@ -85,10 +85,6 @@ namespace tt{
 		};
 		//vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{};
 
-		vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo{
-				vk::PipelineViewportStateCreateFlags(),
-				1, nullptr, 1, nullptr
-		};
 		std::array dynamicStates{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 		vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{
 				vk::PipelineDynamicStateCreateFlags(), dynamicStates.size(), dynamicStates.data()};
@@ -133,7 +129,7 @@ namespace tt{
 				&pipelineVertexInputStateCreateInfo,
 				&pipelineInputAssemblyStateCreateInfo,
 				nullptr,
-				&pipelineViewportStateCreateInfo,
+				nullptr,
 				&pipelineRasterizationStateCreateInfo,
 				&pipelineMultisampleStateCreateInfo,
 				&pipelineDepthStencilStateCreateInfo,
@@ -177,19 +173,20 @@ namespace tt{
 	}
 
 	void JobDraw::CmdBufferRenderpassBegin(RenderpassBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win) {
-		std::array viewports{
-			vk::Viewport{
-					0, 0,
-					win.width,
-					win.height,
-					0.0f, 1.0f
-			}
-		};
-		cmdHandleRenderpassBegin.setViewport(0, viewports);
-		std::array scissors{
-			vk::Rect2D{vk::Offset2D{}, win}
-		};
-		cmdHandleRenderpassBegin.setScissor(0, scissors);
+
+		cmdHandleRenderpassBegin.setViewport(
+				0,
+				std::array{
+						vk::Viewport{
+								0, 0,
+								win.width,
+								win.height,
+								0.0f, 1.0f
+						}
+				}
+		);
+
+		cmdHandleRenderpassBegin.setScissor(0, std::array {vk::Rect2D{vk::Offset2D{}, win}});
 
 		cmdHandleRenderpassBegin.bindPipeline(
 			vk::PipelineBindPoint::eGraphics,
@@ -200,9 +197,10 @@ namespace tt{
 			pipelineLayout.get(), 0,
 			tmpDescriptorSets,
 			{});
-		vk::DeviceSize offsets[1] = {0};
-		cmdHandleRenderpassBegin.bindVertexBuffers(0, 1,
-				&std::get<vk::UniqueBuffer>(BAMs[1]).get(),
+		std::array offsets { vk::DeviceSize{0} };
+		//vk::DeviceSize offsets[1] = {0};
+		cmdHandleRenderpassBegin.bindVertexBuffers(0,
+				std::get<vk::UniqueBuffer>(BAMs[1]).get(),
 				offsets);
 		cmdHandleRenderpassBegin.bindIndexBuffer(
 				std::get<vk::UniqueBuffer>(BAMs[2]).get(),

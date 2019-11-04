@@ -10,12 +10,11 @@
 #include "JobBase.hh"
 
 namespace tt {
-
 	struct JobFont : public JobBase{
 		vk::UniqueRenderPass createRenderpass(tt::Device&);
 		vk::UniqueRenderPass renderPass;
 		std::array<vk::ClearValue,2> clearValues{
-				vk::ClearColorValue{std::array<float, 4>{0.1f, 0.2f, 0.2f, 0.2f}},
+				vk::ClearColorValue{std::array<float, 4>{0.1f, 0.5f, 0.5f, 0.2f}},
 				vk::ClearDepthStencilValue{1.0f, 0},
 		};
 		vk::UniquePipeline createPipeline(tt::Device&,android_app* app);

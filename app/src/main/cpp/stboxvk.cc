@@ -77,11 +77,9 @@ namespace tt {
 	}
 
 	void stboxvk::draw() {
-		devices[0].runJobOnWindow(drawJobs[0], windows[0]);
-		//devices[0].runJobOnWindow(fontJobs[0], windows[0]);
+		//devices[0].runJobOnWindow(drawJobs[0], windows[0]);
+		devices[0].runJobOnWindow(fontJobs[0], windows[0]);
 	}
-
-
 
 	void stboxvk::draw(float dx, float dy) {
 		drawJobs[0].setPv(dx, dy);

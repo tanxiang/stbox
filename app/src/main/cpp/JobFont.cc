@@ -139,7 +139,7 @@ namespace tt{
 		std::array vertexInputBindingDescriptions{
 				vk::VertexInputBindingDescription{
 						0, sizeof(fd_GlyphInstance),
-						vk::VertexInputRate::eVertex
+						vk::VertexInputRate::eInstance
 				}
 		};
 		std::array vertexInputAttributeDescriptions{
@@ -164,10 +164,6 @@ namespace tt{
 				vk::PipelineInputAssemblyStateCreateFlags(), vk::PrimitiveTopology::eTriangleStrip
 		};
 
-		vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo{
-				vk::PipelineViewportStateCreateFlags(),
-				1, nullptr, 1, nullptr
-		};
 		std::array dynamicStates{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 		vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{
 				vk::PipelineDynamicStateCreateFlags(), dynamicStates.size(), dynamicStates.data()};
@@ -213,7 +209,7 @@ namespace tt{
 				&pipelineVertexInputStateCreateInfo,
 				&pipelineInputAssemblyStateCreateInfo,
 				nullptr,
-				&pipelineViewportStateCreateInfo,
+				nullptr,
 				&pipelineRasterizationStateCreateInfo,
 				&pipelineMultisampleStateCreateInfo,
 				&pipelineDepthStencilStateCreateInfo,
@@ -236,25 +232,24 @@ namespace tt{
 	}
 
 	void JobFont::CmdBufferRenderpassBegin(RenderpassBeginHandle &handle, vk::Extent2D win) {
-		std::array viewports{
-				vk::Viewport{
-						0, 0,
-						win.width,
-						win.height,
-						0.0f, 1.0f
-				}
-		};
-		std::array offsets { vk::DeviceSize{0} };
-		handle.setViewport(0,viewports);
 
-		std::array scissors{
-				vk::Rect2D{vk::Offset2D{}, win}
-		};
-		handle.setScissor(0, scissors);
+		handle.setViewport(
+			0,
+			std::array{
+				vk::Viewport{
+					0, 0,
+					win.width,
+					win.height,
+					0.0f, 1.0f
+				}
+			}
+		);
+		std::array offsets { vk::DeviceSize{0} };
+		handle.setScissor(0, std::array {vk::Rect2D{vk::Offset2D{}, win}});
 		handle.bindPipeline(vk::PipelineBindPoint::eGraphics,uniquePipeline.get());
 		std::array tmpDescriptorSets{descriptorSets[0].get()};
 		handle.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,pipelineLayout.get(),0,tmpDescriptorSets,{});
-		handle.bindVertexBuffers(1,std::get<vk::UniqueBuffer>(BAMs[1]).get(),offsets);
+		handle.bindVertexBuffers(0,std::get<vk::UniqueBuffer>(BAMs[2]).get(),offsets);
 		handle.draw(4,1,0,0);
 	}
 
@@ -276,11 +271,11 @@ namespace tt{
 				{}
 		);
 
-		//handle.copyBuffer(
-		//		std::get<vk::UniqueBuffer>(BAMs[1]).get(),
-		//		std::get<vk::UniqueBuffer>(BAMs[2]).get(),
-		//		{vk::BufferCopy{0,0,128*sizeof(fd_GlyphInstance)}}
-		//);
+		handle.copyBuffer(
+				std::get<vk::UniqueBuffer>(BAMs[1]).get(),
+				std::get<vk::UniqueBuffer>(BAMs[2]).get(),
+				{vk::BufferCopy{0,0,128*sizeof(fd_GlyphInstance)}}
+		);
 
 		handle.pipelineBarrier(
 				vk::PipelineStageFlagBits::eTransfer,
@@ -336,7 +331,7 @@ namespace tt{
 
 			auto inputPtr = helper::mapTypeMemoryAndSize<fd_GlyphInstance>(ownerDevice(), inputBM);
 
-			std::string c {"GLLLDE45"};
+			std::string c {"CLLLOD"};
 			for(int i=0;i<c.size();i++){
 				inputPtr[i].glyph_index = c[i]-32;
 				inputPtr[i].rect = {-0.942422,-0.759358,-0.869379,-0.912940};

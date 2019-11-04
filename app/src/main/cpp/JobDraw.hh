@@ -14,8 +14,8 @@ namespace tt {
 		vk::UniquePipeline createPipeline(tt::Device&,android_app* app);
 		vk::UniquePipeline uniquePipeline;//todo vector
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
-		glm::mat4 perspective;
 
+		glm::mat4 perspective;
 		glm::vec3 camPos = glm::vec3(1, 3, 4);
 		glm::vec3 camTo = glm::vec3(0, 0, 0);
 		glm::vec3 camUp = glm::vec3(0, 1, 0);
@@ -43,19 +43,6 @@ namespace tt {
 
 		//memory using
 		std::vector<BufferMemory> BAMs;
-
-		void writeBvm(uint32_t index, void *data, size_t writeSize, size_t offset = 0) {
-			//todo check index size
-			if (writeSize + offset > std::get<size_t>(BAMs[index]))
-				throw std::logic_error{"write buffer overflow!"};
-			auto pMemory = helper::mapMemoryAndSize(descriptorPoll.getOwner(), BAMs[index], offset);
-			memcpy(pMemory.get(), data, writeSize);
-		}
-
-		//auto bvmMemory(uint32_t index, size_t offset = 0) {
-		//	return helper::mapMemoryAndSize(descriptorPoll.getOwner(), BAMs[index], offset);
-		//}
-
 		std::vector<ImageViewMemory> IVMs;
 		vk::UniqueSampler sampler;
 
