@@ -250,7 +250,7 @@ namespace tt{
 		std::array tmpDescriptorSets{descriptorSets[0].get()};
 		handle.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,pipelineLayout.get(),0,tmpDescriptorSets,{});
 		handle.bindVertexBuffers(0,std::get<vk::UniqueBuffer>(BAMs[2]).get(),offsets);
-		handle.draw(4,1,0,0);
+		handle.draw(4,4,0,0);
 	}
 
 	void JobFont::CmdBufferBegin(CommandBufferBeginHandle & handle, vk::Extent2D) {
@@ -303,7 +303,8 @@ namespace tt{
 				device.createBufferAndMemoryFromAssets(
 						app, {"glyhps/glyphy_3072.bin","glyhps/cell_21576.bin","glyhps/point_47440.bin"},
 						vk::BufferUsageFlagBits::eStorageBuffer,
-						vk::MemoryPropertyFlagBits::eDeviceLocal));
+						vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent)
+						);
 
 		std::array descriptorWriteInfos{
 				vk::WriteDescriptorSet{

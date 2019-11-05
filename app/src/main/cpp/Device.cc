@@ -441,6 +441,7 @@ namespace tt{
 		for(auto&file:fileHanders){
 			AAsset_read(std::get<0>(file).get(),(char*)bufferPtr.get()+std::get<1>(file),std::get<2>(file));
 			std::get<std::vector<vk::DescriptorBufferInfo>>(BAM).emplace_back(std::get<vk::UniqueBuffer>(BAM).get(),std::get<1>(file),std::get<2>(file));
+			MY_LOG(INFO) << "off "<< std::get<1>(file) <<" size "<< std::get<2>(file) <<" Align" << alignment;
 		}
 		return BAM;
 	}

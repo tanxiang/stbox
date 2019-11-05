@@ -130,14 +130,15 @@ namespace tt {
 
 		template<typename Tuple>
 		auto mapMemoryAndSize(Tuple &tupleMemoryAndSize, size_t offset = 0) {
+			auto dev = get();
+			auto devMemory = std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get();
 			return BufferMemoryPtr{
 					get().mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
 					                offset,
 					                std::get<size_t>(tupleMemoryAndSize),
 					                vk::MemoryMapFlagBits()),
-					[this, &tupleMemoryAndSize](void *pVoid) {
-						get().unmapMemory(
-								std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get());
+					[dev, devMemory](void *pVoid) {
+						dev.unmapMemory(devMemory);
 					}
 			};
 		}

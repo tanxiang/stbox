@@ -127,29 +127,29 @@ namespace tt {
 	namespace helper {
 		template<typename Tuple>
 		auto mapMemoryAndSize(vk::Device device, Tuple &tupleMemoryAndSize, size_t offset = 0) {
+			auto devMemory = std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get();
 			return BufferMemoryPtr{
 					device.mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
 					                 offset,
 					                 std::get<size_t>(tupleMemoryAndSize),
 					                 vk::MemoryMapFlagBits()),
-					[device, &tupleMemoryAndSize](void *pVoid) {
-						device.unmapMemory(
-								std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get());
+					[device, devMemory](void *pVoid) {
+						device.unmapMemory(devMemory);
 					}
 			};
 		}
 
 		template<typename PodType,typename Tuple>
 		auto mapTypeMemoryAndSize(vk::Device device, Tuple &tupleMemoryAndSize, size_t offset = 0) {
+			auto devMemory = std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get();
 			return BufferTypePtr<PodType>{
 					static_cast<PodType*>(device.mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
 					                 offset,
 					                 std::get<size_t>(tupleMemoryAndSize),
 					                 vk::MemoryMapFlagBits())),
-					[device, &tupleMemoryAndSize](PodType *pVoid) {
+					[device, devMemory](PodType *pVoid) {
 						//FIXME call ~PodType in array
-						device.unmapMemory(
-								std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get());
+						device.unmapMemory(devMemory);
 					}
 			};
 		}
