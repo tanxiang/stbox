@@ -4,11 +4,6 @@
 struct GlyphInfo
 {
     vec4 bbox;
-
-    // point offset
-    // cell offset
-    // cell count in x
-    // cell count in y
     uvec4 cell_info;
 };
 
@@ -50,8 +45,7 @@ void main()
     cell_coord[2] = vec2(0,              gi.cell_info.w);
     cell_coord[3] = vec2(gi.cell_info.z, gi.cell_info.w);
 
-
-    gl_Position = vec4(pos[gl_VertexIndex].x + gl_InstanceIndex / 5.0,pos[gl_VertexIndex].y + 0.5, 0.0, 1.0);
+        gl_Position = vec4(pos[gl_VertexIndex].x + gl_InstanceIndex / 5.0,pos[gl_VertexIndex].y + in_rect.x /5.0 , 0.0, 1.0);
     out_glyph_pos = glyph_pos[gl_VertexIndex];
     out_cell_info = gi.cell_info;
     out_sharpness = in_sharpness;

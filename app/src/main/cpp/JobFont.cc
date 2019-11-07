@@ -190,14 +190,20 @@ namespace tt{
 				},
 				0, 0
 		};
-		vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{};
-		pipelineColorBlendAttachmentState.setColorWriteMask(
-				vk::ColorComponentFlagBits::eR |
-				vk::ColorComponentFlagBits::eG |
-				vk::ColorComponentFlagBits::eB |
-				vk::ColorComponentFlagBits::eA);
+		vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{
+			true,
+			vk::BlendFactor::eSrcAlpha,
+			vk::BlendFactor::eOneMinusSrcAlpha,
+			vk::BlendOp::eAdd,
+			vk::BlendFactor::eSrcAlpha,
+			vk::BlendFactor::eDstAlpha,
+			vk::BlendOp::eMax,
+			vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+			vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+		};
+
 		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo{
-				vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eClear, 1,
+				vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eCopy, 1,
 				&pipelineColorBlendAttachmentState
 		};
 		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{
@@ -250,7 +256,7 @@ namespace tt{
 		std::array tmpDescriptorSets{descriptorSets[0].get()};
 		handle.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,pipelineLayout.get(),0,tmpDescriptorSets,{});
 		handle.bindVertexBuffers(0,std::get<vk::UniqueBuffer>(BAMs[2]).get(),offsets);
-		handle.draw(4,4,0,0);
+		handle.draw(4,6,0,0);
 	}
 
 	void JobFont::CmdBufferBegin(CommandBufferBeginHandle & handle, vk::Extent2D) {
@@ -303,7 +309,7 @@ namespace tt{
 				device.createBufferAndMemoryFromAssets(
 						app, {"glyhps/glyphy_3072.bin","glyhps/cell_21576.bin","glyhps/point_47440.bin"},
 						vk::BufferUsageFlagBits::eStorageBuffer,
-						vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent)
+						vk::MemoryPropertyFlagBits::eDeviceLocal)
 						);
 
 		std::array descriptorWriteInfos{
@@ -332,10 +338,11 @@ namespace tt{
 
 			auto inputPtr = helper::mapTypeMemoryAndSize<fd_GlyphInstance>(ownerDevice(), inputBM);
 
-			std::string c {"CLLLOD"};
+			std::string c {"CLXLOD"};
 			for(int i=0;i<c.size();i++){
 				inputPtr[i].glyph_index = c[i]-32;
-				inputPtr[i].rect = {-0.942422,-0.759358,-0.869379,-0.912940};
+				//MY_LOG(INFO) << " put : "<<inputPtr[i].glyph_index;
+				inputPtr[i].rect = {i,-0.759358,-0.869379,-0.912940};
 				inputPtr[i].sharpness=0.8;
 			}
 

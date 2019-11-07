@@ -110,14 +110,20 @@ namespace tt{
 				},
 				0, 0
 		};
-		vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{};
-		pipelineColorBlendAttachmentState.setColorWriteMask(
-				vk::ColorComponentFlagBits::eR |
-				vk::ColorComponentFlagBits::eG |
-				vk::ColorComponentFlagBits::eB |
-				vk::ColorComponentFlagBits::eA);
+		vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{
+				true,
+				vk::BlendFactor::eSrcAlpha,
+				vk::BlendFactor::eOneMinusSrcAlpha,
+				vk::BlendOp::eAdd,
+				vk::BlendFactor::eSrcAlpha,
+				vk::BlendFactor::eDstAlpha,
+				vk::BlendOp::eMax,
+				vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+				vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+		};
+
 		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo{
-				vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eClear, 1,
+				vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eCopy, 1,
 				&pipelineColorBlendAttachmentState
 		};
 		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{

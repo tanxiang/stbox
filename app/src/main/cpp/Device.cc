@@ -413,10 +413,14 @@ namespace tt{
 		}
 		if(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
 			auto BAM = createBufferAndMemory(offset,vk::BufferUsageFlagBits::eTransferSrc,vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
-			auto bufferPtr = mapMemoryAndSize(BAM);
-			for(auto&file:fileHanders){
-				AAsset_read(std::get<0>(file).get(),(char*)bufferPtr.get()+std::get<1>(file),std::get<2>(file));
-				MY_LOG(INFO) << "off "<< std::get<1>(file) <<" size "<< std::get<2>(file) <<" Align" << alignment;
+			{
+				auto bufferPtr = mapMemoryAndSize(BAM);
+				for (auto &file:fileHanders) {
+					AAsset_read(std::get<0>(file).get(),
+					            (char *) bufferPtr.get() + std::get<1>(file), std::get<2>(file));
+					MY_LOG(INFO) << "off " << std::get<1>(file) << " size " << std::get<2>(file)
+					             << " Align" << alignment;
+				}
 			}
 			auto BAM2 = createBufferAndMemory(offset,bufferUsageFlags,memoryPropertyFlags);
 			auto copyCmd = createCmdBuffers(
