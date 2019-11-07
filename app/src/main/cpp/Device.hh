@@ -208,12 +208,15 @@ namespace tt {
 		}
 
 /*		std::map<std::string, vk::UniquePipeline> createComputePipeline(android_app *app);
-
-		vk::UniquePipeline createPipeline(uint32_t dataStepSize,
-		                                  std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos,
-		                                  vk::PipelineCache &pipelineCache,
-		                                  vk::PipelineLayout pipelineLayout);
 */
+
+		vk::UniquePipeline createGraphsPipeline(
+				vk::ArrayProxy<vk::PipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos,
+				vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo,
+				vk::PipelineLayout pipelineLayout,
+				vk::PipelineCache pipelineCache,
+				vk::RenderPass jobRenderPass
+				);
 
 		std::vector<vk::UniqueCommandBuffer>
 		createCmdBuffers(

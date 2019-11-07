@@ -42,7 +42,7 @@ namespace tt{
 
 		auto vertShaderModule = device.loadShaderFromAssets("shaders/mvp.vert.spv", app);
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/copy.frag.spv", app);
-		std::array shaderStageCreateInfos
+		std::array pipelineShaderStageCreateInfos
 		{
 			vk::PipelineShaderStageCreateInfo{
 				vk::PipelineShaderStageCreateFlags(),
@@ -79,72 +79,8 @@ namespace tt{
 				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
 
 		};
+		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,pipelineVertexInputStateCreateInfo,pipelineLayout.get(),pipelineCache.get(),device.renderPass.get());
 
-		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo{
-				vk::PipelineInputAssemblyStateCreateFlags(), vk::PrimitiveTopology::eTriangleList
-		};
-		//vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{};
-
-		std::array dynamicStates{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-		vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{
-				vk::PipelineDynamicStateCreateFlags(), dynamicStates.size(), dynamicStates.data()};
-
-		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo{
-				vk::PipelineRasterizationStateCreateFlags(),
-				0, 0, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
-				vk::FrontFace::eClockwise, 0,
-				0, 0, 0, 1.0f
-		};
-		vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{
-				vk::PipelineDepthStencilStateCreateFlags(),
-				true, true,
-				vk::CompareOp::eLessOrEqual,
-				false, false,
-				vk::StencilOpState{
-						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
-						vk::StencilOp::eKeep, vk::CompareOp::eNever
-				},
-				vk::StencilOpState{
-						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
-						vk::StencilOp::eKeep, vk::CompareOp::eAlways
-				},
-				0, 0
-		};
-		vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{
-				true,
-				vk::BlendFactor::eSrcAlpha,
-				vk::BlendFactor::eOneMinusSrcAlpha,
-				vk::BlendOp::eAdd,
-				vk::BlendFactor::eSrcAlpha,
-				vk::BlendFactor::eDstAlpha,
-				vk::BlendOp::eMax,
-				vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-				vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-		};
-
-		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo{
-				vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eCopy, 1,
-				&pipelineColorBlendAttachmentState
-		};
-		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{
-				vk::PipelineMultisampleStateCreateFlags(), vk::SampleCountFlagBits::e1};
-
-		vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
-				vk::PipelineCreateFlags(),
-				shaderStageCreateInfos.size(), shaderStageCreateInfos.data(),
-				&pipelineVertexInputStateCreateInfo,
-				&pipelineInputAssemblyStateCreateInfo,
-				nullptr,
-				nullptr,
-				&pipelineRasterizationStateCreateInfo,
-				&pipelineMultisampleStateCreateInfo,
-				&pipelineDepthStencilStateCreateInfo,
-				&pipelineColorBlendStateCreateInfo,
-				&pipelineDynamicStateCreateInfo,
-				pipelineLayout.get(),
-				device.renderPass.get()
-		};
-		return device->createGraphicsPipelineUnique(pipelineCache.get(), pipelineCreateInfo);
 	}
 	void JobDraw::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
 //		MY_LOG(INFO)<<"jobaddr:"<<(void const *)this<<std::endl;

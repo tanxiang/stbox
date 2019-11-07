@@ -160,72 +160,7 @@ namespace tt{
 
 		};
 
-		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo{
-				vk::PipelineInputAssemblyStateCreateFlags(), vk::PrimitiveTopology::eTriangleStrip
-		};
-
-		std::array dynamicStates{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-		vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{
-				vk::PipelineDynamicStateCreateFlags(), dynamicStates.size(), dynamicStates.data()};
-
-
-		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo{
-				vk::PipelineRasterizationStateCreateFlags(),
-				0, 0, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
-				vk::FrontFace::eClockwise, 0,
-				0, 0, 0, 1.0f
-		};
-		vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{
-				vk::PipelineDepthStencilStateCreateFlags(),
-				true, true,
-				vk::CompareOp::eLessOrEqual,
-				false, false,
-				vk::StencilOpState{
-						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
-						vk::StencilOp::eKeep, vk::CompareOp::eNever
-				},
-				vk::StencilOpState{
-						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
-						vk::StencilOp::eKeep, vk::CompareOp::eAlways
-				},
-				0, 0
-		};
-		vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{
-			true,
-			vk::BlendFactor::eSrcAlpha,
-			vk::BlendFactor::eOneMinusSrcAlpha,
-			vk::BlendOp::eAdd,
-			vk::BlendFactor::eSrcAlpha,
-			vk::BlendFactor::eDstAlpha,
-			vk::BlendOp::eMax,
-			vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-			vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-		};
-
-		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo{
-				vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eCopy, 1,
-				&pipelineColorBlendAttachmentState
-		};
-		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{
-				vk::PipelineMultisampleStateCreateFlags(), vk::SampleCountFlagBits::e1};
-
-		vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
-				vk::PipelineCreateFlags(),
-				pipelineShaderStageCreateInfos.size(), pipelineShaderStageCreateInfos.data(),
-				&pipelineVertexInputStateCreateInfo,
-				&pipelineInputAssemblyStateCreateInfo,
-				nullptr,
-				nullptr,
-				&pipelineRasterizationStateCreateInfo,
-				&pipelineMultisampleStateCreateInfo,
-				&pipelineDepthStencilStateCreateInfo,
-				&pipelineColorBlendStateCreateInfo,
-				&pipelineDynamicStateCreateInfo,
-				pipelineLayout.get(),
-				renderPass.get()
-		};
-		//return vk::UniquePipeline{};
-		return device->createGraphicsPipelineUnique(pipelineCache.get(),pipelineCreateInfo);
+		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,pipelineVertexInputStateCreateInfo,pipelineLayout.get(),pipelineCache.get(),device.renderPass.get());
 	}
 
 
