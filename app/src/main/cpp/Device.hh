@@ -49,7 +49,7 @@ namespace tt {
 			return physicalDevice;
 		}
 
-		Job createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
+		JobBase createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
 		               std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings);
 
 		auto transQueue() {
@@ -130,14 +130,15 @@ namespace tt {
 
 		template<typename Tuple>
 		auto mapMemoryAndSize(Tuple &tupleMemoryAndSize, size_t offset = 0) {
+			auto dev = get();
+			auto devMemory = std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get();
 			return BufferMemoryPtr{
 					get().mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
 					                offset,
 					                std::get<size_t>(tupleMemoryAndSize),
 					                vk::MemoryMapFlagBits()),
-					[this, &tupleMemoryAndSize](void *pVoid) {
-						get().unmapMemory(
-								std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get());
+					[dev, devMemory](void *pVoid) {
+						dev.unmapMemory(devMemory);
 					}
 			};
 		}
@@ -206,13 +207,13 @@ namespace tt {
 			};
 		}
 
-		std::map<std::string, vk::UniquePipeline> createComputePipeline(android_app *app);
+/*		std::map<std::string, vk::UniquePipeline> createComputePipeline(android_app *app);
 
 		vk::UniquePipeline createPipeline(uint32_t dataStepSize,
 		                                  std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos,
 		                                  vk::PipelineCache &pipelineCache,
 		                                  vk::PipelineLayout pipelineLayout);
-
+*/
 
 		std::vector<vk::UniqueCommandBuffer>
 		createCmdBuffers(
@@ -221,13 +222,12 @@ namespace tt {
 				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits {}
 		);
 
-		std::vector<vk::UniqueCommandBuffer>
-		createCmdBuffers(
-				tt::Window &swapchain, vk::CommandPool pool,
-				std::function<void(RenderpassBeginHandle &)> = [](RenderpassBeginHandle &) {},
-				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {}
-		);
-
+//		std::vector<vk::UniqueCommandBuffer>
+//		createCmdBuffers(
+//				tt::Window &swapchain, vk::CommandPool pool,
+//				std::function<void(RenderpassBeginHandle &)> = [](RenderpassBeginHandle &) {},
+//				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {}
+//		);
 
 		vk::UniqueFence submitCmdBuffer(vk::CommandBuffer &commandBuffer) {
 			auto fence = get().createFenceUnique(vk::FenceCreateInfo{});

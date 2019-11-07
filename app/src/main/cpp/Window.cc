@@ -2,7 +2,7 @@
 // Created by ttand on 19-8-2.
 //
 
-#include "Job.hh"
+#include "JobBase.hh"
 #include "Device.hh"
 namespace tt{
 

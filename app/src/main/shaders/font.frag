@@ -93,30 +93,30 @@ void process_bezier2(vec2 p, uint i, inout float min_udist, inout float v)
 void process_bezier2_loop(vec2 p, uint begin, uint end, inout float min_udist, inout float v)
 {
 	for (uint i = begin; i < end; i += 2)
-		process_bezier2(p, i, min_udist, v);
+	process_bezier2(p, i, min_udist, v);
 }
 
 float cell_signed_dist(uint point_offset, uint cell, vec2 p)
 {
 	float min_udist = intBitsToFloat(2139095039);
 	float v = -intBitsToFloat(2139095039);
-/*
-	uint len0 = cell & 3;
-	uint len1 = (cell >> 2) & 7;
-	uint len2 = (cell >> 5) & 7;
+	/*
+        uint len0 = cell & 3;
+        uint len1 = (cell >> 2) & 7;
+        uint len2 = (cell >> 5) & 7;
 
-	uint begin0 = point_offset + ((cell >> 8) & 0xFF) * 2;
-	uint begin1 = point_offset + ((cell >> 16) & 0xFF) * 2;
-	uint begin2 = point_offset + ((cell >> 24) & 0xFF) * 2;
+        uint begin0 = point_offset + ((cell >> 8) & 0xFF) * 2;
+        uint begin1 = point_offset + ((cell >> 16) & 0xFF) * 2;
+        uint begin2 = point_offset + ((cell >> 24) & 0xFF) * 2;
 
-	uint end0 = begin0 + len0 * 2;
-	uint end1 = begin1 + len1 * 2;
-	uint end2 = begin2 + len2 * 2;
+        uint end0 = begin0 + len0 * 2;
+        uint end1 = begin1 + len1 * 2;
+        uint end2 = begin2 + len2 * 2;
 
-	process_bezier2_loop(p, begin0, end0, min_udist, v);
-	process_bezier2_loop(p, begin1, end1, min_udist, v);
-	process_bezier2_loop(p, begin2, end2, min_udist, v);
-*/
+        process_bezier2_loop(p, begin0, end0, min_udist, v);
+        process_bezier2_loop(p, begin1, end1, min_udist, v);
+        process_bezier2_loop(p, begin2, end2, min_udist, v);
+    */
 	uvec3 vcell = uvec3(cell, cell, cell);
 	uvec3 len = (vcell >> uvec3(0, 2, 5)) & uvec3(3, 7, 7);
 	uvec3 begin = point_offset + ((vcell >> uvec3(8, 16, 24)) & 0xFF) * 2;
@@ -137,8 +137,12 @@ void main()
 
 	float v = cell_signed_dist(in_cell_info.x, cell, in_glyph_pos);
 	float alpha = clamp(v * in_sharpness + 0.5, 0.0, 1.0);
-	out_color = vec4(1.0, 1.0, 1.0, alpha);
 
+	out_color = vec4(alpha, alpha, alpha, alpha);
+	//if(in_glyph_pos.x * in_glyph_pos.x + in_glyph_pos.y * in_glyph_pos.y < 1.0)
+	//	out_color = vec4(1.0, 0.5, 1.0, 1.0);
+	//else
+	//	out_color = vec4(1.0, 0.0, 1.0, 0.0);
 	//if ((c.x + c.y) % 2 == 0)
 	//	out_color = mix(out_color, vec4(1.0, 0.0, 0.0, 1.0), 0.1);
 }

@@ -2,7 +2,7 @@
 // Created by ttand on 19-8-2.
 //
 
-#include "Job.hh"
+#include "JobBase.hh"
 #include "Device.hh"
 #include "Window.hh"
 namespace tt{
@@ -78,99 +78,9 @@ namespace tt{
 		}
 		return mapComputePipeline;
 	};
+
+
 */
-
-	vk::UniquePipeline Device::createPipeline(uint32_t dataStepSize,
-	                                          std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos,
-	                                          vk::PipelineCache &pipelineCache,
-	                                          vk::PipelineLayout pipelineLayout) {
-
-		std::array vertexInputBindingDescriptions{
-				vk::VertexInputBindingDescription{
-						0, dataStepSize,
-						vk::VertexInputRate::eVertex
-				}
-		};
-		std::array vertexInputAttributeDescriptions{
-				vk::VertexInputAttributeDescription{
-						0, 0, vk::Format::eR32G32B32A32Sfloat, 0
-				},
-				vk::VertexInputAttributeDescription{
-						1, 0, vk::Format::eR32G32Sfloat, 16
-				}//VK_FORMAT_R32G32_SFLOAT
-		};
-		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
-				vk::PipelineVertexInputStateCreateFlags(),
-				vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
-				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
-
-		};
-
-		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo{
-				vk::PipelineInputAssemblyStateCreateFlags(), vk::PrimitiveTopology::eTriangleList
-		};
-		//vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{};
-
-		vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo{
-				vk::PipelineViewportStateCreateFlags(),
-				1, nullptr, 1, nullptr
-		};
-		std::array dynamicStates{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-		vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{
-				vk::PipelineDynamicStateCreateFlags(), dynamicStates.size(), dynamicStates.data()};
-
-		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo{
-				vk::PipelineRasterizationStateCreateFlags(),
-				0, 0, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
-				vk::FrontFace::eClockwise, 0,
-				0, 0, 0, 1.0f
-		};
-		vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{
-				vk::PipelineDepthStencilStateCreateFlags(),
-				true, true,
-				vk::CompareOp::eLessOrEqual,
-				false, false,
-				vk::StencilOpState{
-						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
-						vk::StencilOp::eKeep, vk::CompareOp::eNever
-				},
-				vk::StencilOpState{
-						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
-						vk::StencilOp::eKeep, vk::CompareOp::eAlways
-				},
-				0, 0
-		};
-		vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{};
-		pipelineColorBlendAttachmentState.setColorWriteMask(
-				vk::ColorComponentFlagBits::eR |
-				vk::ColorComponentFlagBits::eG |
-				vk::ColorComponentFlagBits::eB |
-				vk::ColorComponentFlagBits::eA);
-		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo{
-				vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eClear, 1,
-				&pipelineColorBlendAttachmentState
-		};
-		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{
-				vk::PipelineMultisampleStateCreateFlags(), vk::SampleCountFlagBits::e1};
-
-		vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
-				vk::PipelineCreateFlags(),
-				shaderStageCreateInfos.size(), shaderStageCreateInfos.data(),
-				&pipelineVertexInputStateCreateInfo,
-				&pipelineInputAssemblyStateCreateInfo,
-				nullptr,
-				&pipelineViewportStateCreateInfo,
-				&pipelineRasterizationStateCreateInfo,
-				&pipelineMultisampleStateCreateInfo,
-				&pipelineDepthStencilStateCreateInfo,
-				&pipelineColorBlendStateCreateInfo,
-				&pipelineDynamicStateCreateInfo,
-				pipelineLayout,
-				renderPass.get()
-		};
-		return get().createGraphicsPipelineUnique(pipelineCache, pipelineCreateInfo);
-	}
-
 	vk::UniqueRenderPass Device::createRenderpass(vk::Format surfaceDefaultFormat) {
 		//auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
 		renderPassFormat = surfaceDefaultFormat;
@@ -243,7 +153,7 @@ namespace tt{
 				subpassDeps.size(), subpassDeps.data()
 		});
 	}
-
+/*
 	std::vector<vk::UniqueCommandBuffer>
 	Device::createCmdBuffers(tt::Window &swapchain, vk::CommandPool pool,
 	                         std::function<void(RenderpassBeginHandle &)> functionRenderpassBegin,
@@ -288,7 +198,7 @@ namespace tt{
 		}
 		return commandBuffers;
 	}
-
+*/
 	std::vector<vk::UniqueCommandBuffer>
 	Device::createCmdBuffers(size_t cmdNum, vk::CommandPool pool,
 	                         std::function<void(CommandBufferBeginHandle &)> functionBegin,
@@ -489,51 +399,60 @@ namespace tt{
 	                                                     vk::BufferUsageFlags bufferUsageFlags,
 	                                                     vk::MemoryPropertyFlags memoryPropertyFlags) {
 		auto alignment = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
-		off_t bufferLength = 0;
+		off_t offset = 0;
 		std::vector <std::tuple<AAssetHander,off_t ,off_t >> fileHanders;
 		for(auto&name:names){
 			auto file = AAssetManagerFileOpen(androidAppCtx->activity->assetManager,name);
 			if(!file)
 				throw std::runtime_error{"asset not found"};
 			auto length =  AAsset_getLength(file.get());
-			fileHanders.emplace_back(std::move(file),bufferLength,length);
+			fileHanders.emplace_back(std::move(file),offset,length);
 			length += (alignment - 1) - ((length - 1) % alignment) ;
-			bufferLength += length;
+			offset += length;
 		}
 		if(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
-			auto BAM = createBufferAndMemory(bufferLength,vk::BufferUsageFlagBits::eTransferSrc,vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
-			auto bufferPtr = mapMemoryAndSize(BAM);
-			for(auto&file:fileHanders){
-				AAsset_read(std::get<0>(file).get(),(char*)bufferPtr.get()+std::get<1>(file),std::get<2>(file));
+			auto BAM = createBufferAndMemory(offset,vk::BufferUsageFlagBits::eTransferSrc,vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
+			{
+				auto bufferPtr = mapMemoryAndSize(BAM);
+				for (auto &file:fileHanders) {
+					AAsset_read(std::get<0>(file).get(),
+					            (char *) bufferPtr.get() + std::get<1>(file), std::get<2>(file));
+					MY_LOG(INFO) << "off " << std::get<1>(file) << " size " << std::get<2>(file)
+					             << " Align" << alignment;
+				}
 			}
-			auto BAM2 = createBufferAndMemory(bufferLength,bufferUsageFlags,memoryPropertyFlags);
+			auto BAM2 = createBufferAndMemory(offset,bufferUsageFlags,memoryPropertyFlags);
 			auto copyCmd = createCmdBuffers(
 					1, gPoolUnique.get(),
 					[&](CommandBufferBeginHandle &commandBufferBeginHandle){
 						commandBufferBeginHandle.copyBuffer(std::get<vk::UniqueBuffer>(BAM).get(),
 								std::get<vk::UniqueBuffer>(BAM2).get(),
-								{vk::BufferCopy{0,0,bufferLength}});
+								{vk::BufferCopy{0,0,offset}});
 					},
 					vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 
 			auto copyFence = submitCmdBuffer(copyCmd[0].get());
 			waitFence(copyFence.get());
+			for(auto&file:fileHanders){
+				std::get<std::vector<vk::DescriptorBufferInfo>>(BAM2).emplace_back(std::get<vk::UniqueBuffer>(BAM2).get(),std::get<1>(file),std::get<2>(file));
+			}
 			return BAM2;
 		}
 
-		auto BAM = createBufferAndMemory(bufferLength,bufferUsageFlags,memoryPropertyFlags);
+		auto BAM = createBufferAndMemory(offset,bufferUsageFlags,memoryPropertyFlags);
 		auto bufferPtr = mapMemoryAndSize(BAM);
 		for(auto&file:fileHanders){
 			AAsset_read(std::get<0>(file).get(),(char*)bufferPtr.get()+std::get<1>(file),std::get<2>(file));
+			std::get<std::vector<vk::DescriptorBufferInfo>>(BAM).emplace_back(std::get<vk::UniqueBuffer>(BAM).get(),std::get<1>(file),std::get<2>(file));
+			MY_LOG(INFO) << "off "<< std::get<1>(file) <<" size "<< std::get<2>(file) <<" Align" << alignment;
 		}
 		return BAM;
 	}
 
-
-	Job Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
+	JobBase Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
 	                       std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings) {
 
-		return tt::Job{*this, gQueueFamilyIndex, std::move(descriptorPoolSizes),
+		return tt::JobBase{*this, gQueueFamilyIndex, std::move(descriptorPoolSizes),
 		               std::move(descriptorSetLayoutBindings)};
 	}
 }

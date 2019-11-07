@@ -2,13 +2,13 @@
 // Created by ttand on 19-8-2.
 //
 
-#ifndef STBOX_JOB_HH
-#define STBOX_JOB_HH
+#ifndef STBOX_JOBBASE_HH
+#define STBOX_JOBBASE_HH
 
 #include "util.hh"
 
 namespace tt {
-	struct Job {
+	struct JobBase {
 		//tt::Device &device;
 		vk::PhysicalDevice physicalDevice;
 		vk::UniqueDescriptorPool descriptorPoll;
@@ -19,10 +19,14 @@ namespace tt {
 		vk::UniquePipelineLayout pipelineLayout;//todo vector
 		vk::UniqueCommandPool commandPool;
 
-		Job(tt::Device &device, uint32_t queueIndex,
+		JobBase(tt::Device &device, uint32_t queueIndex,
 		    std::vector<vk::DescriptorPoolSize> &&descriptorPoolSizes,
 		    std::vector<vk::DescriptorSetLayoutBinding> &&descriptorSetLayoutBindings);
+
+		auto ownerDevice(){
+			return descriptorPoll.getOwner();
+		}
 	};
 }
 
-#endif //STBOX_JOB_HH
+#endif //STBOX_JOBBASE_HH

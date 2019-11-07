@@ -67,11 +67,12 @@ namespace tt {
 	                             vk::MemoryPropertyFlags flags) {
 		auto memoryProperties = physicalDevice.getMemoryProperties();
 		for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+			//MY_LOG(INFO) << vk::to_string(memoryProperties.memoryTypes[i].propertyFlags)
+			//             << " march " << vk::to_string(flags) << " ? " << i;
 			if ((memoryTypeBits & 1) == 1) {
 				// Type is available, does it match user properties?
+
 				if ((memoryProperties.memoryTypes[i].propertyFlags & flags) == flags) {
-					MY_LOG(INFO) << vk::to_string(memoryProperties.memoryTypes[i].propertyFlags)
-					             << " march " << vk::to_string(flags) << " return " << i;
 					return i;
 				}
 

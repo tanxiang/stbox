@@ -14,6 +14,7 @@
 #include <vulkan.hpp>
 #include <thread>
 #include <queue>
+#include <optional>
 #include <condition_variable>
 #include <android_native_app_glue.h>
 #include <iostream>
@@ -32,7 +33,7 @@ namespace tt {
 
 	class Window;
 
-	class Job;
+	class JobBase;
 
 	class Instance;
 
@@ -93,10 +94,8 @@ namespace tt {
 			end();
 		}
 
-		CommandBufferBeginHandle(
-				const CommandBufferBeginHandle &) = delete; // non construction-copyable
-		CommandBufferBeginHandle &
-		operator=(const CommandBufferBeginHandle &) = delete; // non copyable
+		CommandBufferBeginHandle(const CommandBufferBeginHandle &) = delete; // non construction-copyable
+		CommandBufferBeginHandle &operator=(const CommandBufferBeginHandle &) = delete; // non copyable
 	};
 
 	uint32_t findMemoryTypeIndex(vk::PhysicalDevice physicalDevice, uint32_t memoryTypeBits,
@@ -107,7 +106,7 @@ namespace tt {
 
 	//using ImageViewSamplerMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueSampler, vk::UniqueDeviceMemory>;
 
-	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t>;
+	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t ,std::vector<vk::DescriptorBufferInfo> >;
 
 
 	class BufferMemoryPtr : public std::unique_ptr<void, std::function<void(void *)> > {
@@ -119,19 +118,85 @@ namespace tt {
 		}
 
 	};
+
+	template<typename PodType>
+	struct BufferTypePtr : public std::unique_ptr<PodType[], std::function<void(PodType*)> > {
+		using std::unique_ptr<PodType[], std::function<void(PodType *)> >::unique_ptr;
+
+	};
+
 	namespace helper {
 		template<typename Tuple>
 		auto mapMemoryAndSize(vk::Device device, Tuple &tupleMemoryAndSize, size_t offset = 0) {
+			auto devMemory = std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get();
 			return BufferMemoryPtr{
 					device.mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
 					                 offset,
 					                 std::get<size_t>(tupleMemoryAndSize),
 					                 vk::MemoryMapFlagBits()),
-					[device, &tupleMemoryAndSize](void *pVoid) {
-						device.unmapMemory(
-								std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get());
+					[device, devMemory](void *pVoid) {
+						device.unmapMemory(devMemory);
 					}
 			};
+		}
+
+		template<typename PodType,typename Tuple>
+		auto mapTypeMemoryAndSize(vk::Device device, Tuple &tupleMemoryAndSize, size_t offset = 0) {
+			auto devMemory = std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get();
+			return BufferTypePtr<PodType>{
+					static_cast<PodType*>(device.mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
+					                 offset,
+					                 std::get<size_t>(tupleMemoryAndSize),
+					                 vk::MemoryMapFlagBits())),
+					[device, devMemory](PodType *pVoid) {
+						//FIXME call ~PodType in array
+						device.unmapMemory(devMemory);
+					}
+			};
+		}
+
+		template <typename JobType>
+		auto createCmdBuffers(vk::Device device,
+		                 vk::RenderPass renderPass,
+		                 JobType &job,
+		                 std::vector<vk::UniqueFramebuffer> &framebuffers,
+		                 vk::Extent2D extent2D,
+		                 vk::CommandPool pool){
+			MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << framebuffers.size();
+			std::vector commandBuffers = device.allocateCommandBuffersUnique(
+					vk::CommandBufferAllocateInfo{
+							pool,
+							vk::CommandBufferLevel::ePrimary,
+							framebuffers.size()
+					}
+			);
+
+			uint32_t frameIndex = 0;
+			for (auto &cmdBuffer : commandBuffers) {
+				//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+				{
+					CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
+					job.CmdBufferBegin(cmdBeginHandle, extent2D);
+					{
+						RenderpassBeginHandle cmdHandleRenderpassBegin{
+								cmdBeginHandle,
+								vk::RenderPassBeginInfo{
+										renderPass,
+										framebuffers[frameIndex].get(),
+										vk::Rect2D{
+												vk::Offset2D{},
+												extent2D
+										},
+										job.clearValues.size(), job.clearValues.data()
+								}
+						};
+						job.CmdBufferRenderpassBegin(cmdHandleRenderpassBegin, extent2D);
+					}
+
+				}
+				++frameIndex;
+			}
+			return commandBuffers;
 		}
 	}
 }
