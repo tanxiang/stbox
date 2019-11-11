@@ -422,7 +422,8 @@ namespace tt {
 				auto bufferPtr = mapMemoryAndSize(BAM);
 				for (auto &file:fileHanders) {
 					AAsset_read(std::get<0>(file).get(),
-					            (char *) bufferPtr.get() + std::get<1>(file), std::get<2>(file));
+					            (char *) bufferPtr.get() + std::get<1>(file),
+					            std::get<2>(file));
 					MY_LOG(INFO) << "off " << std::get<1>(file) << " size " << std::get<2>(file)
 					             << " Align" << alignment;
 				}
