@@ -39,8 +39,7 @@ namespace tt {
 
 	Device &stboxvk::initDevice(android_app *app, tt::Instance &instance,
 	                            vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR surface) {
-		auto &device = devices.emplace_back(
-				instance.connectToDevice(physicalDevice, surface));//reconnect
+		auto &device = devices.emplace_back(instance.connectToDevice(physicalDevice, surface));//reconnect
 		auto defaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
 		for (auto &phdFormat:defaultDeviceFormats) {
 			MY_LOG(INFO) << vk::to_string(phdFormat.colorSpace) << "@"
@@ -56,12 +55,14 @@ namespace tt {
 		auto surface = instance.connectToWSI(app->window);
 
 		if (devices.empty()) {
-			auto phyDevices = instance->enumeratePhysicalDevices();
+			auto phyDevices = instance->enumeratePhysicalDevices()[0];
+			auto phyFeatures = phyDevices.getFeatures();
+			MY_LOG(INFO) << "geometryShader : " <<phyFeatures.geometryShader;
 			//phyDevices[0].getSurfaceCapabilities2KHR(vk::PhysicalDeviceSurfaceInfo2KHR{surface.get()});
 			//auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevices[0],
 			//                                                         vk::QueueFlagBits::eGraphics,
 			//                                                         surface.get());
-			auto &device = initDevice(app, instance, phyDevices[0], surface.get());
+			auto &device = initDevice(app, instance, phyDevices, surface.get());
 			//
 
 			drawJobs.emplace_back(JobDraw::create(app, device));

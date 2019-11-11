@@ -4,15 +4,16 @@
 
 #include "JobBase.hh"
 #include "Device.hh"
+
 namespace tt {
 
 	JobBase::JobBase(tt::Device
-	         &device,
-	         uint32_t queueIndex,
-	         std::vector<vk::DescriptorPoolSize>
-	         &&descriptorPoolSizes,
-	         std::vector<vk::DescriptorSetLayoutBinding> &&descriptorSetLayoutBindings) :
-			physicalDevice {device.phyDevice()},
+	                 &device,
+	                 uint32_t queueIndex,
+	                 std::vector<vk::DescriptorPoolSize>
+	                 &&descriptorPoolSizes,
+	                 std::vector<vk::DescriptorSetLayoutBinding> &&descriptorSetLayoutBindings) :
+			physicalDevice{device.phyDevice()},
 			descriptorPoll{
 					device->createDescriptorPoolUnique(
 							vk::DescriptorPoolCreateInfo{
@@ -41,7 +42,7 @@ namespace tt {
 /* renderPass{device->createRenderPassUnique(renderPassCreateInfo)},*/
 			pipelineCache{
 					device->createPipelineCacheUnique(vk::PipelineCacheCreateInfo{})
-					},
+			},
 			pipelineLayout{
 					device->createPipelineLayoutUnique(
 							vk::PipelineLayoutCreateInfo{

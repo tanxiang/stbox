@@ -21,10 +21,10 @@ namespace tt {
 		vk::UniqueCommandPool commandPool;
 
 		JobBase(tt::Device &device, uint32_t queueIndex,
-		    std::vector<vk::DescriptorPoolSize> &&descriptorPoolSizes,
-		    std::vector<vk::DescriptorSetLayoutBinding> &&descriptorSetLayoutBindings);
+		        std::vector<vk::DescriptorPoolSize> &&descriptorPoolSizes,
+		        std::vector<vk::DescriptorSetLayoutBinding> &&descriptorSetLayoutBindings);
 
-		auto ownerDevice(){
+		auto ownerDevice() {
 			return descriptorPoll.getOwner();
 		}
 	};

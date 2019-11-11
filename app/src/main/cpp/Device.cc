@@ -6,7 +6,7 @@
 #include "Device.hh"
 #include "Window.hh"
 
-namespace tt{
+namespace tt {
 	vk::UniqueShaderModule Device::loadShaderFromAssets(const std::string &filePath,
 	                                                    android_app *androidAppCtx) {
 		// Read the file
@@ -154,6 +154,7 @@ namespace tt{
 				subpassDeps.size(), subpassDeps.data()
 		});
 	}
+
 /*
 	std::vector<vk::UniqueCommandBuffer>
 	Device::createCmdBuffers(tt::Window &swapchain, vk::CommandPool pool,
@@ -208,7 +209,7 @@ namespace tt{
 		std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
 				vk::CommandBufferAllocateInfo{pool, vk::CommandBufferLevel::ePrimary, cmdNum});
 		for (auto &cmdBuffer : commandBuffers) {
-			CommandBufferBeginHandle cmdBeginHandle{cmdBuffer,commandBufferUsageFlags};
+			CommandBufferBeginHandle cmdBeginHandle{cmdBuffer, commandBufferUsageFlags};
 			functionBegin(cmdBeginHandle);
 		}
 		return commandBuffers;
@@ -253,9 +254,9 @@ namespace tt{
 	}
 
 
-
 	ImageViewMemory
-	Device::createImageAndMemoryFromMemory(gli::texture2d t2d, vk::ImageUsageFlags imageUsageFlags) {
+	Device::createImageAndMemoryFromMemory(gli::texture2d t2d,
+	                                       vk::ImageUsageFlags imageUsageFlags) {
 		vk::ImageSubresourceRange imageSubresourceRange{
 				vk::ImageAspectFlagBits::eColor,
 				0, t2d.levels(), 0, 1
@@ -287,7 +288,7 @@ namespace tt{
 				0, t2d.levels(), 0, 1
 		};
 		//todo check t2d.format();
-		MY_LOG(INFO)<<"t2d Format:"<<vk::to_string(static_cast<vk::Format >(t2d.format()));
+		MY_LOG(INFO) << "t2d Format:" << vk::to_string(static_cast<vk::Format >(t2d.format()));
 		auto imageAndMemory = createImageAndMemory(
 				static_cast<vk::Format >(t2d.format()), vk::Extent3D{
 						static_cast<uint32_t>(t2d[0].extent().x),
@@ -302,7 +303,8 @@ namespace tt{
 						vk::ComponentSwizzle::eB,
 						vk::ComponentSwizzle::eA
 				},
-				imageSubresourceRange);
+				imageSubresourceRange
+		);
 		{
 			auto transferSrcBuffer = createBufferAndMemory(
 					t2d.size(),
@@ -364,7 +366,7 @@ namespace tt{
 								1, &imageMemoryBarrierToGeneral);
 					},
 					vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-					);
+			);
 
 			auto copyFence = submitCmdBuffer(copyCmd[0].get());
 			waitFence(copyFence.get());
@@ -396,23 +398,26 @@ namespace tt{
 		return BM;
 	}
 
-	BufferMemory Device::createBufferAndMemoryFromAssets(android_app *androidAppCtx,std::vector<std::string> names,
+	BufferMemory Device::createBufferAndMemoryFromAssets(android_app *androidAppCtx,
+	                                                     std::vector<std::string> names,
 	                                                     vk::BufferUsageFlags bufferUsageFlags,
 	                                                     vk::MemoryPropertyFlags memoryPropertyFlags) {
 		auto alignment = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 		off_t offset = 0;
-		std::vector <std::tuple<AAssetHander,off_t ,off_t >> fileHanders;
-		for(auto&name:names){
-			auto file = AAssetManagerFileOpen(androidAppCtx->activity->assetManager,name);
-			if(!file)
+		std::vector<std::tuple<AAssetHander, off_t, off_t >> fileHanders;
+		for (auto &name:names) {
+			auto file = AAssetManagerFileOpen(androidAppCtx->activity->assetManager, name);
+			if (!file)
 				throw std::runtime_error{"asset not found"};
-			auto length =  AAsset_getLength(file.get());
-			fileHanders.emplace_back(std::move(file),offset,length);
-			length += (alignment - 1) - ((length - 1) % alignment) ;
+			auto length = AAsset_getLength(file.get());
+			fileHanders.emplace_back(std::move(file), offset, length);
+			length += (alignment - 1) - ((length - 1) % alignment);
 			offset += length;
 		}
-		if(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
-			auto BAM = createBufferAndMemory(offset,vk::BufferUsageFlagBits::eTransferSrc,vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
+		if (memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
+			auto BAM = createBufferAndMemory(offset, vk::BufferUsageFlagBits::eTransferSrc,
+			                                 vk::MemoryPropertyFlagBits::eHostVisible |
+			                                 vk::MemoryPropertyFlagBits::eHostCoherent);
 			{
 				auto bufferPtr = mapMemoryAndSize(BAM);
 				for (auto &file:fileHanders) {
@@ -422,39 +427,44 @@ namespace tt{
 					             << " Align" << alignment;
 				}
 			}
-			auto BAM2 = createBufferAndMemory(offset,bufferUsageFlags,memoryPropertyFlags);
+			auto BAM2 = createBufferAndMemory(offset, bufferUsageFlags, memoryPropertyFlags);
 			auto copyCmd = createCmdBuffers(
 					1, gPoolUnique.get(),
-					[&](CommandBufferBeginHandle &commandBufferBeginHandle){
+					[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
 						commandBufferBeginHandle.copyBuffer(std::get<vk::UniqueBuffer>(BAM).get(),
-								std::get<vk::UniqueBuffer>(BAM2).get(),
-								{vk::BufferCopy{0,0,offset}});
+						                                    std::get<vk::UniqueBuffer>(BAM2).get(),
+						                                    {vk::BufferCopy{0, 0, offset}});
 					},
 					vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 
 			auto copyFence = submitCmdBuffer(copyCmd[0].get());
 			waitFence(copyFence.get());
-			for(auto&file:fileHanders){
-				std::get<std::vector<vk::DescriptorBufferInfo>>(BAM2).emplace_back(std::get<vk::UniqueBuffer>(BAM2).get(),std::get<1>(file),std::get<2>(file));
+			for (auto &file:fileHanders) {
+				std::get<std::vector<vk::DescriptorBufferInfo>>(BAM2).emplace_back(
+						std::get<vk::UniqueBuffer>(BAM2).get(), std::get<1>(file),
+						std::get<2>(file));
 			}
 			return BAM2;
 		}
 
-		auto BAM = createBufferAndMemory(offset,bufferUsageFlags,memoryPropertyFlags);
+		auto BAM = createBufferAndMemory(offset, bufferUsageFlags, memoryPropertyFlags);
 		auto bufferPtr = mapMemoryAndSize(BAM);
-		for(auto&file:fileHanders){
-			AAsset_read(std::get<0>(file).get(),(char*)bufferPtr.get()+std::get<1>(file),std::get<2>(file));
-			std::get<std::vector<vk::DescriptorBufferInfo>>(BAM).emplace_back(std::get<vk::UniqueBuffer>(BAM).get(),std::get<1>(file),std::get<2>(file));
-			MY_LOG(INFO) << "off "<< std::get<1>(file) <<" size "<< std::get<2>(file) <<" Align" << alignment;
+		for (auto &file:fileHanders) {
+			AAsset_read(std::get<0>(file).get(), (char *) bufferPtr.get() + std::get<1>(file),
+			            std::get<2>(file));
+			std::get<std::vector<vk::DescriptorBufferInfo>>(BAM).emplace_back(
+					std::get<vk::UniqueBuffer>(BAM).get(), std::get<1>(file), std::get<2>(file));
+			MY_LOG(INFO) << "off " << std::get<1>(file) << " size " << std::get<2>(file) << " Align"
+			             << alignment;
 		}
 		return BAM;
 	}
 
 	JobBase Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
-	                       std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings) {
+	                          std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings) {
 
 		return tt::JobBase{*this, gQueueFamilyIndex, std::move(descriptorPoolSizes),
-		               std::move(descriptorSetLayoutBindings)};
+		                   std::move(descriptorSetLayoutBindings)};
 	}
 
 	vk::UniquePipeline Device::createGraphsPipeline(
@@ -530,6 +540,6 @@ namespace tt{
 				jobRenderPass
 		};
 		//return vk::UniquePipeline{};
-		return get().createGraphicsPipelineUnique(pipelineCache,pipelineCreateInfo);
+		return get().createGraphicsPipelineUnique(pipelineCache, pipelineCreateInfo);
 	}
 }

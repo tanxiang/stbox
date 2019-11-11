@@ -7,6 +7,7 @@
 
 #include "util.hh"
 #include "Window.hh"
+
 namespace tt {
 	class JobBase;
 
@@ -52,7 +53,7 @@ namespace tt {
 		}
 
 		JobBase createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
-		               std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings);
+		                  std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings);
 
 		auto transQueue() {
 			return get().getQueue(gQueueFamilyIndex, 0);
@@ -126,8 +127,9 @@ namespace tt {
 
 
 		BufferMemory
-		createBufferAndMemoryFromAssets(android_app *androidAppCtx,std::vector<std::string> names, vk::BufferUsageFlags bufferUsageFlags,
-		                      vk::MemoryPropertyFlags memoryPropertyFlags);
+		createBufferAndMemoryFromAssets(android_app *androidAppCtx, std::vector<std::string> names,
+		                                vk::BufferUsageFlags bufferUsageFlags,
+		                                vk::MemoryPropertyFlags memoryPropertyFlags);
 
 
 		template<typename Tuple>
@@ -146,7 +148,8 @@ namespace tt {
 		}
 
 		ImageViewMemory createImageAndMemoryFromMemory(gli::texture2d t2d,
-		                                            vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
+		                                               vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
+
 		ImageViewMemory createImageAndMemoryFromT2d(gli::texture2d t2d,
 		                                            vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 
@@ -218,13 +221,13 @@ namespace tt {
 				vk::PipelineLayout pipelineLayout,
 				vk::PipelineCache pipelineCache,
 				vk::RenderPass jobRenderPass
-				);
+		);
 
 		std::vector<vk::UniqueCommandBuffer>
 		createCmdBuffers(
 				size_t cmdNum, vk::CommandPool pool,
 				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {},
-				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits {}
+				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits{}
 		);
 
 //		std::vector<vk::UniqueCommandBuffer>
