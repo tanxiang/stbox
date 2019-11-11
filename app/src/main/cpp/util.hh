@@ -31,10 +31,6 @@ namespace tt {
 
 	class Device;
 
-	class Window;
-
-	class JobBase;
-
 	class Instance;
 
 	std::vector<char> loadDataFromAssets(const std::string &filePath, android_app *androidAppCtx);

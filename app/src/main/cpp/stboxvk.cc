@@ -17,9 +17,9 @@
 
 #include "util.hh"
 #include "Instance.hh"
-#include "JobBase.hh"
 #include "Device.hh"
-#include "Window.hh"
+#include "JobFont.hh"
+#include "JobDraw.hh"
 #include "onnx.hh"
 #include <functional>
 

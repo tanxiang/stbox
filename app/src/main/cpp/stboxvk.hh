@@ -7,12 +7,12 @@
 
 #include "util.hh"
 #include "onnx.hh"
-#include "main.hh"
-#include "JobDraw.hh"
-#include "JobFont.hh"
+#include "Window.hh"
 
 //uint32_t draw_run(tt::Device &ttInstance,vk::SurfaceKHR &surfaceKHR);
 namespace tt {
+	class JobDraw;
+	class JobFont;
 	class stboxvk {
         std::vector<Device> devices;
 		std::vector<JobDraw> drawJobs;

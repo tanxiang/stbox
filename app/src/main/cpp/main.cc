@@ -18,7 +18,8 @@
 #include "util.hh"
 #include "Instance.hh"
 #include "main.hh"
-#include "JobBase.hh"
+#include "JobFont.hh"
+#include "JobDraw.hh"
 #include "Device.hh"
 #include "stboxvk.hh"
 #include "vertexdata.hh"
@@ -96,6 +97,15 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
     }
     catch (std::runtime_error runtimeError) {
         MY_LOG(ERROR) << "got system error:" << runtimeError.what() << "!#"  ;
+        JNIEnv* jni;
+        app->activity->vm->AttachCurrentThread(&jni, NULL);
+        jstring jmessage = jni->NewStringUTF(runtimeError.what());
+        jclass clazz = jni->GetObjectClass(app->activity->clazz);
+        // Signature has to match java implementation (arguments)
+        jmethodID methodID = jni->GetMethodID(clazz, "showAlert", "(Ljava/lang/String;)V");
+        jni->CallVoidMethod(app->activity->clazz, methodID, jmessage);
+        jni->DeleteLocalRef(jmessage);
+        app->activity->vm->DetachCurrentThread();
     }
     /*
     catch (std::system_error systemError) {

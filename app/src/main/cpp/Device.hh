@@ -8,6 +8,8 @@
 #include "util.hh"
 #include "Window.hh"
 namespace tt {
+	class JobBase;
+
 	class Device : public vk::UniqueDevice {
 		vk::PhysicalDevice physicalDevice;
 		uint32_t gQueueFamilyIndex;
