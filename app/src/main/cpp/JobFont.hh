@@ -29,7 +29,6 @@ namespace tt {
 
 		void CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D);
 
-
 		void buildCmdBuffer(tt::Window &swapchain);
 
 		void buildCmdBuffer(tt::Window &swapchain, vk::RenderPass cmdrenderPass);

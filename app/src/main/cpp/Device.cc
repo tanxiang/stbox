@@ -461,13 +461,6 @@ namespace tt {
 		return BAM;
 	}
 
-	JobBase Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
-	                          std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings) {
-
-		return tt::JobBase{*this, gQueueFamilyIndex, std::move(descriptorPoolSizes),
-		                   std::move(descriptorSetLayoutBindings)};
-	}
-
 	vk::UniquePipeline Device::createGraphsPipeline(
 			vk::ArrayProxy<vk::PipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos,
 			vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo,

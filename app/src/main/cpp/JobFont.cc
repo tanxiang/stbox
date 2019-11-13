@@ -158,7 +158,7 @@ namespace tt {
 		};
 
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
-		                                   pipelineVertexInputStateCreateInfo, pipelineLayout.get(),
+		                                   pipelineVertexInputStateCreateInfo, pipelineLayouts[0].get(),
 		                                   pipelineCache.get(), device.renderPass.get());
 	}
 
@@ -192,7 +192,7 @@ namespace tt {
 		handle.setScissor(0, std::array{vk::Rect2D{vk::Offset2D{}, win}});
 		handle.bindPipeline(vk::PipelineBindPoint::eGraphics, uniquePipeline.get());
 		std::array tmpDescriptorSets{descriptorSets[0].get()};
-		handle.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout.get(), 0,
+		handle.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts[0].get(), 0,
 		                          tmpDescriptorSets, {});
 		handle.bindVertexBuffers(0, std::get<vk::UniqueBuffer>(BAMs[2]).get(), offsets);
 		handle.draw(4, 6, 0, 0);

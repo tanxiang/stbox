@@ -80,7 +80,7 @@ namespace tt {
 
 		};
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
-		                                   pipelineVertexInputStateCreateInfo, pipelineLayout.get(),
+		                                   pipelineVertexInputStateCreateInfo, pipelineLayouts[0].get(),
 		                                   pipelineCache.get(), device.renderPass.get());
 
 	}
@@ -141,7 +141,7 @@ namespace tt {
 		std::array tmpDescriptorSets{descriptorSets[0].get()};
 		cmdHandleRenderpassBegin.bindDescriptorSets(
 				vk::PipelineBindPoint::eGraphics,
-				pipelineLayout.get(), 0,
+				pipelineLayouts[0].get(), 0,
 				tmpDescriptorSets,
 				{});
 		std::array offsets{vk::DeviceSize{0}};

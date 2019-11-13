@@ -7,9 +7,9 @@
 
 #include "util.hh"
 #include "Window.hh"
+#include "JobBase.hh"
 
 namespace tt {
-	class JobBase;
 
 	class Device : public vk::UniqueDevice {
 		vk::PhysicalDevice physicalDevice;
@@ -52,8 +52,11 @@ namespace tt {
 			return physicalDevice;
 		}
 
-		JobBase createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
-		                  std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings);
+		auto createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
+		                  std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings){
+			return tt::JobBase{get(), gQueueFamilyIndex, descriptorPoolSizes,
+			                   {descriptorSetLayoutBindings}};
+		}
 
 		auto transQueue() {
 			return get().getQueue(gQueueFamilyIndex, 0);
