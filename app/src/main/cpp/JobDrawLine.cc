@@ -16,7 +16,6 @@ namespace tt {
 		return JobDrawLine(
 				device.createJob(
 						{
-
 								vk::DescriptorPoolSize{
 										vk::DescriptorType::eUniformBuffer, 1
 								},

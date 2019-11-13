@@ -58,6 +58,13 @@ namespace tt {
 			                   {descriptorSetLayoutBindings}};
 		}
 
+
+		auto createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
+		               std::initializer_list<std::vector<vk::DescriptorSetLayoutBinding>> descriptorSetLayoutBindings){
+			return tt::JobBase{get(), gQueueFamilyIndex, descriptorPoolSizes,
+			                   descriptorSetLayoutBindings};
+		}
+
 		auto transQueue() {
 			return get().getQueue(gQueueFamilyIndex, 0);
 		}
