@@ -14,16 +14,26 @@
 
 #version 450
 
+#if NCNN_fp16_storage
+#extension GL_EXT_shader_16bit_storage: require
+#endif
+#if NCNN_fp16_arithmetic
+#extension GL_AMD_gpu_shader_half_float: require
+#endif
+
 layout (constant_id = 0) const int bias_term = 0;
+layout (constant_id = 1) const int activation_type = 0;
+layout (constant_id = 2) const float activation_param_0 = 0;
+layout (constant_id = 3) const float activation_param_1 = 0;
 
 layout (local_size_x_id = 233) in;
 layout (local_size_y_id = 234) in;
 layout (local_size_z_id = 235) in;
 
-layout (binding = 0) readonly buffer bottom_blob { vec4 bottom_blob_data[]; };
-layout (binding = 1) writeonly buffer top_blob { vec4 top_blob_data[]; };
-layout (binding = 2) readonly buffer weight_blob { float weight_data[]; };
-layout (binding = 3) readonly buffer bias_blob { float bias_data[]; };
+layout (binding = 0) readonly buffer bottom_blob { sfpvec4 bottom_blob_data[]; };
+layout (binding = 1) writeonly buffer top_blob { sfpvec4 top_blob_data[]; };
+layout (binding = 2) readonly buffer weight_blob { sfp weight_data[]; };
+layout (binding = 3) readonly buffer bias_blob { sfp bias_data[]; };
 
 layout (push_constant) uniform parameter
 {
@@ -47,15 +57,15 @@ void main()
     if (gx >= p.outsize_4 || gy >= 1 || gz >= p.outc)
         return;
 
-    vec4 sum;
+    afpvec4 sum;
 
     if (bias_term == 1)
     {
-        sum = vec4(bias_data[gz]);
+        sum = afpvec4(bias_data[gz]);
     }
     else
     {
-        sum = vec4(0.f);
+        sum = afpvec4(0.f);
     }
 
     int w_offset = gz * p.c;
@@ -63,11 +73,31 @@ void main()
 
     for (int z = 0; z < p.c; z++)
     {
-        sum += weight_data[w_offset] * bottom_blob_data[v_offset];
+        sum += sfp2afp(weight_data[w_offset]) * sfp2afpvec4(bottom_blob_data[v_offset]);
 
         w_offset += 1;
         v_offset += p.cstep_4;
     }
 
-    top_blob_data[gz * p.outcstep_4 + gx] = sum;
+    if (activation_type == 1)
+    {
+        sum = max(sum, afp(0.f));
+    }
+    if (activation_type == 2)
+    {
+        const afp slope = afp(activation_param_0);
+        sum = mix(sum, sum * afp(slope), lessThan(sum, afpvec4(0.f)));
+    }
+    if (activation_type == 3)
+    {
+        const afp const_min = afp(activation_param_0);
+        const afp const_max = afp(activation_param_1);
+        sum = clamp(sum, const_min, const_max);
+    }
+    if (activation_type == 4)
+    {
+        sum = afp(1.f) / (afp(1.f) + exp(-sum));
+    }
+
+    top_blob_data[gz * p.outcstep_4 + gx] = afp2sfpvec4(sum);
 }

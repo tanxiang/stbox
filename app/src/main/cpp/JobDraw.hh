@@ -31,9 +31,6 @@ namespace tt {
 		                   		CommandBufferBeginHandle &,
 		                   		vk::Extent2D) {};
 
-		auto clearCmdBuffer() {
-			return cmdBuffers.clear();
-		}
 
 		void buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass);
 

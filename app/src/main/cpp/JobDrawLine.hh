@@ -12,6 +12,17 @@
 
 namespace tt {
 	struct JobDrawLine : public JobBase{
+		vk::UniqueRenderPass renderPass;
+		vk::UniqueRenderPass createRenderpass(tt::Device &);
+
+		std::array<vk::ClearValue, 2> clearValues{
+				vk::ClearColorValue{std::array<float, 4>{0.1f, 0.5f, 0.5f, 0.2f}},
+				vk::ClearDepthStencilValue{1.0f, 0},
+		};
+
+		vk::UniquePipeline gPipeline,cPipeline;//todo vector
+		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app);
+		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app);
 
 		static JobDrawLine create(android_app *app, tt::Device &device);
 
