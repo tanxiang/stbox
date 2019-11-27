@@ -183,19 +183,6 @@ namespace tt {
 		ImageViewMemory createImageAndMemoryFromT2d(gli::texture2d t2d,
 		                                            vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 
-		template<typename VectorType>
-		BufferMemory
-		createBufferAndMemoryFromVector(VectorType data, vk::BufferUsageFlags bufferUsageFlags,
-		                                vk::MemoryPropertyFlags memoryPropertyFlags) {
-			auto BufferMemoryToWirte = createBufferAndMemory(
-					sizeof(typename VectorType::value_type) * data.size(), bufferUsageFlags,
-					memoryPropertyFlags);
-
-			auto dataPtr = mapMemoryAndSize(BufferMemoryToWirte);
-			std::memcpy(dataPtr.get(), data.data(), std::get<size_t>(BufferMemoryToWirte));
-			return BufferMemoryToWirte;
-		}
-
 
 		BufferMemory
 		createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
@@ -207,51 +194,98 @@ namespace tt {
 		                                vk::BufferUsageFlags bufferUsageFlags,
 		                                vk::MemoryPropertyFlags memoryPropertyFlags);
 
-		auto alignment(uint32_t alignment,uint32_t length){
+		auto alignment(uint32_t alignment, uint32_t length) {
 			return length + (alignment - 1) - ((length - 1) % alignment);
 		}
 
+
 		template<typename T, typename std::enable_if<!is_container<T>::value, int>::type = 0>
-		auto objSize(uint32_t alig,const T &t) {
-			return alignment(alig,sizeof(t));
+		auto objSizec( const T &t) {
+			return sizeof(t);
 		}
 
 		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
-		auto objSize(uint32_t alig,const T &t) {
-			return alignment(alig,t.size() * sizeof(typename T::value_type));
+		auto objSizec(const T &t) {
+			return t.size() * sizeof(typename T::value_type);
+		}
+
+		template<typename T, typename std::enable_if<!is_container<T>::value, int>::type = 0>
+		auto objSize(uint32_t alig, const T &t) {
+			return alignment(alig, sizeof(t));
+		}
+
+		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
+		auto objSize(uint32_t alig, const T &t) {
+			return alignment(alig, t.size() * sizeof(typename T::value_type));
 		}
 
 		template<typename T, typename ... Ts>
 		auto
-		objSize(uint32_t alig,const T &t,const Ts &... ts) {
-			return objSize(alig,t) + objSize(alig,ts...);
+		objSize(uint32_t alig, const T &t, const Ts &... ts) {
+			return objSize(alig, t) + objSize(alig, ts...);
 		}
 
 		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
-		vk::DescriptorBufferInfo writeObj(BufferMemoryPtr& ptr,vk::Buffer buffer,uint32_t alig,uint32_t& off,const T &t) {
+		vk::DescriptorBufferInfo
+		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t &off,
+		         const T &t) {
 			auto size = t.size() * sizeof(typename T::value_type);
-			memcpy(static_cast<char*>(ptr.get())+off,t.data(),size);
-			off += objSize(alig,t);
-			return vk::DescriptorBufferInfo{buffer,off,size};
+			memcpy(static_cast<char *>(ptr.get()) + off, t.data(), size);
+			off += objSize(alig, t);
+			return vk::DescriptorBufferInfo{buffer, off, size};
 		}
 
 		template<typename T, typename std::enable_if<!is_container<T>::value, int>::type = 0>
-		vk::DescriptorBufferInfo writeObj(BufferMemoryPtr& ptr,vk::Buffer buffer,uint32_t alig,uint32_t& off,const T &t) {
+		vk::DescriptorBufferInfo
+		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t &off,
+		         const T &t) {
 			auto size = sizeof(t);
-			memcpy(static_cast<char*>(ptr.get())+off,&t,size);
-			off += objSize(alig,t);
-			return vk::DescriptorBufferInfo{buffer,off,size};
+			memcpy(static_cast<char *>(ptr.get()) + off, &t, size);
+			off += objSize(alig, t);
+			return vk::DescriptorBufferInfo{buffer, off, size};
 		}
 
 		BufferMemory flushBufferToDevMemory(vk::BufferUsageFlags bufferUsageFlags,
-		                            vk::MemoryPropertyFlags memoryPropertyFlags,size_t size,BufferMemory&& bufferMemory);
+		                                    vk::MemoryPropertyFlags memoryPropertyFlags,
+		                                    size_t size, BufferMemory &&bufferMemory);
 
+#if 0 //index vertex buffer in same memory
+		template<typename ... Ts>
+		auto& buildBufferOnBsM(BuffersMemory<> &BsM, vk::BufferUsageFlags bufferUsageFlags,
+		                   const Ts &... objs) {
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			auto size = objSize(alig, objs...);
+			return BsM.buffers().emplace_back(
+					get().createBufferUnique(
+							vk::BufferCreateInfo{
+									vk::BufferCreateFlags(),
+									size,
+									bufferUsageFlags}
+					),
+					size
+			);
+		}
+
+		auto buildLoaclMemoryOnBsM(BuffersMemory<> &BsM,vk::MemoryPropertyFlags memoryPropertyFlags){
+			size_t size =0 ;
+			uint32_t typeIndex;
+			for(auto& buffer:BsM.buffers()) {
+				auto memoryRequirements = get().getBufferMemoryRequirements(buffer.get());
+				auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits,
+				                                     memoryPropertyFlags);
+			}
+			BsM.memory() = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
+					memoryRequirements.size, typeIndex
+			});
+		}
+#endif
 		template<typename ... Ts>
 		auto
 		createBufferAndMemoryFromTypes(vk::BufferUsageFlags bufferUsageFlags,
-		                               vk::MemoryPropertyFlags memoryPropertyFlags,const Ts &... objs) {
+		                               vk::MemoryPropertyFlags memoryPropertyFlags,
+		                               const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
-			auto size = objSize(alig,objs...);
+			auto size = objSize(alig, objs...);
 			auto BAM = createBufferAndMemory(
 					size,
 					memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal ?
@@ -264,10 +298,12 @@ namespace tt {
 			);
 			uint32_t off = 0;
 			auto bufferPtr = mapMemoryAndSize(BAM);
-			std::vector descriptorBufferInfos{writeObj(bufferPtr,std::get<vk::UniqueBuffer>(BAM).get(),alig,off,objs)...};
-			if(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal){
-				BAM = flushBufferToDevMemory(bufferUsageFlags,memoryPropertyFlags,size,std::move(BAM));
-				for(auto& descriptorBufferInfo:descriptorBufferInfos)
+			std::vector descriptorBufferInfos{
+					writeObj(bufferPtr, std::get<vk::UniqueBuffer>(BAM).get(), alig, off, objs)...};
+			if (memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
+				BAM = flushBufferToDevMemory(bufferUsageFlags, memoryPropertyFlags, size,
+				                             std::move(BAM));
+				for (auto &descriptorBufferInfo:descriptorBufferInfos)
 					descriptorBufferInfo.setBuffer(std::get<vk::UniqueBuffer>(BAM).get());
 			}
 			std::get<std::vector<vk::DescriptorBufferInfo>>(BAM) = descriptorBufferInfos;
