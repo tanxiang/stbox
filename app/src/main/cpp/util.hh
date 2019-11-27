@@ -117,7 +117,6 @@ namespace tt {
 	template<typename PodType>
 	struct BufferTypePtr : public std::unique_ptr<PodType[], std::function<void(PodType*)> > {
 		using std::unique_ptr<PodType[], std::function<void(PodType *)> >::unique_ptr;
-
 	};
 
 	namespace helper {

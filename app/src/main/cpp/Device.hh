@@ -8,8 +8,39 @@
 #include "util.hh"
 #include "Window.hh"
 #include "JobBase.hh"
+#include <type_traits>
+
 
 namespace tt {
+
+	template<typename T, typename _ = void>
+	struct is_container : std::false_type {
+	};
+
+	template<typename... Ts>
+	struct is_container_helper {
+	};
+
+	template<typename T>
+	struct is_container<
+			T,
+			std::conditional_t<
+					false,
+					is_container_helper<
+							typename T::value_type,
+							typename T::size_type,
+							typename T::allocator_type,
+							typename T::iterator,
+							typename T::const_iterator,
+							decltype(std::declval<T>().size()),
+							decltype(std::declval<T>().begin()),
+							decltype(std::declval<T>().end()),
+							decltype(std::declval<T>().data())
+					>,
+					void
+			>
+	> : public std::true_type {
+	};
 
 	class Device : public vk::UniqueDevice {
 		vk::PhysicalDevice physicalDevice;
@@ -53,14 +84,14 @@ namespace tt {
 		}
 
 		auto createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
-		                  std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings){
+		               std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings) {
 			return tt::JobBase{get(), gQueueFamilyIndex, descriptorPoolSizes,
 			                   {descriptorSetLayoutBindings}};
 		}
 
 
 		auto createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
-		               std::initializer_list<std::vector<vk::DescriptorSetLayoutBinding>> descriptorSetLayoutBindings){
+		               std::initializer_list<std::vector<vk::DescriptorSetLayoutBinding>> descriptorSetLayoutBindings) {
 			return tt::JobBase{get(), gQueueFamilyIndex, descriptorPoolSizes,
 			                   descriptorSetLayoutBindings};
 		}
@@ -131,17 +162,6 @@ namespace tt {
 				}
 		);
 
-		BufferMemory
-		createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
-		                      vk::MemoryPropertyFlags memoryPropertyFlags);
-
-
-		BufferMemory
-		createBufferAndMemoryFromAssets(android_app *androidAppCtx, std::vector<std::string> names,
-		                                vk::BufferUsageFlags bufferUsageFlags,
-		                                vk::MemoryPropertyFlags memoryPropertyFlags);
-
-
 		template<typename Tuple>
 		auto mapMemoryAndSize(Tuple &tupleMemoryAndSize, size_t offset = 0) {
 			auto dev = get();
@@ -176,16 +196,82 @@ namespace tt {
 			return BufferMemoryToWirte;
 		}
 
-		template<typename MatType>
-		BufferMemory
-		createBufferAndMemoryFromMat(MatType data, vk::BufferUsageFlags bufferUsageFlags,
-		                             vk::MemoryPropertyFlags memoryPropertyFlags) {
-			auto BufferMemoryToWirte = createBufferAndMemory(sizeof(MatType), bufferUsageFlags,
-			                                                 memoryPropertyFlags);
 
-			auto dataPtr = mapMemoryAndSize(BufferMemoryToWirte);
-			memcpy(dataPtr.get(), &data, std::get<size_t>(BufferMemoryToWirte));
-			return BufferMemoryToWirte;
+		BufferMemory
+		createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
+		                      vk::MemoryPropertyFlags memoryPropertyFlags);
+
+
+		BufferMemory
+		createBufferAndMemoryFromAssets(android_app *androidAppCtx, std::vector<std::string> names,
+		                                vk::BufferUsageFlags bufferUsageFlags,
+		                                vk::MemoryPropertyFlags memoryPropertyFlags);
+
+		auto alignment(uint32_t alignment,uint32_t length){
+			return length + (alignment - 1) - ((length - 1) % alignment);
+		}
+
+		template<typename T, typename std::enable_if<!is_container<T>::value, int>::type = 0>
+		auto objSize(uint32_t alig,const T &t) {
+			return alignment(alig,sizeof(t));
+		}
+
+		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
+		auto objSize(uint32_t alig,const T &t) {
+			return alignment(alig,t.size() * sizeof(typename T::value_type));
+		}
+
+		template<typename T, typename ... Ts>
+		auto
+		objSize(uint32_t alig,const T &t,const Ts &... ts) {
+			return objSize(alig,t) + objSize(alig,ts...);
+		}
+
+		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
+		vk::DescriptorBufferInfo writeObj(BufferMemoryPtr& ptr,vk::Buffer buffer,uint32_t alig,uint32_t& off,const T &t) {
+			auto size = t.size() * sizeof(typename T::value_type);
+			memcpy(static_cast<char*>(ptr.get())+off,t.data(),size);
+			off += objSize(alig,t);
+			return vk::DescriptorBufferInfo{buffer,off,size};
+		}
+
+		template<typename T, typename std::enable_if<!is_container<T>::value, int>::type = 0>
+		vk::DescriptorBufferInfo writeObj(BufferMemoryPtr& ptr,vk::Buffer buffer,uint32_t alig,uint32_t& off,const T &t) {
+			auto size = sizeof(t);
+			memcpy(static_cast<char*>(ptr.get())+off,&t,size);
+			off += objSize(alig,t);
+			return vk::DescriptorBufferInfo{buffer,off,size};
+		}
+
+		BufferMemory flushBufferToDevMemory(vk::BufferUsageFlags bufferUsageFlags,
+		                            vk::MemoryPropertyFlags memoryPropertyFlags,size_t size,BufferMemory&& bufferMemory);
+
+		template<typename ... Ts>
+		auto
+		createBufferAndMemoryFromTypes(vk::BufferUsageFlags bufferUsageFlags,
+		                               vk::MemoryPropertyFlags memoryPropertyFlags,const Ts &... objs) {
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			auto size = objSize(alig,objs...);
+			auto BAM = createBufferAndMemory(
+					size,
+					memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal ?
+					vk::BufferUsageFlagBits::eTransferSrc :
+					bufferUsageFlags,
+					memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal ?
+					vk::MemoryPropertyFlagBits::eHostVisible |
+					vk::MemoryPropertyFlagBits::eHostCoherent :
+					memoryPropertyFlags
+			);
+			uint32_t off = 0;
+			auto bufferPtr = mapMemoryAndSize(BAM);
+			std::vector descriptorBufferInfos{writeObj(bufferPtr,std::get<vk::UniqueBuffer>(BAM).get(),alig,off,objs)...};
+			if(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal){
+				BAM = flushBufferToDevMemory(bufferUsageFlags,memoryPropertyFlags,size,std::move(BAM));
+				for(auto& descriptorBufferInfo:descriptorBufferInfos)
+					descriptorBufferInfo.setBuffer(std::get<vk::UniqueBuffer>(BAM).get());
+			}
+			std::get<std::vector<vk::DescriptorBufferInfo>>(BAM) = descriptorBufferInfos;
+			return BAM;
 		}
 
 		auto createSampler(uint32_t levels) {

@@ -385,10 +385,8 @@ namespace tt {
 						dataSize,
 						bufferUsageFlags}
 		);
-		auto memoryRequirements = get().getBufferMemoryRequirements(
-				std::get<vk::UniqueBuffer>(BM).get());
-		auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits,
-		                                     memoryPropertyFlags);
+		auto memoryRequirements = get().getBufferMemoryRequirements(std::get<vk::UniqueBuffer>(BM).get());
+		auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits, memoryPropertyFlags);
 		std::get<vk::UniqueDeviceMemory>(BM) = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
 				memoryRequirements.size, typeIndex
 		});
@@ -535,5 +533,29 @@ namespace tt {
 		};
 		//return vk::UniquePipeline{};
 		return get().createGraphicsPipelineUnique(pipelineCache, pipelineCreateInfo);
+	}
+
+	BufferMemory Device::flushBufferToDevMemory(vk::BufferUsageFlags bufferUsageFlags,
+	                                    vk::MemoryPropertyFlags memoryPropertyFlags, size_t size,
+	                                    BufferMemory &&bufferMemory) {
+		auto BAM = createBufferAndMemory(
+				size,
+				bufferUsageFlags,
+				memoryPropertyFlags
+		);
+
+		auto copyCmd = createCmdBuffers(
+				1, gPoolUnique.get(),
+				[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
+					commandBufferBeginHandle.copyBuffer(std::get<vk::UniqueBuffer>(bufferMemory).get(),
+					                                    std::get<vk::UniqueBuffer>(BAM).get(),
+					                                    {vk::BufferCopy{0, 0, size}});
+				},
+				vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+
+		auto copyFence = submitCmdBuffer(copyCmd[0].get());
+		waitFence(copyFence.get());
+
+		return BAM;
 	}
 }

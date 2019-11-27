@@ -80,7 +80,8 @@ namespace tt {
 
 		};
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
-		                                   pipelineVertexInputStateCreateInfo, pipelineLayouts[0].get(),
+		                                   pipelineVertexInputStateCreateInfo,
+		                                   pipelineLayouts[0].get(),
 		                                   pipelineCache.get(), device.renderPass.get());
 
 	}
@@ -134,7 +135,6 @@ namespace tt {
 		);
 
 		cmdHandleRenderpassBegin.setScissor(0, std::array{vk::Rect2D{vk::Offset2D{}, win}});
-
 		cmdHandleRenderpassBegin.bindPipeline(
 				vk::PipelineBindPoint::eGraphics,
 				uniquePipeline.get());
@@ -146,9 +146,10 @@ namespace tt {
 				{});
 		std::array offsets{vk::DeviceSize{0}};
 		//vk::DeviceSize offsets[1] = {0};
-		cmdHandleRenderpassBegin.bindVertexBuffers(0,
-		                                           std::get<vk::UniqueBuffer>(BAMs[1]).get(),
-		                                           offsets);
+		cmdHandleRenderpassBegin.bindVertexBuffers(
+				0,
+				std::get<vk::UniqueBuffer>(BAMs[1]).get(),
+				offsets);
 		cmdHandleRenderpassBegin.bindIndexBuffer(
 				std::get<vk::UniqueBuffer>(BAMs[2]).get(),
 				0, vk::IndexType::eUint32);
@@ -170,17 +171,18 @@ namespace tt {
 				{{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
 		};
 		BAMs.emplace_back(
-				device.createBufferAndMemoryFromVector(
-						vertices, vk::BufferUsageFlagBits::eVertexBuffer,
-						vk::MemoryPropertyFlagBits::eHostVisible |
-						vk::MemoryPropertyFlagBits::eHostCoherent));
+				device.createBufferAndMemoryFromTypes(
+						vk::BufferUsageFlagBits::eVertexBuffer,
+						vk::MemoryPropertyFlagBits::eDeviceLocal,
+						vertices)
+		);
 
 		BAMs.emplace_back(
-				device.createBufferAndMemoryFromVector(
-						std::vector<uint32_t>{0, 1, 2, 2, 3, 0},
+				device.createBufferAndMemoryFromTypes(
 						vk::BufferUsageFlagBits::eIndexBuffer,
-						vk::MemoryPropertyFlagBits::eHostVisible |
-						vk::MemoryPropertyFlagBits::eHostCoherent));
+						vk::MemoryPropertyFlagBits::eDeviceLocal,
+						std::array{0u, 1u, 2u, 2u, 3u, 0u})
+		);
 
 		{
 			auto fileContent = loadDataFromAssets("textures/ic_launcher-web.ktx", app);
