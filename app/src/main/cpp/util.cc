@@ -57,7 +57,7 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
 */
 
 #include <android/log.h>
-
+#include <bitset>
 
 namespace tt {
 	namespace helper {
@@ -66,6 +66,7 @@ namespace tt {
 	uint32_t findMemoryTypeIndex(vk::PhysicalDevice physicalDevice, uint32_t memoryTypeBits,
 	                             vk::MemoryPropertyFlags flags) {
 		auto memoryProperties = physicalDevice.getMemoryProperties();
+		//MY_LOG(INFO) << vk::to_string(flags) << " ? " << std::bitset<sizeof(memoryTypeBits)<<3>(memoryTypeBits);
 		for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
 			//MY_LOG(INFO) << vk::to_string(memoryProperties.memoryTypes[i].propertyFlags)
 			//             << " march " << vk::to_string(flags) << " ? " << i;

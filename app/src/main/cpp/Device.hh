@@ -177,6 +177,17 @@ namespace tt {
 			};
 		}
 
+		auto mapMemorySize(vk::DeviceMemory devMemory, size_t size, size_t offset = 0) {
+			auto dev = get();
+			return BufferMemoryPtr{
+					dev.mapMemory(devMemory, offset, size,
+					              vk::MemoryMapFlagBits()),
+					[dev, devMemory](void *pVoid) {
+						dev.unmapMemory(devMemory);
+					}
+			};
+		}
+
 		ImageViewMemory createImageAndMemoryFromMemory(gli::texture2d t2d,
 		                                               vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 
@@ -200,15 +211,16 @@ namespace tt {
 
 
 		template<typename T, typename std::enable_if<!is_container<T>::value, int>::type = 0>
-		auto objSizec( const T &t) {
+		auto objSize(uint32_t alig, const T &t) {
 			return sizeof(t);
 		}
 
 		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
-		auto objSizec(const T &t) {
+		auto objSize(uint32_t alig, const T &t) {
 			return t.size() * sizeof(typename T::value_type);
 		}
 
+/*
 		template<typename T, typename std::enable_if<!is_container<T>::value, int>::type = 0>
 		auto objSize(uint32_t alig, const T &t) {
 			return alignment(alig, sizeof(t));
@@ -218,11 +230,11 @@ namespace tt {
 		auto objSize(uint32_t alig, const T &t) {
 			return alignment(alig, t.size() * sizeof(typename T::value_type));
 		}
-
+*/
 		template<typename T, typename ... Ts>
 		auto
 		objSize(uint32_t alig, const T &t, const Ts &... ts) {
-			return objSize(alig, t) + objSize(alig, ts...);
+			return alignment(alig, objSize(alig, t)) + objSize(alig, ts...);
 		}
 
 		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
@@ -231,8 +243,10 @@ namespace tt {
 		         const T &t) {
 			auto size = t.size() * sizeof(typename T::value_type);
 			memcpy(static_cast<char *>(ptr.get()) + off, t.data(), size);
-			off += objSize(alig, t);
-			return vk::DescriptorBufferInfo{buffer, off, size};
+			auto m_off = off;
+			//off += get().getBufferMemoryRequirements(buffer).size;
+			off += alignment(alig, objSize(alig, t));
+			return vk::DescriptorBufferInfo{buffer, m_off, size};
 		}
 
 		template<typename T, typename std::enable_if<!is_container<T>::value, int>::type = 0>
@@ -241,18 +255,39 @@ namespace tt {
 		         const T &t) {
 			auto size = sizeof(t);
 			memcpy(static_cast<char *>(ptr.get()) + off, &t, size);
-			off += objSize(alig, t);
-			return vk::DescriptorBufferInfo{buffer, off, size};
+			auto m_off = off;
+			//off += get().getBufferMemoryRequirements(buffer).size;
+			off += alignment(alig, objSize(alig, t));
+			return vk::DescriptorBufferInfo{buffer, m_off, size};
+		}
+
+		template<typename ... Ts>
+		auto writeObjs(BufferMemoryPtr &bufferPtr, vk::Buffer buffer, uint32_t &off,
+		               const Ts &... objs) {
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			auto m_off = off;
+			off += get().getBufferMemoryRequirements(buffer).size;
+			return std::vector{writeObj(bufferPtr, buffer, alig, m_off, objs)...};
 		}
 
 		BufferMemory flushBufferToDevMemory(vk::BufferUsageFlags bufferUsageFlags,
 		                                    vk::MemoryPropertyFlags memoryPropertyFlags,
 		                                    size_t size, BufferMemory &&bufferMemory);
 
-#if 0 //index vertex buffer in same memory
+
+
+		void flushBufferToBuffer(vk::Buffer srcbuffer,vk::Buffer decbuffer,size_t size,
+		                         size_t srcoff = 0, size_t decoff = 0);
+
+		void flushBufferToMemory(vk::Buffer buffer, vk::DeviceMemory memory,size_t size,
+		                         size_t srcoff = 0, size_t decoff = 0);
+
+		void bindBsm(BuffersMemory<> &BsM);
+
+
 		template<typename ... Ts>
-		auto& buildBufferOnBsM(BuffersMemory<> &BsM, vk::BufferUsageFlags bufferUsageFlags,
-		                   const Ts &... objs) {
+		auto &buildBufferOnBsM(BuffersMemory<> &BsM, vk::BufferUsageFlags bufferUsageFlags,
+		                       const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			auto size = objSize(alig, objs...);
 			return BsM.buffers().emplace_back(
@@ -266,19 +301,54 @@ namespace tt {
 			);
 		}
 
-		auto buildLoaclMemoryOnBsM(BuffersMemory<> &BsM,vk::MemoryPropertyFlags memoryPropertyFlags){
-			size_t size =0 ;
-			uint32_t typeIndex;
-			for(auto& buffer:BsM.buffers()) {
-				auto memoryRequirements = get().getBufferMemoryRequirements(buffer.get());
-				auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits,
-				                                     memoryPropertyFlags);
+		auto createLoaclBufferOnBsM(BuffersMemory<> &BsM) {
+			size_t size = 0;
+			for (auto &buffer:BsM.buffers()) {
+				auto memoryRequirements = get().getBufferMemoryRequirements(buffer.buffer().get());
+				size += memoryRequirements.size;
 			}
-			BsM.memory() = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
+			MY_LOG(INFO)<<"need locale mem :" << size;
+			return get().createBufferUnique(
+					vk::BufferCreateInfo{
+							vk::BufferCreateFlags(),
+							size,
+							vk::BufferUsageFlagBits::eTransferSrc}
+			);
+		}
+
+		auto createLoaclMemoryOnBsM(vk::Buffer buffer) {
+			auto memoryRequirements = get().getBufferMemoryRequirements(buffer);
+			auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits,
+			                                     vk::MemoryPropertyFlagBits::eHostVisible |
+			                                     vk::MemoryPropertyFlagBits::eHostCoherent);
+			MY_LOG(INFO)<<"alloc locale mem :" << memoryRequirements.size<<" id:"<<typeIndex;
+
+			return get().allocateMemoryUnique(vk::MemoryAllocateInfo{
 					memoryRequirements.size, typeIndex
 			});
 		}
-#endif
+
+
+		void buildMemoryOnBsM(BuffersMemory<> &BsM,
+		                      vk::MemoryPropertyFlags memoryPropertyFlags) {
+			size_t size = 0;
+			uint32_t memoryTypeBits = 0xFFFFFFFF;
+			for (auto &buffer:BsM.buffers()) {
+				auto memoryRequirements = get().getBufferMemoryRequirements(buffer.buffer().get());
+				memoryTypeBits &= memoryRequirements.memoryTypeBits;
+				size += memoryRequirements.size;
+				//MY_LOG(INFO) << size << '=' << buffer.size() << '?'
+				//             << std::bitset<sizeof(memoryTypeBits) << 3>(memoryTypeBits);
+			}
+			auto typeIndex = findMemoryTypeIndex(memoryTypeBits, memoryPropertyFlags);
+			MY_LOG(INFO)<<"alloc dev mem:"<<size<<" index:"<<typeIndex;
+			BsM.memory() = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
+					size, typeIndex
+			});
+			BsM.size() = size;
+		}
+
+
 		template<typename ... Ts>
 		auto
 		createBufferAndMemoryFromTypes(vk::BufferUsageFlags bufferUsageFlags,

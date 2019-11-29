@@ -148,10 +148,11 @@ namespace tt {
 		//vk::DeviceSize offsets[1] = {0};
 		cmdHandleRenderpassBegin.bindVertexBuffers(
 				0,
-				std::get<vk::UniqueBuffer>(BAMs[1]).get(),
+				//std::get<vk::UniqueBuffer>(BAMs[1]).get(),
+				Bsm.buffers()[0].buffer().get(),
 				offsets);
 		cmdHandleRenderpassBegin.bindIndexBuffer(
-				std::get<vk::UniqueBuffer>(BAMs[2]).get(),
+				Bsm.buffers()[1].buffer().get(),
 				0, vk::IndexType::eUint32);
 		cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
 	}
@@ -170,6 +171,35 @@ namespace tt {
 				{{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
 				{{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
 		};
+		std::array indexes{0u, 1u, 2u, 2u, 3u, 0u};
+		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eVertexBuffer, vertices);
+		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eIndexBuffer, indexes);
+		{
+			auto localeBuffer = device.createLoaclBufferOnBsM(Bsm);
+			auto localMemory = device.createLoaclMemoryOnBsM(localeBuffer.get());
+			device->bindBufferMemory(localeBuffer.get(),localMemory.get(),0);
+
+			{
+				uint32_t off = 0;
+				auto memoryPtr = device.mapMemorySize(
+						localMemory.get(),
+						device->getBufferMemoryRequirements(localeBuffer.get()).size
+				);
+				Bsm.buffers()[0].descriptors() =
+						device.writeObjs(memoryPtr, Bsm.buffers()[0].buffer().get(), off, vertices);
+
+				MY_LOG(INFO)<<"descriptors:" << Bsm.buffers()[0].descriptors().size() <<" off:"<<Bsm.buffers()[0].descriptors()[0].offset
+				<<" size:"<<Bsm.buffers()[0].descriptors()[0].range;
+
+				Bsm.buffers()[1].descriptors() =
+						device.writeObjs(memoryPtr, Bsm.buffers()[1].buffer().get(), off, indexes);
+			}
+			//Bsm.memory() = std::move(localMemory);
+			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
+			device.flushBufferToMemory(localeBuffer.get(),Bsm.memory().get(), Bsm.size());
+			device.bindBsm(Bsm);
+		}
+
 		BAMs.emplace_back(
 				device.createBufferAndMemoryFromTypes(
 						vk::BufferUsageFlagBits::eVertexBuffer,

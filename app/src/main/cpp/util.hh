@@ -109,13 +109,13 @@ namespace tt {
 
 	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t, std::vector<vk::DescriptorBufferInfo> >;
 
-#if 0
+
 	template <typename T = std::vector<vk::DescriptorBufferInfo>>
 	struct DescriptorsBuffer : public std::tuple<vk::UniqueBuffer, size_t ,T> {
 		auto& buffer(){
 			return std::get<vk::UniqueBuffer>(*this);
 		}
-		auto size(){
+		auto& size(){
 			return std::get<size_t>(*this);
 		}
 		auto& descriptors(){
@@ -129,7 +129,7 @@ namespace tt {
 		auto& memory(){
 			return std::get<vk::UniqueDeviceMemory>(*this);
 		}
-		auto size(){
+		auto& size(){
 			return std::get<size_t>(*this);
 		}
 		auto& buffers(){
@@ -137,7 +137,7 @@ namespace tt {
 		}
 		using std::tuple<vk::UniqueDeviceMemory, size_t , T>::tuple;
 	};
-#endif
+
 	class BufferMemoryPtr : public std::unique_ptr<void, std::function<void(void *)> > {
 	public:
 		using std::unique_ptr<void, std::function<void(void *)> >::unique_ptr;

@@ -40,6 +40,7 @@ namespace tt {
 
 		//memory using
 		std::vector<BufferMemory> BAMs;
+		BuffersMemory<> Bsm;
 		std::vector<ImageViewMemory> IVMs;
 		vk::UniqueSampler sampler;
 
