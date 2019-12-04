@@ -175,44 +175,29 @@ namespace tt {
 		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eVertexBuffer, vertices);
 		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eIndexBuffer, indexes);
 		{
-			auto localeBuffer = device.createLoaclBufferOnBsM(Bsm);
-			auto localMemory = device.createLoaclMemoryOnBsM(localeBuffer.get());
-			device->bindBufferMemory(localeBuffer.get(),localMemory.get(),0);
+			auto localeBufferMemory = device.createLocalBufferMemoryOnBsM(Bsm);
 
 			{
 				uint32_t off = 0;
 				auto memoryPtr = device.mapMemorySize(
-						localMemory.get(),
-						device->getBufferMemoryRequirements(localeBuffer.get()).size
+						std::get<vk::UniqueDeviceMemory>(localeBufferMemory).get(),
+						device->getBufferMemoryRequirements(std::get<vk::UniqueBuffer>(localeBufferMemory).get()).size
 				);
-				Bsm.buffers()[0].descriptors() =
-						device.writeObjs(memoryPtr, Bsm.buffers()[0].buffer().get(), off, vertices);
+				//Bsm.buffers()[0].descriptors() =
+				//		device.writeObjs(memoryPtr, Bsm.buffers()[0].buffer().get(), off, vertices);
 
-				MY_LOG(INFO)<<"descriptors:" << Bsm.buffers()[0].descriptors().size() <<" off:"<<Bsm.buffers()[0].descriptors()[0].offset
-				<<" size:"<<Bsm.buffers()[0].descriptors()[0].range;
+				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.buffers()[0], off, vertices);
+				//MY_LOG(INFO)<<"descriptors:" << Bsm.buffers()[0].descriptors().size() <<" off:"<<Bsm.buffers()[0].descriptors()[0].offset
+				//<<" size:"<<Bsm.buffers()[0].descriptors()[0].range;
+				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.buffers()[1], off, indexes);
 
-				Bsm.buffers()[1].descriptors() =
-						device.writeObjs(memoryPtr, Bsm.buffers()[1].buffer().get(), off, indexes);
+				//Bsm.buffers()[1].descriptors() =
+				//		device.writeObjs(memoryPtr, Bsm.buffers()[1].buffer().get(), off, indexes);
 			}
 			//Bsm.memory() = std::move(localMemory);
 			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
-			device.flushBufferToMemory(localeBuffer.get(),Bsm.memory().get(), Bsm.size());
-			device.bindBsm(Bsm);
+			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),Bsm.memory().get(), Bsm.size());
 		}
-
-		BAMs.emplace_back(
-				device.createBufferAndMemoryFromTypes(
-						vk::BufferUsageFlagBits::eVertexBuffer,
-						vk::MemoryPropertyFlagBits::eDeviceLocal,
-						vertices)
-		);
-
-		BAMs.emplace_back(
-				device.createBufferAndMemoryFromTypes(
-						vk::BufferUsageFlagBits::eIndexBuffer,
-						vk::MemoryPropertyFlagBits::eDeviceLocal,
-						std::array{0u, 1u, 2u, 2u, 3u, 0u})
-		);
 
 		{
 			auto fileContent = loadDataFromAssets("textures/ic_launcher-web.ktx", app);

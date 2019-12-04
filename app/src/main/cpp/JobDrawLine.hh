@@ -10,6 +10,7 @@
 #include "JobBase.hh"
 #include <android_native_app_glue.h>
 
+
 namespace tt {
 	struct JobDrawLine : public JobBase{
 		vk::UniqueRenderPass renderPass;
@@ -21,6 +22,9 @@ namespace tt {
 		};
 
 		vk::UniquePipeline gPipeline,cPipeline;//todo vector
+
+		BuffersMemory<> Bsm;
+
 		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app);
 		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app);
 

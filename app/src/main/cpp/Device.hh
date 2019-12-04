@@ -239,28 +239,28 @@ namespace tt {
 
 		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
 		vk::DescriptorBufferInfo
-		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t &off,
+		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,uint32_t &off,
 		         const T &t) {
 			auto size = t.size() * sizeof(typename T::value_type);
 			memcpy(static_cast<char *>(ptr.get()) + off, t.data(), size);
 			auto m_off = off;
 			//off += get().getBufferMemoryRequirements(buffer).size;
 			off += alignment(alig, objSize(alig, t));
-			return vk::DescriptorBufferInfo{buffer, m_off, size};
+			return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
 		}
 
 		template<typename T, typename std::enable_if<!is_container<T>::value, int>::type = 0>
 		vk::DescriptorBufferInfo
-		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t &off,
+		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff, uint32_t &off,
 		         const T &t) {
 			auto size = sizeof(t);
 			memcpy(static_cast<char *>(ptr.get()) + off, &t, size);
 			auto m_off = off;
 			//off += get().getBufferMemoryRequirements(buffer).size;
 			off += alignment(alig, objSize(alig, t));
-			return vk::DescriptorBufferInfo{buffer, m_off, size};
+			return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
 		}
-
+/*
 		template<typename ... Ts>
 		auto writeObjs(BufferMemoryPtr &bufferPtr, vk::Buffer buffer, uint32_t &off,
 		               const Ts &... objs) {
@@ -269,17 +269,25 @@ namespace tt {
 			off += get().getBufferMemoryRequirements(buffer).size;
 			return std::vector{writeObj(bufferPtr, buffer, alig, m_off, objs)...};
 		}
+*/
+		template<typename TP,typename ... Ts>
+		auto writeObjsDescriptorBufferInfo(BufferMemoryPtr &bufferPtr, TP& tp, uint32_t &off,
+		               const Ts &... objs) {
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			auto m_off = off;
+			tp.descriptors() = std::vector{writeObj(bufferPtr, tp.buffer().get(), alig,off, m_off, objs)...};
+			return get().getBufferMemoryRequirements(tp.buffer().get()).size;
+		}
 
 		BufferMemory flushBufferToDevMemory(vk::BufferUsageFlags bufferUsageFlags,
 		                                    vk::MemoryPropertyFlags memoryPropertyFlags,
 		                                    size_t size, BufferMemory &&bufferMemory);
 
 
-
-		void flushBufferToBuffer(vk::Buffer srcbuffer,vk::Buffer decbuffer,size_t size,
+		void flushBufferToBuffer(vk::Buffer srcbuffer, vk::Buffer decbuffer, size_t size,
 		                         size_t srcoff = 0, size_t decoff = 0);
 
-		void flushBufferToMemory(vk::Buffer buffer, vk::DeviceMemory memory,size_t size,
+		void flushBufferToMemory(vk::Buffer buffer, vk::DeviceMemory memory, size_t size,
 		                         size_t srcoff = 0, size_t decoff = 0);
 
 		void bindBsm(BuffersMemory<> &BsM);
@@ -301,31 +309,19 @@ namespace tt {
 			);
 		}
 
-		auto createLoaclBufferOnBsM(BuffersMemory<> &BsM) {
+		auto createLocalBufferMemoryOnBsM(BuffersMemory<> &BsM) {
+
 			size_t size = 0;
 			for (auto &buffer:BsM.buffers()) {
 				auto memoryRequirements = get().getBufferMemoryRequirements(buffer.buffer().get());
 				size += memoryRequirements.size;
 			}
-			MY_LOG(INFO)<<"need locale mem :" << size;
-			return get().createBufferUnique(
-					vk::BufferCreateInfo{
-							vk::BufferCreateFlags(),
-							size,
-							vk::BufferUsageFlagBits::eTransferSrc}
-			);
-		}
+			//MY_LOG(INFO) << "need locale mem :" << size;
+			return createBufferAndMemory(size,
+			                             vk::BufferUsageFlagBits::eTransferSrc,
+			                             vk::MemoryPropertyFlagBits::eHostVisible |
+			                             vk::MemoryPropertyFlagBits::eHostCoherent);
 
-		auto createLoaclMemoryOnBsM(vk::Buffer buffer) {
-			auto memoryRequirements = get().getBufferMemoryRequirements(buffer);
-			auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits,
-			                                     vk::MemoryPropertyFlagBits::eHostVisible |
-			                                     vk::MemoryPropertyFlagBits::eHostCoherent);
-			MY_LOG(INFO)<<"alloc locale mem :" << memoryRequirements.size<<" id:"<<typeIndex;
-
-			return get().allocateMemoryUnique(vk::MemoryAllocateInfo{
-					memoryRequirements.size, typeIndex
-			});
 		}
 
 
@@ -341,14 +337,15 @@ namespace tt {
 				//             << std::bitset<sizeof(memoryTypeBits) << 3>(memoryTypeBits);
 			}
 			auto typeIndex = findMemoryTypeIndex(memoryTypeBits, memoryPropertyFlags);
-			MY_LOG(INFO)<<"alloc dev mem:"<<size<<" index:"<<typeIndex;
+			MY_LOG(INFO) << "alloc dev mem:" << size << " index:" << typeIndex;
 			BsM.memory() = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
 					size, typeIndex
 			});
 			BsM.size() = size;
+			bindBsm(BsM);
 		}
 
-
+/*
 		template<typename ... Ts>
 		auto
 		createBufferAndMemoryFromTypes(vk::BufferUsageFlags bufferUsageFlags,
@@ -379,7 +376,7 @@ namespace tt {
 			std::get<std::vector<vk::DescriptorBufferInfo>>(BAM) = descriptorBufferInfos;
 			return BAM;
 		}
-
+*/
 		auto createSampler(uint32_t levels) {
 			return get().createSamplerUnique(
 					vk::SamplerCreateInfo{

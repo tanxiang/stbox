@@ -115,7 +115,7 @@ namespace tt {
 		auto& buffer(){
 			return std::get<vk::UniqueBuffer>(*this);
 		}
-		auto& size(){
+		auto& off(){
 			return std::get<size_t>(*this);
 		}
 		auto& descriptors(){
