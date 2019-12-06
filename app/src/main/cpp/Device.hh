@@ -210,9 +210,9 @@ namespace tt {
 		}
 
 
-		template<typename T, typename std::enable_if<!is_container<T>::value, int>::type = 0>
+		template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
 		auto objSize(uint32_t alig, const T &t) {
-			return sizeof(t);
+			return t;
 		}
 
 		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
@@ -220,21 +220,27 @@ namespace tt {
 			return t.size() * sizeof(typename T::value_type);
 		}
 
-/*
-		template<typename T, typename std::enable_if<!is_container<T>::value, int>::type = 0>
+		template<typename T, typename std::enable_if<!is_container<T>::value&&!std::is_integral<T>::value, int>::type = 0>
 		auto objSize(uint32_t alig, const T &t) {
-			return alignment(alig, sizeof(t));
+			return sizeof(t);
 		}
 
-		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
-		auto objSize(uint32_t alig, const T &t) {
-			return alignment(alig, t.size() * sizeof(typename T::value_type));
-		}
-*/
 		template<typename T, typename ... Ts>
 		auto
 		objSize(uint32_t alig, const T &t, const Ts &... ts) {
 			return alignment(alig, objSize(alig, t)) + objSize(alig, ts...);
+		}
+
+		template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
+		vk::DescriptorBufferInfo
+		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,uint32_t &off,
+		         const T &t) {
+			auto size = t;
+			//memcpy(static_cast<char *>(ptr.get()) + off, t.data(), size);
+			auto m_off = off;
+			//off += get().getBufferMemoryRequirements(buffer).size;
+			off += alignment(alig, objSize(alig, t));
+			return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
 		}
 
 		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
@@ -249,7 +255,7 @@ namespace tt {
 			return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
 		}
 
-		template<typename T, typename std::enable_if<!is_container<T>::value, int>::type = 0>
+		template<typename T, typename std::enable_if<!is_container<T>::value&&!std::is_integral<T>::value, int>::type = 0>
 		vk::DescriptorBufferInfo
 		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff, uint32_t &off,
 		         const T &t) {

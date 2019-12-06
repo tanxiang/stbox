@@ -18,15 +18,16 @@ namespace tt {
 			cPipeline{createComputePipeline(device, app)} {
 
 		std::array vertices{
-				Vertex{{1.0f,  1.0f,  0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-				Vertex{{-1.0f, 1.0f,  0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-				Vertex{{-1.0f, -1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-				Vertex{{1.0f,  1.0f,  1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}}
+				Vertex{{1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
+				Vertex{{-1.0f, 1.0f, 0.0f, 1.0f}, {1.0f,  1.0f, 1.0f, 1.0f}},
+				Vertex{{-1.0f, -1.0f, 1.0f, 1.0f}, {1.0f,  1.0f,  1.0f, 1.0f}},
+				Vertex{{1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}}
 		};
 
-		std::vector<Vertex> verticesOut{30};
+		//std::vector<Vertex> verticesOut{32};
 
-		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eStorageBuffer, vertices,verticesOut);
+		//device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eStorageBuffer, vertices,
+		//                        sizeof(Vertex)*32);
 		{
 			auto localeBufferMemory = device.createLocalBufferMemoryOnBsM(Bsm);
 
@@ -34,16 +35,24 @@ namespace tt {
 				uint32_t off = 0;
 				auto memoryPtr = device.mapMemorySize(
 						std::get<vk::UniqueDeviceMemory>(localeBufferMemory).get(),
-						device->getBufferMemoryRequirements(std::get<vk::UniqueBuffer>(localeBufferMemory).get()).size
+						device->getBufferMemoryRequirements(
+								std::get<vk::UniqueBuffer>(localeBufferMemory).get()).size
 				);
 
-				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.buffers()[0], off, vertices,verticesOut);
+				//off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.buffers()[0], off,
+				//                                            vertices, sizeof(Vertex)*32);
 			}
 			//Bsm.memory() = std::move(localMemory);
 			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
-			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),Bsm.memory().get(), Bsm.size());
+			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),
+			                           Bsm.memory().get(), Bsm.size());
 		}
 
+		outputMemory = device.createBufferAndMemory(
+				sizeof(Vertex)*32,
+				vk::BufferUsageFlagBits::eTransferDst,
+				vk::MemoryPropertyFlagBits::eHostVisible|
+				vk::MemoryPropertyFlagBits::eHostCoherent);
 
 		std::array writeDes{
 				vk::WriteDescriptorSet{
@@ -59,9 +68,92 @@ namespace tt {
 		};
 		device->updateDescriptorSets(writeDes, nullptr);
 
-		cPipeline = createComputePipeline(device,app);
+		cPipeline = createComputePipeline(device, app);
+
+		auto cmdbuffers = device.createCmdBuffers(
+				1, commandPool.get(),
+				[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
+					std::array BarrierHostWrite{
+							vk::BufferMemoryBarrier{
+									vk::AccessFlagBits::eTransferWrite,
+									vk::AccessFlagBits::eShaderRead,
+									VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
+									Bsm.buffers()[0].buffer().get(),
+									0, VK_WHOLE_SIZE,
+							}
+					};
+					commandBufferBeginHandle.pipelineBarrier(
+							vk::PipelineStageFlagBits::eTransfer,
+							vk::PipelineStageFlagBits::eComputeShader,
+							vk::DependencyFlags{},
+							{},
+							BarrierHostWrite, {});
 
 
+					commandBufferBeginHandle.bindPipeline(vk::PipelineBindPoint::eCompute,
+					                                      cPipeline.get());
+
+					commandBufferBeginHandle.bindDescriptorSets(
+							vk::PipelineBindPoint::eCompute,
+							pipelineLayouts[0].get(),
+							0,
+							std::array{descriptorSets[0].get()},
+							std::array{0u}
+					);
+
+					commandBufferBeginHandle.dispatch(32,1,1);
+
+					std::array BarrierShaderWrite{
+							vk::BufferMemoryBarrier{
+									vk::AccessFlagBits::eShaderWrite,
+									vk::AccessFlagBits::eTransferRead,
+									VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
+									Bsm.buffers()[1].buffer().get(),
+									0, VK_WHOLE_SIZE,
+							}
+					};
+					commandBufferBeginHandle.pipelineBarrier(
+							vk::PipelineStageFlagBits::eComputeShader,
+							vk::PipelineStageFlagBits::eTransfer,
+							vk::DependencyFlags{},
+							{},
+							BarrierShaderWrite,
+							{});
+
+					commandBufferBeginHandle.copyBuffer(
+							Bsm.buffers()[1].buffer().get(),
+							std::get<vk::UniqueBuffer>(outputMemory).get(),
+							{vk::BufferCopy{0, 0, sizeof(Vertex)*32}});
+
+					std::array BarrierHostRead{
+							vk::BufferMemoryBarrier{
+									vk::AccessFlagBits::eTransferWrite,
+									vk::AccessFlagBits::eHostRead,
+									VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
+									std::get<vk::UniqueBuffer>(outputMemory).get(),
+									0, VK_WHOLE_SIZE,
+							}
+					};
+					commandBufferBeginHandle.pipelineBarrier(
+							vk::PipelineStageFlagBits::eTransfer,
+							vk::PipelineStageFlagBits::eHost,
+							vk::DependencyFlags{},
+							{},
+							BarrierHostRead,
+							{});
+				}
+		);
+
+
+		vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eTransfer;
+		std::array submitInfos{
+				vk::SubmitInfo{
+						0, nullptr, &pipelineStageFlags,
+						1, &cmdbuffers[0].get(),
+				}
+		};
+		auto renderFence = device->createFenceUnique(vk::FenceCreateInfo{});
+		device.graphsQueue().submit(submitInfos, renderFence.get());
 	}
 
 	JobDrawLine JobDrawLine::create(android_app *app, tt::Device &device) {
@@ -133,12 +225,12 @@ namespace tt {
 				},
 		};
 
-		std::array data{ 1u, 1u, 1u };
+		std::array data{1u, 1u, 1u};
 
 		vk::SpecializationInfo specializationInfo{
 				specializationMapEntrys.size(),
 				specializationMapEntrys.data(),
-				data.size() * sizeof(decltype(data)::value_type),data.data()
+				data.size() * sizeof(decltype(data)::value_type), data.data()
 		};
 
 		vk::PipelineShaderStageCreateInfo shaderStageCreateInfo{
