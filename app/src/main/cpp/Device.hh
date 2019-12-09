@@ -281,6 +281,7 @@ namespace tt {
 		               const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			auto m_off = off;
+			tp.off() = off;
 			tp.descriptors() = std::vector{writeObj(bufferPtr, tp.buffer().get(), alig,off, m_off, objs)...};
 			return get().getBufferMemoryRequirements(tp.buffer().get()).size;
 		}

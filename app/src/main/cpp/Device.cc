@@ -591,7 +591,7 @@ namespace tt {
 
 	void Device::bindBsm(BuffersMemory<> &BsM) {
 		for (auto &buffer:BsM.buffers()) {
-			get().bindBufferMemory(buffer.buffer().get(),BsM.memory().get(),buffer.descriptors()[0].offset);
+			get().bindBufferMemory(buffer.buffer().get(),BsM.memory().get(),buffer.off());
 		}
 	}
 }
