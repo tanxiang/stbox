@@ -66,14 +66,15 @@ namespace tt {
 			//
 
 			drawJobs.emplace_back(JobDraw::create(app, device));
-			fontJobs.emplace_back(JobFont::create(app, device));
+			//fontJobs.emplace_back(JobFont::create(app, device));
+			drawLineJobs.emplace_back(JobDrawLine::create(app,device));
 		}
 
 		auto &window = windows.emplace_back(std::move(surface), devices[0],
 		                                    AndroidGetWindowSize(app));
 		drawJobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
 		drawJobs[0].setPv();
-		fontJobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
+		//fontJobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
 		return;
 	}
 

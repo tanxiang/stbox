@@ -26,8 +26,8 @@ namespace tt {
 
 		//std::vector<Vertex> verticesOut{32};
 
-		//device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eStorageBuffer, vertices,
-		//                        sizeof(Vertex)*32);
+		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eStorageBuffer, vertices,
+		                        sizeof(Vertex)*32);
 		{
 			auto localeBufferMemory = device.createLocalBufferMemoryOnBsM(Bsm);
 
@@ -39,8 +39,8 @@ namespace tt {
 								std::get<vk::UniqueBuffer>(localeBufferMemory).get()).size
 				);
 
-				//off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.buffers()[0], off,
-				//                                            vertices, sizeof(Vertex)*32);
+				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.buffers()[0], off,
+				                                            vertices, sizeof(Vertex)*32);
 			}
 			//Bsm.memory() = std::move(localMemory);
 			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
@@ -54,21 +54,23 @@ namespace tt {
 				vk::MemoryPropertyFlagBits::eHostVisible|
 				vk::MemoryPropertyFlagBits::eHostCoherent);
 
+		//MY_LOG(INFO)<<"descriptorSets"<<descriptorSets.size()<<"Bsm.buffers()"<<Bsm.buffers().size();
+		//MY_LOG(INFO)<<"offset="<<Bsm.buffers()[0].descriptors().size();//<<" range="<<Bsm.buffers()[0].descriptors()[0].range;
+		//vk::DescriptorBufferInfo test{Bsm.buffers()[0].buffer().get(),0,128};
 		std::array writeDes{
 				vk::WriteDescriptorSet{
-						descriptorSets[0].get(), 0, 0, 1,
+						descriptorSets[1].get(), 0, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &Bsm.buffers()[0].descriptors()[0]
 				},
 				vk::WriteDescriptorSet{
-						descriptorSets[0].get(), 1, 0, 1,
+						descriptorSets[1].get(), 1, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &Bsm.buffers()[0].descriptors()[1]
 				}
 		};
-		device->updateDescriptorSets(writeDes, nullptr);
 
-		cPipeline = createComputePipeline(device, app);
+		device->updateDescriptorSets(writeDes, nullptr);
 
 		auto cmdbuffers = device.createCmdBuffers(
 				1, commandPool.get(),
@@ -108,7 +110,7 @@ namespace tt {
 									vk::AccessFlagBits::eShaderWrite,
 									vk::AccessFlagBits::eTransferRead,
 									VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-									Bsm.buffers()[1].buffer().get(),
+									Bsm.buffers()[0].buffer().get(),
 									0, VK_WHOLE_SIZE,
 							}
 					};
@@ -121,7 +123,7 @@ namespace tt {
 							{});
 
 					commandBufferBeginHandle.copyBuffer(
-							Bsm.buffers()[1].buffer().get(),
+							Bsm.buffers()[0].buffer().get(),
 							std::get<vk::UniqueBuffer>(outputMemory).get(),
 							{vk::BufferCopy{0, 0, sizeof(Vertex)*32}});
 
