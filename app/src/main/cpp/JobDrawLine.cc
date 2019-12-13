@@ -7,7 +7,7 @@
 
 struct Vertex {
 	float pos[4];  // Position data
-	float c[4];              // Color
+	float color[4];              // Color
 };
 
 namespace tt {
@@ -99,7 +99,7 @@ namespace tt {
 							vk::PipelineBindPoint::eCompute,
 							pipelineLayouts[0].get(),
 							0,
-							std::array{descriptorSets[0].get()},
+							std::array{descriptorSets[1].get()},
 							std::array{0u}
 					);
 
@@ -125,7 +125,7 @@ namespace tt {
 					commandBufferBeginHandle.copyBuffer(
 							Bsm.buffers()[0].buffer().get(),
 							std::get<vk::UniqueBuffer>(outputMemory).get(),
-							{vk::BufferCopy{0, 0, sizeof(Vertex)*32}});
+							{vk::BufferCopy{Bsm.buffers()[0].descriptors()[1].offset, 0, sizeof(Vertex)*32}});
 
 					std::array BarrierHostRead{
 							vk::BufferMemoryBarrier{
@@ -156,6 +156,10 @@ namespace tt {
 		};
 		auto renderFence = device->createFenceUnique(vk::FenceCreateInfo{});
 		device.graphsQueue().submit(submitInfos, renderFence.get());
+		device.waitFence(renderFence.get());
+		auto outputMemoryPtr = helper::mapTypeMemoryAndSize<Vertex>(ownerDevice(),outputMemory);
+		for(int i =0;i<32;i++)
+			MY_LOG(INFO)<<outputMemoryPtr[i].pos[0];
 	}
 
 	JobDrawLine JobDrawLine::create(android_app *app, tt::Device &device) {

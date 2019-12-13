@@ -24,8 +24,8 @@ namespace tt{
 		device.graphsQueue().submit(submitInfos, renderFence.get());
 		auto presentRet = queuePresent(device.graphsQueue(), currentBufferIndex.value,
 		                               renderSemaphore);
-		MY_LOG(INFO) << "index:" << currentBufferIndex.value << "\tpresentRet:"
-		             << vk::to_string(presentRet);
+		//MY_LOG(INFO) << "index:" << currentBufferIndex.value << "\tpresentRet:"
+		//             << vk::to_string(presentRet);
 		return renderFence;
 	}
 

@@ -205,7 +205,7 @@ namespace tt {
 	Device::createCmdBuffers(size_t cmdNum, vk::CommandPool pool,
 	                         std::function<void(CommandBufferBeginHandle &)> functionBegin,
 	                         vk::CommandBufferUsageFlags commandBufferUsageFlags) {
-		MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << cmdNum;
+		//MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << cmdNum;
 		std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
 				vk::CommandBufferAllocateInfo{pool, vk::CommandBufferLevel::ePrimary, cmdNum});
 		for (auto &cmdBuffer : commandBuffers) {
@@ -288,7 +288,7 @@ namespace tt {
 				0, t2d.levels(), 0, 1
 		};
 		//todo check t2d.format();
-		MY_LOG(INFO) << "t2d Format:" << vk::to_string(static_cast<vk::Format >(t2d.format()));
+		//MY_LOG(INFO) << "t2d Format:" << vk::to_string(static_cast<vk::Format >(t2d.format()));
 		auto imageAndMemory = createImageAndMemory(
 				static_cast<vk::Format >(t2d.format()), vk::Extent3D{
 						static_cast<uint32_t>(t2d[0].extent().x),

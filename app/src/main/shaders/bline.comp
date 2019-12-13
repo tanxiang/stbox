@@ -23,7 +23,8 @@ void main()
     //float t = 1.0 * gl_LocalInvocationID.x / gl_WorkGroupSize.x;
     float t = 1.0 * gl_WorkGroupID.x/ gl_NumWorkGroups.x;
     vec4 pm = mix(ininfo[1].point, ininfo[2].point, t);
-    outinfo[gl_WorkGroupID.x].point = mix(mix(mix(ininfo[0].point, ininfo[1].point, t), pm, t), mix(pm, mix(ininfo[2].point, ininfo[3].point, t), t), t);
+    //outinfo[gl_WorkGroupID.x].point = mix(mix(mix(ininfo[0].point, ininfo[1].point, t), pm, t), mix(pm, mix(ininfo[2].point, ininfo[3].point, t), t), t);
+    outinfo[gl_WorkGroupID.x].point = vec4(1.0 ,10.0,1.0,10.0);
     //outinfo[gl_LocalInvocationID.x].color = mix(mix(ininfo[0].color,ininfo[1].color,t),mix(ininfo[2].color,ininfo[3].color,t),t);
 }
 

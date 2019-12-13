@@ -41,10 +41,10 @@ namespace tt {
 	                            vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR surface) {
 		auto &device = devices.emplace_back(instance.connectToDevice(physicalDevice, surface));//reconnect
 		auto defaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
-		for (auto &phdFormat:defaultDeviceFormats) {
-			MY_LOG(INFO) << vk::to_string(phdFormat.colorSpace) << "@"
-			             << vk::to_string(phdFormat.format);
-		}
+		//for (auto &phdFormat:defaultDeviceFormats) {
+		//	MY_LOG(INFO) << vk::to_string(phdFormat.colorSpace) << "@"
+		//	             << vk::to_string(phdFormat.format);
+		//}
 		device.renderPass = device.createRenderpass(defaultDeviceFormats[0].format);
 		return device;
 	}

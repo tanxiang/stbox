@@ -51,10 +51,10 @@ namespace tt{
 		MY_LOG(INFO) << "enumerateInstanceLayerProperties:" << instanceLayerProperties.size();
 		std::vector<const char *> instanceLayerPropertiesName;
 
-		for (auto &prop:instanceLayerProperties) {
-			MY_LOG(INFO) << prop.layerName;
+		//for (auto &prop:instanceLayerProperties) {
+			//MY_LOG(INFO) << prop.layerName;
 			//instanceLayerPropertiesName.emplace_back(prop.layerName);
-		}
+		//}
 		vk::ApplicationInfo vkAppInfo{"stbox", VK_VERSION_1_0, "stbox",
 		                              VK_VERSION_1_0, VK_API_VERSION_1_0};
 
@@ -66,7 +66,7 @@ namespace tt{
 		};
 		auto instanceExts = vk::enumerateInstanceExtensionProperties();
 		for (auto &Ext: instanceExts) {
-			MY_LOG(INFO) << "instanceExt:" << Ext.extensionName;
+			//MY_LOG(INFO) << "instanceExt:" << Ext.extensionName;
 			if (!std::strcmp(Ext.extensionName, VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
 				//MY_LOG(INFO) << "push " << Ext.extensionName;
 				//instanceEtensionNames.emplace_back(Ext.extensionName);
@@ -132,16 +132,16 @@ namespace tt{
 		auto deviceLayerProperties = phyDevice.enumerateDeviceLayerProperties();
 		//auto deviceFeatures = phyDevice.getFeatures();
 		//MY_LOG(INFO) << "deviceFeatures.samplerAnisotropy = "<<deviceFeatures.samplerAnisotropy;
-		MY_LOG(INFO) << "phyDeviceDeviceLayerProperties : " << deviceLayerProperties.size();
+		//MY_LOG(INFO) << "phyDeviceDeviceLayerProperties : " << deviceLayerProperties.size();
 		std::vector<const char *> deviceLayerPropertiesName;
 		for (auto &deviceLayerPropertie :deviceLayerProperties) {
 			MY_LOG(INFO) << "phyDeviceDeviceLayerPropertie : " << deviceLayerPropertie.layerName;
 			deviceLayerPropertiesName.emplace_back(deviceLayerPropertie.layerName);
 		}
 		auto deviceExtensionProperties = phyDevice.enumerateDeviceExtensionProperties();
-		for (auto &deviceExtensionPropertie:deviceExtensionProperties)
-			MY_LOG(INFO) << "PhyDeviceExtensionPropertie : "
-			             << deviceExtensionPropertie.extensionName;
+		//for (auto &deviceExtensionPropertie:deviceExtensionProperties)
+		//	MY_LOG(INFO) << "PhyDeviceExtensionPropertie : "
+		//	             << deviceExtensionPropertie.extensionName;
 		std::array deviceExtensionNames{
 				VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 				VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
