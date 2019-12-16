@@ -226,8 +226,7 @@ namespace tt {
 		}
 
 		template<typename T, typename ... Ts>
-		auto
-		objSize(uint32_t alig, const T &t, const Ts &... ts) {
+		auto objSize(uint32_t alig, const T &t, const Ts &... ts) {
 			return alignment(alig, objSize(alig, t)) + objSize(alig, ts...);
 		}
 
@@ -266,16 +265,7 @@ namespace tt {
 			off += alignment(alig, objSize(alig, t));
 			return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
 		}
-/*
-		template<typename ... Ts>
-		auto writeObjs(BufferMemoryPtr &bufferPtr, vk::Buffer buffer, uint32_t &off,
-		               const Ts &... objs) {
-			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
-			auto m_off = off;
-			off += get().getBufferMemoryRequirements(buffer).size;
-			return std::vector{writeObj(bufferPtr, buffer, alig, m_off, objs)...};
-		}
-*/
+
 		template<typename TP,typename ... Ts>
 		auto writeObjsDescriptorBufferInfo(BufferMemoryPtr &bufferPtr, TP& tp, uint32_t &off,
 		               const Ts &... objs) {
@@ -305,21 +295,21 @@ namespace tt {
 		                       const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			auto size = objSize(alig, objs...);
-			return BsM.buffers().emplace_back(
+			//MY_LOG(INFO) << "buffersize:" <<size;
+			return BsM.desAndBuffers().emplace_back(
 					get().createBufferUnique(
 							vk::BufferCreateInfo{
 									vk::BufferCreateFlags(),
 									size,
 									bufferUsageFlags}
-					),
-					size
+					)
 			);
 		}
 
 		auto createLocalBufferMemoryOnBsM(BuffersMemory<> &BsM) {
 
 			size_t size = 0;
-			for (auto &buffer:BsM.buffers()) {
+			for (auto &buffer:BsM.desAndBuffers()) {
 				auto memoryRequirements = get().getBufferMemoryRequirements(buffer.buffer().get());
 				size += memoryRequirements.size;
 			}
@@ -336,7 +326,7 @@ namespace tt {
 		                      vk::MemoryPropertyFlags memoryPropertyFlags) {
 			size_t size = 0;
 			uint32_t memoryTypeBits = 0xFFFFFFFF;
-			for (auto &buffer:BsM.buffers()) {
+			for (auto &buffer:BsM.desAndBuffers()) {
 				auto memoryRequirements = get().getBufferMemoryRequirements(buffer.buffer().get());
 				memoryTypeBits &= memoryRequirements.memoryTypeBits;
 				size += memoryRequirements.size;

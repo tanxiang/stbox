@@ -13,13 +13,13 @@ namespace tt{
     {
     private:
         std::ostringstream m_ss;
-        int m_logLevel;
+        const int m_logLevel;
     public:
 
-        ss(int Xi_logLevel)
+        ss(int Xi_logLevel):m_logLevel(Xi_logLevel)
         {
-            m_logLevel = Xi_logLevel;
         };
+
         ~ss()
         {
             __android_log_print(m_logLevel,"TBOX","%s", m_ss.str().c_str());

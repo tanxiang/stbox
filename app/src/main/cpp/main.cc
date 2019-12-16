@@ -71,7 +71,7 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
                 MY_LOG(INFO) << "APP_CMD_STOP:" << cmd ;
                 break;
             case APP_CMD_GAINED_FOCUS:
-                MY_LOG(INFO) << "APP_CMD_GAINED_FOCUS:" << cmd ;
+                //MY_LOG(INFO) << "APP_CMD_GAINED_FOCUS:" << cmd ;
                 break;
             case APP_CMD_LOST_FOCUS:
                 MY_LOG(INFO) << "APP_CMD_LOST_FOCUS:" << cmd ;
@@ -96,7 +96,7 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
         }
     }
     catch (std::runtime_error runtimeError) {
-        MY_LOG(ERROR) << "got system error:" << runtimeError.what() << "!#"  ;
+        //MY_LOG(ERROR) << "got system error:" << runtimeError.what() << "!#"  ;
         JNIEnv* jni;
         app->activity->vm->AttachCurrentThread(&jni, NULL);
         jstring jmessage = jni->NewStringUTF(runtimeError.what());
@@ -117,7 +117,6 @@ void Android_handle_cmd(android_app *app, int32_t cmd) {
 }
 
 int Android_handle_input(struct android_app *app, AInputEvent *event) {
-
     static int64_t lastTapTime;
 	tt::stboxvk & appbox = *static_cast<tt::stboxvk*>(app->userData);
     //todo check window instance device state
@@ -166,10 +165,10 @@ int Android_handle_input(struct android_app *app, AInputEvent *event) {
             }
 
             default:
-                return false;
+                return 1;
         }
     }
-    return false;
+    return 1;
 }
 
 void Android_process(struct android_app *app) {
@@ -203,42 +202,6 @@ void Android_process(struct android_app *app) {
     return ANativeActivity_finish(app->activity);
 }
 
-/*
-class AndroidBuffer : public std::streambuf {
-public:
-    AndroidBuffer(android_LogPriority priority) {
-        priority_ = priority;
-        this->setp(buffer_, buffer_ + kBufferSize - 1);
-    }
-
-private:
-    static const int32_t kBufferSize = 128;
-
-    int32_t overflow(int32_t c) {
-        if (c == traits_type::eof()) {
-            *this->pptr() = traits_type::to_char_type(c);
-            this->sbumpc();
-        }
-        return this->sync() ? traits_type::eof() : traits_type::not_eof(c);
-    }
-
-    int32_t sync() {
-        int32_t rc = 0;
-        if (this->pbase() != this->pptr()) {
-            char writebuf[kBufferSize + 1];
-            memcpy(writebuf, this->pbase(), this->pptr() - this->pbase());
-            writebuf[this->pptr() - this->pbase()] = '\0';
-
-            rc = __android_log_write(priority_, "STBOX", writebuf) > 0;
-            this->setp(buffer_, buffer_ + kBufferSize - 1);
-        }
-        return rc;
-    }
-
-    android_LogPriority priority_ = ANDROID_LOG_INFO;
-    char buffer_[kBufferSize];
-};
-*/
 void android_main(struct android_app *app) {
     assert(app != nullptr);
     // Set static variables.
@@ -246,11 +209,6 @@ void android_main(struct android_app *app) {
 
     app->onAppCmd = Android_handle_cmd;
     app->onInputEvent = Android_handle_input;
-
-
-    // Forward cout/cerr to logcat.
-    //std::cout.rdbuf(new AndroidBuffer(ANDROID_LOG_INFO));
-    //std::cerr.rdbuf(new AndroidBuffer(ANDROID_LOG_ERROR));
 
     // Main loop
     return Android_process(app);

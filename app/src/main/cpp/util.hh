@@ -132,7 +132,7 @@ namespace tt {
 		auto& size(){
 			return std::get<size_t>(*this);
 		}
-		auto& buffers(){
+		auto& desAndBuffers(){
 			return std::get<T>(*this);
 		}
 		using std::tuple<vk::UniqueDeviceMemory, size_t , T>::tuple;

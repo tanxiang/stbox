@@ -28,6 +28,7 @@ namespace tt {
 
 		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eStorageBuffer, vertices,
 		                        sizeof(Vertex)*32);
+		MY_LOG(INFO) <<" buffer:" << sizeof(Vertex)*32 << sizeof(Vertex)*4;
 		{
 			auto localeBufferMemory = device.createLocalBufferMemoryOnBsM(Bsm);
 
@@ -39,7 +40,7 @@ namespace tt {
 								std::get<vk::UniqueBuffer>(localeBufferMemory).get()).size
 				);
 
-				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.buffers()[0], off,
+				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[0], off,
 				                                            vertices, sizeof(Vertex)*32);
 			}
 			//Bsm.memory() = std::move(localMemory);
@@ -61,12 +62,12 @@ namespace tt {
 				vk::WriteDescriptorSet{
 						descriptorSets[1].get(), 0, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &Bsm.buffers()[0].descriptors()[0]
+						nullptr, &Bsm.desAndBuffers()[0].descriptors()[0]
 				},
 				vk::WriteDescriptorSet{
 						descriptorSets[1].get(), 1, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &Bsm.buffers()[0].descriptors()[1]
+						nullptr, &Bsm.desAndBuffers()[0].descriptors()[1]
 				}
 		};
 
@@ -80,7 +81,7 @@ namespace tt {
 									vk::AccessFlagBits::eTransferWrite,
 									vk::AccessFlagBits::eShaderRead,
 									VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-									Bsm.buffers()[0].buffer().get(),
+									Bsm.desAndBuffers()[0].buffer().get(),
 									0, VK_WHOLE_SIZE,
 							}
 					};
@@ -97,7 +98,7 @@ namespace tt {
 
 					commandBufferBeginHandle.bindDescriptorSets(
 							vk::PipelineBindPoint::eCompute,
-							pipelineLayouts[0].get(),
+							pipelineLayouts[1].get(),
 							0,
 							std::array{descriptorSets[1].get()},
 							std::array{0u}
@@ -110,7 +111,7 @@ namespace tt {
 									vk::AccessFlagBits::eShaderWrite,
 									vk::AccessFlagBits::eTransferRead,
 									VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-									Bsm.buffers()[0].buffer().get(),
+									Bsm.desAndBuffers()[0].buffer().get(),
 									0, VK_WHOLE_SIZE,
 							}
 					};
@@ -123,9 +124,9 @@ namespace tt {
 							{});
 
 					commandBufferBeginHandle.copyBuffer(
-							Bsm.buffers()[0].buffer().get(),
+							Bsm.desAndBuffers()[0].buffer().get(),
 							std::get<vk::UniqueBuffer>(outputMemory).get(),
-							{vk::BufferCopy{Bsm.buffers()[0].descriptors()[1].offset, 0, sizeof(Vertex)*32}});
+							{vk::BufferCopy{Bsm.desAndBuffers()[0].descriptors()[1].offset, 0, sizeof(Vertex)*32}});
 
 					std::array BarrierHostRead{
 							vk::BufferMemoryBarrier{

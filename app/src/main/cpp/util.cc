@@ -59,6 +59,7 @@ std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const
 #include <android/log.h>
 #include <bitset>
 
+
 namespace tt {
 	namespace helper {
 	}

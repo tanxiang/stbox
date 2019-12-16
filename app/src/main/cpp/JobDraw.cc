@@ -149,10 +149,10 @@ namespace tt {
 		cmdHandleRenderpassBegin.bindVertexBuffers(
 				0,
 				//std::get<vk::UniqueBuffer>(BAMs[1]).get(),
-				Bsm.buffers()[0].buffer().get(),
+				Bsm.desAndBuffers()[0].buffer().get(),
 				offsets);
 		cmdHandleRenderpassBegin.bindIndexBuffer(
-				Bsm.buffers()[1].buffer().get(),
+				Bsm.desAndBuffers()[1].buffer().get(),
 				0, vk::IndexType::eUint32);
 		cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
 	}
@@ -186,10 +186,10 @@ namespace tt {
 				//Bsm.buffers()[0].descriptors() =
 				//		device.writeObjs(memoryPtr, Bsm.buffers()[0].buffer().get(), off, vertices);
 
-				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.buffers()[0], off, vertices);
+				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[0], off, vertices);
 				//MY_LOG(INFO)<<"descriptors:" << Bsm.buffers()[0].descriptors().size() <<" off:"<<Bsm.buffers()[0].descriptors()[0].offset
 				//<<" size:"<<Bsm.buffers()[0].descriptors()[0].range;
-				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.buffers()[1], off, indexes);
+				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[1], off, indexes);
 
 				//Bsm.buffers()[1].descriptors() =
 				//		device.writeObjs(memoryPtr, Bsm.buffers()[1].buffer().get(), off, indexes);
