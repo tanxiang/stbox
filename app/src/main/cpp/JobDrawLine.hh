@@ -7,7 +7,7 @@
 
 #include "util.hh"
 #include "Device.hh"
-#include "JobBase.hh"
+#include "PipelineResource.hh"
 #include <android_native_app_glue.h>
 
 
