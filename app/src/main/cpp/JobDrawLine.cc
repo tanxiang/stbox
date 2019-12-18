@@ -14,21 +14,40 @@ namespace tt {
 
 	JobDrawLine::JobDrawLine(JobBase &&j, android_app *app, tt::Device &device) :
 			JobBase{std::move(j)}, renderPass{createRenderpass(device)},
-			gPipeline(createGraphsPipeline(device, app)),
-			cPipeline{createComputePipeline(device, app)} {
+			compPipeline{
+					device.get(),
+					descriptorPoll.get(),
+					[&](vk::PipelineLayout pipelineLayout) {
+						return createComputePipeline(device, app,pipelineLayout);
+					},
+					std::array{
+							vk::DescriptorSetLayoutBinding{
+									0, vk::DescriptorType::eStorageBuffer, 1,
+									vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									1, vk::DescriptorType::eStorageBuffer, 1,
+									vk::ShaderStageFlagBits::eCompute
+							}
+					}
+			} {
 
 		std::array vertices{
-				Vertex{{1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-				Vertex{{-1.0f, 1.0f, 0.0f, 1.0f}, {1.0f,  1.0f, 1.0f, 1.0f}},
-				Vertex{{-1.0f, -1.0f, 1.0f, 1.0f}, {1.0f,  1.0f,  1.0f, 1.0f}},
-				Vertex{{1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}}
+				Vertex{{1.0f, 1.0f, 0.0f, 1.0f},
+				       {1.0f, 1.0f, 1.0f, 1.0f}},
+				Vertex{{-1.0f, 1.0f, 0.0f, 1.0f},
+				       {1.0f,  1.0f, 1.0f, 1.0f}},
+				Vertex{{-1.0f, -1.0f, 1.0f, 1.0f},
+				       {1.0f,  1.0f,  1.0f, 1.0f}},
+				Vertex{{1.0f, 1.0f, 1.0f, 1.0f},
+				       {1.0f, 1.0f, 1.0f, 1.0f}}
 		};
 
 		//std::vector<Vertex> verticesOut{32};
 
 		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eStorageBuffer, vertices,
-		                        sizeof(Vertex)*32);
-		MY_LOG(INFO) <<" buffer:" << sizeof(Vertex)*32 << sizeof(Vertex)*4;
+		                        sizeof(Vertex) * 32);
+		//MY_LOG(INFO) << " buffer:" << sizeof(Vertex) * 32 << sizeof(Vertex) * 4;
 		{
 			auto localeBufferMemory = device.createLocalBufferMemoryOnBsM(Bsm);
 
@@ -41,7 +60,7 @@ namespace tt {
 				);
 
 				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[0], off,
-				                                            vertices, sizeof(Vertex)*32);
+				                                            vertices, sizeof(Vertex) * 32);
 			}
 			//Bsm.memory() = std::move(localMemory);
 			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
@@ -50,9 +69,9 @@ namespace tt {
 		}
 
 		outputMemory = device.createBufferAndMemory(
-				sizeof(Vertex)*32,
+				sizeof(Vertex) * 32,
 				vk::BufferUsageFlagBits::eTransferDst,
-				vk::MemoryPropertyFlagBits::eHostVisible|
+				vk::MemoryPropertyFlagBits::eHostVisible |
 				vk::MemoryPropertyFlagBits::eHostCoherent);
 
 		//MY_LOG(INFO)<<"descriptorSets"<<descriptorSets.size()<<"Bsm.buffers()"<<Bsm.buffers().size();
@@ -60,12 +79,12 @@ namespace tt {
 		//vk::DescriptorBufferInfo test{Bsm.buffers()[0].buffer().get(),0,128};
 		std::array writeDes{
 				vk::WriteDescriptorSet{
-						descriptorSets[1].get(), 0, 0, 1,
+						compPipeline.descriptorSets[0], 0, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &Bsm.desAndBuffers()[0].descriptors()[0]
 				},
 				vk::WriteDescriptorSet{
-						descriptorSets[1].get(), 1, 0, 1,
+						compPipeline.descriptorSets[0], 1, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &Bsm.desAndBuffers()[0].descriptors()[1]
 				}
@@ -94,17 +113,17 @@ namespace tt {
 
 
 					commandBufferBeginHandle.bindPipeline(vk::PipelineBindPoint::eCompute,
-					                                      cPipeline.get());
+					                                      compPipeline.pipeline.get());
 
 					commandBufferBeginHandle.bindDescriptorSets(
 							vk::PipelineBindPoint::eCompute,
-							pipelineLayouts[1].get(),
+							compPipeline.pipelineLayout.get(),
 							0,
-							std::array{descriptorSets[1].get()},
+							std::array{compPipeline.descriptorSets[0]},
 							std::array{0u}
 					);
 
-					commandBufferBeginHandle.dispatch(32,1,1);
+					commandBufferBeginHandle.dispatch(32, 1, 1);
 
 					std::array BarrierShaderWrite{
 							vk::BufferMemoryBarrier{
@@ -126,7 +145,8 @@ namespace tt {
 					commandBufferBeginHandle.copyBuffer(
 							Bsm.desAndBuffers()[0].buffer().get(),
 							std::get<vk::UniqueBuffer>(outputMemory).get(),
-							{vk::BufferCopy{Bsm.desAndBuffers()[0].descriptors()[1].offset, 0, sizeof(Vertex)*32}});
+							{vk::BufferCopy{Bsm.desAndBuffers()[0].descriptors()[1].offset, 0,
+							                sizeof(Vertex) * 32}});
 
 					std::array BarrierHostRead{
 							vk::BufferMemoryBarrier{
@@ -158,14 +178,14 @@ namespace tt {
 		auto renderFence = device->createFenceUnique(vk::FenceCreateInfo{});
 		device.graphsQueue().submit(submitInfos, renderFence.get());
 		device.waitFence(renderFence.get());
-		auto outputMemoryPtr = helper::mapTypeMemoryAndSize<Vertex>(ownerDevice(),outputMemory);
-		for(int i =0;i<32;i++)
-			MY_LOG(INFO)<<outputMemoryPtr[i].pos[0];
+		auto outputMemoryPtr = helper::mapTypeMemoryAndSize<Vertex>(ownerDevice(), outputMemory);
+		for (int i = 0; i < 32; i++)
+			MY_LOG(INFO) << outputMemoryPtr[i].pos[0];
 	}
 
 	JobDrawLine JobDrawLine::create(android_app *app, tt::Device &device) {
 		return JobDrawLine(
-				device.createJob(
+				device.createJobBase(
 						{
 								vk::DescriptorPoolSize{
 										vk::DescriptorType::eUniformBuffer, 1
@@ -174,28 +194,7 @@ namespace tt {
 										vk::DescriptorType::eStorageBuffer, 3
 								}
 						},
-						{
-								{
-										vk::DescriptorSetLayoutBinding{
-												0, vk::DescriptorType::eUniformBuffer,
-												1, vk::ShaderStageFlagBits::eVertex
-										},
-										{
-												1, vk::DescriptorType::eStorageBuffer,
-												1, vk::ShaderStageFlagBits::eVertex
-										}
-								},
-								{
-										{
-												0, vk::DescriptorType::eStorageBuffer,
-												1, vk::ShaderStageFlagBits::eCompute
-										},
-										{
-												1, vk::DescriptorType::eStorageBuffer,
-												1, vk::ShaderStageFlagBits::eCompute
-										}
-								}
-						}
+						2
 				),
 				app,
 				device
@@ -211,7 +210,7 @@ namespace tt {
 		return vk::UniquePipeline();
 	}
 
-	vk::UniquePipeline JobDrawLine::createComputePipeline(tt::Device &device, android_app *app) {
+	vk::UniquePipeline JobDrawLine::createComputePipeline(tt::Device &device, android_app *app,vk::PipelineLayout pipelineLayout) {
 		auto compShaderModule = device.loadShaderFromAssets("shaders/bline.comp.spv", app);
 
 		std::array specializationMapEntrys{
@@ -251,7 +250,7 @@ namespace tt {
 		vk::ComputePipelineCreateInfo computePipelineCreateInfo{
 				vk::PipelineCreateFlags(),
 				shaderStageCreateInfo,
-				pipelineLayouts[1].get()
+				pipelineLayout
 		};
 
 		return device->createComputePipelineUnique(pipelineCache.get(), computePipelineCreateInfo);

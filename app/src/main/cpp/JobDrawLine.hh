@@ -21,6 +21,7 @@ namespace tt {
 				vk::ClearDepthStencilValue{1.0f, 0},
 		};
 
+		PipelineResource compPipeline;
 		vk::UniquePipeline gPipeline,cPipeline;//todo vector
 
 		BuffersMemory<> Bsm;
@@ -28,7 +29,7 @@ namespace tt {
 		vk::UniqueCommandBuffer cCommandBuffer;
 
 		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app);
-		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app);
+		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 
 		static JobDrawLine create(android_app *app, tt::Device &device);
 

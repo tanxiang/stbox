@@ -83,11 +83,16 @@ namespace tt {
 			return physicalDevice;
 		}
 
+		auto createJobBase(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,size_t maxSet) {
+			return tt::JobBase{get(), gQueueFamilyIndex, descriptorPoolSizes, maxSet};
+		}
+
 		auto createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
 		               std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings) {
 			return tt::JobBase{get(), gQueueFamilyIndex, descriptorPoolSizes,
 			                   {descriptorSetLayoutBindings}};
 		}
+
 
 
 		auto createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,

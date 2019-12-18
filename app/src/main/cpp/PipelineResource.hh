@@ -14,6 +14,7 @@ namespace tt {
 	private:
 		const vk::Device device;
 		const vk::DescriptorPool pool;
+
 		template<typename ... Ts>
 		auto createDescriptorSetLayouts(const Ts &... objs) {
 			return std::vector{
@@ -25,6 +26,20 @@ namespace tt {
 							}
 					)...
 			};
+		}
+
+
+		auto createDescriptorSetLayouts(
+				std::initializer_list<vk::ArrayProxy<vk::DescriptorSetLayoutBinding>> objs) {
+			std::vector<vk::DescriptorSetLayout> dSetLayouts;
+			for (auto &obj:objs)
+				dSetLayouts.emplace_back(device.createDescriptorSetLayout(
+						vk::DescriptorSetLayoutCreateInfo{
+								vk::DescriptorSetLayoutCreateFlags(),
+								obj.size(),
+								obj.data()
+						}));
+			return dSetLayouts;
 		}
 
 		std::vector<vk::DescriptorSet> createDescriptorSets() {
@@ -43,7 +58,7 @@ namespace tt {
 							vk::PipelineLayoutCreateFlags(),
 							descriptorSetLayouts.size(),
 							descriptorSetLayouts.data(),
-							0,
+							0,//FIXME input
 							nullptr
 					}
 			);
@@ -62,10 +77,19 @@ namespace tt {
 			device.freeDescriptorSets(pool, descriptorSets);
 		}
 
-		template<typename ... Ts>
-		PipelineResource(vk::Device dev, vk::DescriptorPool desPool,const Ts &... objs)
+		template<typename Func,typename ... Ts>
+		PipelineResource(vk::Device dev, vk::DescriptorPool desPool,Func func,const Ts &... objs)
 				: device{dev}, pool{desPool},
-				descriptorSetLayouts{createDescriptorSetLayouts(objs...)} {}
+				  descriptorSetLayouts{createDescriptorSetLayouts(objs...)},
+				  pipeline{func(pipelineLayout.get())} {}
+
+
+		PipelineResource(vk::Device dev, vk::DescriptorPool desPool,
+		                 std::initializer_list<vk::ArrayProxy<vk::DescriptorSetLayoutBinding>> objs)
+				: device{dev}, pool{desPool},
+				descriptorSetLayouts{createDescriptorSetLayouts(objs)} {}
+
+		PipelineResource(PipelineResource &&) = default;
 	};
 }
 #endif //STBOX_PIPELINERESOURCE_HH

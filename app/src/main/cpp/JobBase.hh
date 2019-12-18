@@ -83,12 +83,12 @@ namespace tt {
 		//        std::vector<vk::DescriptorSetLayoutBinding> &&descriptorSetLayoutBindings);
 
 		JobBase(vk::Device device, uint32_t queueIndex,
-		        vk::ArrayProxy<vk::DescriptorPoolSize> descriptorPoolSizes, size_t bindingSize) :
+		        vk::ArrayProxy<vk::DescriptorPoolSize> descriptorPoolSizes, size_t maxSet) :
 				descriptorPoll{
 						device.createDescriptorPoolUnique(
 								vk::DescriptorPoolCreateInfo{
 										vk::DescriptorPoolCreateFlags(),
-										bindingSize,
+										maxSet,
 										descriptorPoolSizes.size(),
 										descriptorPoolSizes.data()
 								}
