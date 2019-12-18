@@ -22,17 +22,6 @@ namespace tt {
 										vk::DescriptorType::eCombinedImageSampler, 1
 								},
 						}, 1
-						/*
-						{
-								vk::DescriptorSetLayoutBinding{
-										0, vk::DescriptorType::eUniformBuffer,
-										1, vk::ShaderStageFlagBits::eVertex
-								},
-								vk::DescriptorSetLayoutBinding{
-										1, vk::DescriptorType::eCombinedImageSampler,
-										1, vk::ShaderStageFlagBits::eFragment
-								}
-						}*/
 				),
 				app,
 				device

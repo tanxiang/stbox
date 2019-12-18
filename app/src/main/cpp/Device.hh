@@ -87,20 +87,6 @@ namespace tt {
 			return tt::JobBase{get(), gQueueFamilyIndex, descriptorPoolSizes, maxSet};
 		}
 
-		auto createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
-		               std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings) {
-			return tt::JobBase{get(), gQueueFamilyIndex, descriptorPoolSizes,
-			                   {descriptorSetLayoutBindings}};
-		}
-
-
-
-		auto createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
-		               std::initializer_list<std::vector<vk::DescriptorSetLayoutBinding>> descriptorSetLayoutBindings) {
-			return tt::JobBase{get(), gQueueFamilyIndex, descriptorPoolSizes,
-			                   descriptorSetLayoutBindings};
-		}
-
 		auto transQueue() {
 			return get().getQueue(gQueueFamilyIndex, 0);
 		}
@@ -347,38 +333,6 @@ namespace tt {
 			bindBsm(BsM);
 		}
 
-/*
-		template<typename ... Ts>
-		auto
-		createBufferAndMemoryFromTypes(vk::BufferUsageFlags bufferUsageFlags,
-		                               vk::MemoryPropertyFlags memoryPropertyFlags,
-		                               const Ts &... objs) {
-			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
-			auto size = objSize(alig, objs...);
-			auto BAM = createBufferAndMemory(
-					size,
-					memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal ?
-					vk::BufferUsageFlagBits::eTransferSrc :
-					bufferUsageFlags,
-					memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal ?
-					vk::MemoryPropertyFlagBits::eHostVisible |
-					vk::MemoryPropertyFlagBits::eHostCoherent :
-					memoryPropertyFlags
-			);
-			uint32_t off = 0;
-			auto bufferPtr = mapMemoryAndSize(BAM);
-			std::vector descriptorBufferInfos{
-					writeObj(bufferPtr, std::get<vk::UniqueBuffer>(BAM).get(), alig, off, objs)...};
-			if (memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
-				BAM = flushBufferToDevMemory(bufferUsageFlags, memoryPropertyFlags, size,
-				                             std::move(BAM));
-				for (auto &descriptorBufferInfo:descriptorBufferInfos)
-					descriptorBufferInfo.setBuffer(std::get<vk::UniqueBuffer>(BAM).get());
-			}
-			std::get<std::vector<vk::DescriptorBufferInfo>>(BAM) = descriptorBufferInfos;
-			return BAM;
-		}
-*/
 		auto createSampler(uint32_t levels) {
 			return get().createSamplerUnique(
 					vk::SamplerCreateInfo{
@@ -431,12 +385,6 @@ namespace tt {
 				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits{}
 		);
 
-//		std::vector<vk::UniqueCommandBuffer>
-//		createCmdBuffers(
-//				tt::Window &swapchain, vk::CommandPool pool,
-//				std::function<void(RenderpassBeginHandle &)> = [](RenderpassBeginHandle &) {},
-//				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {}
-//		);
 
 		vk::UniqueFence submitCmdBuffer(vk::CommandBuffer &commandBuffer) {
 			auto fence = get().createFenceUnique(vk::FenceCreateInfo{});

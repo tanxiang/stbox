@@ -20,26 +20,12 @@ namespace tt {
 
 	JobFont JobFont::create(android_app *app, tt::Device &device) {
 		return JobFont{
-				device.createJob(
+				device.createJobBase(
 						{
 								vk::DescriptorPoolSize{
 										vk::DescriptorType::eStorageBuffer, 3
 								}
-						},
-						{
-								vk::DescriptorSetLayoutBinding{
-										0, vk::DescriptorType::eStorageBuffer,
-										1, vk::ShaderStageFlagBits::eVertex
-								},
-								{
-										1, vk::DescriptorType::eStorageBuffer,
-										1, vk::ShaderStageFlagBits::eFragment
-								},
-								{
-										2, vk::DescriptorType::eStorageBuffer,
-										1, vk::ShaderStageFlagBits::eFragment
-								}
-						}
+						},1
 				),
 				device, app
 		};
@@ -118,7 +104,7 @@ namespace tt {
 		);
 	}
 
-	vk::UniquePipeline JobFont::createPipeline(Device &device, android_app *app) {
+	vk::UniquePipeline JobFont::createPipeline(Device &device, android_app *app,vk::PipelineLayout pipelineLayout) {
 		auto vertShaderModule = device.loadShaderFromAssets("shaders/font.vert.spv", app);
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/font.frag.spv", app);
 		std::array pipelineShaderStageCreateInfos{
@@ -158,7 +144,7 @@ namespace tt {
 		};
 
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
-		                                   pipelineVertexInputStateCreateInfo, pipelineLayouts[0].get(),
+		                                   pipelineVertexInputStateCreateInfo,pipelineLayout,
 		                                   pipelineCache.get(), device.renderPass.get());
 	}
 
@@ -190,10 +176,10 @@ namespace tt {
 		);
 		std::array offsets{vk::DeviceSize{0}};
 		handle.setScissor(0, std::array{vk::Rect2D{vk::Offset2D{}, win}});
-		handle.bindPipeline(vk::PipelineBindPoint::eGraphics, uniquePipeline.get());
-		std::array tmpDescriptorSets{descriptorSets[0].get()};
-		handle.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts[0].get(), 0,
-		                          tmpDescriptorSets, {});
+		handle.bindPipeline(vk::PipelineBindPoint::eGraphics, graphPipeline.pipeline.get());
+		//std::array tmpDescriptorSets{descriptorSets[0].get()};
+		handle.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphPipeline.pipelineLayout.get(), 0,
+		                          graphPipeline.descriptorSets[0], {});
 		handle.bindVertexBuffers(0, std::get<vk::UniqueBuffer>(BAMs[2]).get(), offsets);
 		handle.draw(4, 6, 0, 0);
 	}
@@ -244,7 +230,24 @@ namespace tt {
 	JobFont::JobFont(JobBase &&j, Device &device, android_app *app) :
 			JobBase{std::move(j)},
 			renderPass{createRenderpass(device)},
-			uniquePipeline{createPipeline(device, app)} {
+			graphPipeline{
+					device.get(),
+					descriptorPoll.get(),
+					[&](vk::PipelineLayout pipelineLayout) {
+						return createPipeline(device, app, pipelineLayout);
+					},
+					std::array{
+							vk::DescriptorSetLayoutBinding{
+									0, vk::DescriptorType::eUniformBuffer,
+									1, vk::ShaderStageFlagBits::eVertex
+							},
+							vk::DescriptorSetLayoutBinding{
+									1, vk::DescriptorType::eCombinedImageSampler,
+									1, vk::ShaderStageFlagBits::eFragment
+							}
+					}
+			}
+			 {
 		auto &fontBVM = BAMs.emplace_back(
 				device.createBufferAndMemoryFromAssets(
 						app, {"glyhps/glyphy_3072.bin", "glyhps/cell_21576.bin",
@@ -255,15 +258,15 @@ namespace tt {
 
 		std::array descriptorWriteInfos{
 				vk::WriteDescriptorSet{
-						descriptorSets[0].get(), 0, 0, 1, vk::DescriptorType::eStorageBuffer,
+						graphPipeline.descriptorSets[0], 0, 0, 1, vk::DescriptorType::eStorageBuffer,
 						nullptr, &std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[0]
 				},
 				vk::WriteDescriptorSet{
-						descriptorSets[0].get(), 1, 0, 1, vk::DescriptorType::eStorageBuffer,
+						graphPipeline.descriptorSets[0], 1, 0, 1, vk::DescriptorType::eStorageBuffer,
 						nullptr, &std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[1]
 				},
 				vk::WriteDescriptorSet{
-						descriptorSets[0].get(), 2, 0, 1, vk::DescriptorType::eStorageBuffer,
+						graphPipeline.descriptorSets[0], 2, 0, 1, vk::DescriptorType::eStorageBuffer,
 						nullptr, &std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[2]
 				}
 		};

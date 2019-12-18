@@ -8,6 +8,7 @@
 #include "util.hh"
 #include "Device.hh"
 #include "JobBase.hh"
+#include "PipelineResource.hh"
 
 namespace tt {
 	struct JobFont : public JobBase {
@@ -19,9 +20,9 @@ namespace tt {
 				vk::ClearDepthStencilValue{1.0f, 0},
 		};
 
-		vk::UniquePipeline createPipeline(tt::Device &, android_app *app);
+		vk::UniquePipeline createPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 
-		vk::UniquePipeline uniquePipeline;//todo vector
+		PipelineResource graphPipeline;
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
 		std::vector<BufferMemory> BAMs;
 
