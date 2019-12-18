@@ -8,11 +8,14 @@
 #include "util.hh"
 #include "Device.hh"
 #include "JobBase.hh"
+#include "PipelineResource.hh"
+
 
 namespace tt {
 	struct JobDraw : public JobBase{
-		vk::UniquePipeline createPipeline(tt::Device&,android_app* app);
-		vk::UniquePipeline uniquePipeline;//todo vector
+		vk::UniquePipeline createPipeline(tt::Device&,android_app* app,vk::PipelineLayout pipelineLayout);
+		PipelineResource graphPipeline;
+
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
 
 		glm::mat4 perspective;

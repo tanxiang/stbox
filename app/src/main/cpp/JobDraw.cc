@@ -13,7 +13,7 @@ namespace tt {
 
 	JobDraw JobDraw::create(android_app *app, tt::Device &device) {
 		return JobDraw{
-				device.createJob(
+				device.createJobBase(
 						{
 								vk::DescriptorPoolSize{
 										vk::DescriptorType::eUniformBuffer, 1
@@ -21,7 +21,8 @@ namespace tt {
 								vk::DescriptorPoolSize{
 										vk::DescriptorType::eCombinedImageSampler, 1
 								},
-						},
+						}, 1
+						/*
 						{
 								vk::DescriptorSetLayoutBinding{
 										0, vk::DescriptorType::eUniformBuffer,
@@ -31,14 +32,15 @@ namespace tt {
 										1, vk::DescriptorType::eCombinedImageSampler,
 										1, vk::ShaderStageFlagBits::eFragment
 								}
-						}
+						}*/
 				),
 				app,
 				device
 		};
 	}
 
-	vk::UniquePipeline JobDraw::createPipeline(Device &device, android_app *app) {
+	vk::UniquePipeline
+	JobDraw::createPipeline(Device &device, android_app *app, vk::PipelineLayout pipelineLayout) {
 
 		auto vertShaderModule = device.loadShaderFromAssets("shaders/mvp.vert.spv", app);
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/copy.frag.spv", app);
@@ -81,7 +83,7 @@ namespace tt {
 		};
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
 		                                   pipelineVertexInputStateCreateInfo,
-		                                   pipelineLayouts[0].get(),
+		                                   pipelineLayout,
 		                                   pipelineCache.get(), device.renderPass.get());
 
 	}
@@ -137,12 +139,12 @@ namespace tt {
 		cmdHandleRenderpassBegin.setScissor(0, std::array{vk::Rect2D{vk::Offset2D{}, win}});
 		cmdHandleRenderpassBegin.bindPipeline(
 				vk::PipelineBindPoint::eGraphics,
-				uniquePipeline.get());
-		std::array tmpDescriptorSets{descriptorSets[0].get()};
+				graphPipeline.pipeline.get());
+		//std::array tmpDescriptorSets{descriptorSets[0].get()};
 		cmdHandleRenderpassBegin.bindDescriptorSets(
 				vk::PipelineBindPoint::eGraphics,
-				pipelineLayouts[0].get(), 0,
-				tmpDescriptorSets,
+				graphPipeline.pipelineLayout.get(), 0,
+				graphPipeline.descriptorSets,
 				{});
 		std::array offsets{vk::DeviceSize{0}};
 		//vk::DeviceSize offsets[1] = {0};
@@ -157,7 +159,25 @@ namespace tt {
 		cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
 	}
 
-	JobDraw::JobDraw(JobBase &&j, android_app *app, tt::Device &device) : JobBase{std::move(j)} {
+	JobDraw::JobDraw(JobBase &&j, android_app *app, tt::Device &device) :
+			JobBase{std::move(j)},
+			graphPipeline{
+					device.get(),
+					descriptorPoll.get(),
+					[&](vk::PipelineLayout pipelineLayout) {
+						return createPipeline(device, app, pipelineLayout);
+					},
+					std::array{
+							vk::DescriptorSetLayoutBinding{
+									0, vk::DescriptorType::eUniformBuffer,
+									1, vk::ShaderStageFlagBits::eVertex
+							},
+							vk::DescriptorSetLayoutBinding{
+									1, vk::DescriptorType::eCombinedImageSampler,
+									1, vk::ShaderStageFlagBits::eFragment
+							}
+					}
+			} {
 		BAMs.emplace_back(
 				device.createBufferAndMemory(
 						sizeof(glm::mat4),
@@ -181,22 +201,26 @@ namespace tt {
 				uint32_t off = 0;
 				auto memoryPtr = device.mapMemorySize(
 						std::get<vk::UniqueDeviceMemory>(localeBufferMemory).get(),
-						device->getBufferMemoryRequirements(std::get<vk::UniqueBuffer>(localeBufferMemory).get()).size
+						device->getBufferMemoryRequirements(
+								std::get<vk::UniqueBuffer>(localeBufferMemory).get()).size
 				);
 				//Bsm.buffers()[0].descriptors() =
 				//		device.writeObjs(memoryPtr, Bsm.buffers()[0].buffer().get(), off, vertices);
 
-				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[0], off, vertices);
+				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[0], off,
+				                                            vertices);
 				//MY_LOG(INFO)<<"descriptors:" << Bsm.buffers()[0].descriptors().size() <<" off:"<<Bsm.buffers()[0].descriptors()[0].offset
 				//<<" size:"<<Bsm.buffers()[0].descriptors()[0].range;
-				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[1], off, indexes);
+				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[1], off,
+				                                            indexes);
 
 				//Bsm.buffers()[1].descriptors() =
 				//		device.writeObjs(memoryPtr, Bsm.buffers()[1].buffer().get(), off, indexes);
 			}
 			//Bsm.memory() = std::move(localMemory);
 			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
-			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),Bsm.memory().get(), Bsm.size());
+			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),
+			                           Bsm.memory().get(), Bsm.size());
 		}
 
 		{
@@ -208,19 +232,19 @@ namespace tt {
 		}
 
 
-		uniquePipeline = createPipeline(device, app);
+		//uniquePipeline = createPipeline(device, app);
 
 		auto descriptorBufferInfo = device.getDescriptorBufferInfo(BAMs[0]);
 		auto descriptorImageInfo = device.getDescriptorImageInfo(IVMs[0], sampler.get());
 
 		std::array writeDes{
 				vk::WriteDescriptorSet{
-						descriptorSets[0].get(), 0, 0, 1,
+						graphPipeline.descriptorSets[0], 0, 0, 1,
 						vk::DescriptorType::eUniformBuffer,
 						nullptr, &descriptorBufferInfo
 				},
 				vk::WriteDescriptorSet{
-						descriptorSets[0].get(), 1, 0, 1,
+						graphPipeline.descriptorSets[0], 1, 0, 1,
 						vk::DescriptorType::eCombinedImageSampler,
 						&descriptorImageInfo
 				}
