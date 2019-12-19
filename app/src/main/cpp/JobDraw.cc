@@ -128,12 +128,12 @@ namespace tt {
 		cmdHandleRenderpassBegin.setScissor(0, std::array{vk::Rect2D{vk::Offset2D{}, win}});
 		cmdHandleRenderpassBegin.bindPipeline(
 				vk::PipelineBindPoint::eGraphics,
-				graphPipeline.pipeline.get());
+				graphPipeline.get());
 		//std::array tmpDescriptorSets{descriptorSets[0].get()};
 		cmdHandleRenderpassBegin.bindDescriptorSets(
 				vk::PipelineBindPoint::eGraphics,
-				graphPipeline.pipelineLayout.get(), 0,
-				graphPipeline.descriptorSets,
+				graphPipeline.layout(), 0,
+				graphPipeline.getDescriptorSets(),
 				{});
 		std::array offsets{vk::DeviceSize{0}};
 		//vk::DeviceSize offsets[1] = {0};
@@ -228,12 +228,12 @@ namespace tt {
 
 		std::array writeDes{
 				vk::WriteDescriptorSet{
-						graphPipeline.descriptorSets[0], 0, 0, 1,
+						graphPipeline.getDescriptorSet(0), 0, 0, 1,
 						vk::DescriptorType::eUniformBuffer,
 						nullptr, &descriptorBufferInfo
 				},
 				vk::WriteDescriptorSet{
-						graphPipeline.descriptorSets[0], 1, 0, 1,
+						graphPipeline.getDescriptorSet(0), 1, 0, 1,
 						vk::DescriptorType::eCombinedImageSampler,
 						&descriptorImageInfo
 				}

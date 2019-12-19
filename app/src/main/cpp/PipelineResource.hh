@@ -64,12 +64,29 @@ namespace tt {
 			);
 		}
 
-	public:
 
 		std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
 		std::vector<vk::DescriptorSet> descriptorSets{createDescriptorSets()};
 		vk::UniquePipelineLayout pipelineLayout{createPipelineLayout()};
 		vk::UniquePipeline pipeline;
+	public:
+
+		auto& getDescriptorSets(){
+			return descriptorSets;
+		}
+
+		auto getDescriptorSet(size_t index){
+			return descriptorSets[index];
+		}
+
+
+		auto layout(){
+			return pipelineLayout.get();
+		}
+
+		auto get(){
+			return pipeline.get();
+		}
 
 		~PipelineResource() {
 			for (auto &descriptorSetLayout:descriptorSetLayouts)

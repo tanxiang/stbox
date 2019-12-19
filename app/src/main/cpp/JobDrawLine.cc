@@ -79,12 +79,12 @@ namespace tt {
 		//vk::DescriptorBufferInfo test{Bsm.buffers()[0].buffer().get(),0,128};
 		std::array writeDes{
 				vk::WriteDescriptorSet{
-						compPipeline.descriptorSets[0], 0, 0, 1,
+						compPipeline.getDescriptorSet(0), 0, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &Bsm.desAndBuffers()[0].descriptors()[0]
 				},
 				vk::WriteDescriptorSet{
-						compPipeline.descriptorSets[0], 1, 0, 1,
+						compPipeline.getDescriptorSet(0), 1, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &Bsm.desAndBuffers()[0].descriptors()[1]
 				}
@@ -113,13 +113,13 @@ namespace tt {
 
 
 					commandBufferBeginHandle.bindPipeline(vk::PipelineBindPoint::eCompute,
-					                                      compPipeline.pipeline.get());
+					                                      compPipeline.get());
 
 					commandBufferBeginHandle.bindDescriptorSets(
 							vk::PipelineBindPoint::eCompute,
-							compPipeline.pipelineLayout.get(),
+							compPipeline.layout(),
 							0,
-							std::array{compPipeline.descriptorSets[0]},
+							std::array{compPipeline.getDescriptorSet(0)},
 							std::array{0u}
 					);
 
