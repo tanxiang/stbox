@@ -28,7 +28,7 @@ namespace tt {
 			};
 		}
 
-
+/*
 		auto createDescriptorSetLayouts(
 				std::initializer_list<vk::ArrayProxy<vk::DescriptorSetLayoutBinding>> objs) {
 			std::vector<vk::DescriptorSetLayout> dSetLayouts;
@@ -41,7 +41,7 @@ namespace tt {
 						}));
 			return dSetLayouts;
 		}
-
+*/
 		std::vector<vk::DescriptorSet> createDescriptorSets() {
 			return device.allocateDescriptorSets(
 					vk::DescriptorSetAllocateInfo{
@@ -83,11 +83,11 @@ namespace tt {
 				  descriptorSetLayouts{createDescriptorSetLayouts(objs...)},
 				  pipeline{func(pipelineLayout.get())} {}
 
-
+/*
 		PipelineResource(vk::Device dev, vk::DescriptorPool desPool,
 		                 std::initializer_list<vk::ArrayProxy<vk::DescriptorSetLayoutBinding>> objs)
 				: device{dev}, pool{desPool},
-				descriptorSetLayouts{createDescriptorSetLayouts(objs)} {}
+				descriptorSetLayouts{createDescriptorSetLayouts(objs)} {}*/
 
 		PipelineResource(PipelineResource &&) = default;
 	};
