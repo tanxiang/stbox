@@ -12,22 +12,64 @@ struct Vertex {
 
 namespace tt {
 
+	JobDrawLine JobDrawLine::create(android_app *app, tt::Device &device) {
+		return JobDrawLine(
+				device.createJobBase(
+						{
+								vk::DescriptorPoolSize{
+										vk::DescriptorType::eUniformBuffer, 1
+								},
+								vk::DescriptorPoolSize{
+										vk::DescriptorType::eStorageBuffer, 3
+								}
+						},
+						2
+				),
+				app,
+				device
+		);
+	}
+
 	JobDrawLine::JobDrawLine(JobBase &&j, android_app *app, tt::Device &device) :
-			JobBase{std::move(j)}, renderPass{createRenderpass(device)},
+			JobBase{std::move(j)},
+			renderPass{createRenderpass(device)},
 			compPipeline{
 					device.get(),
 					descriptorPoll.get(),
 					[&](vk::PipelineLayout pipelineLayout) {
-						return createComputePipeline(device, app,pipelineLayout);
+						return createComputePipeline(
+								device,
+								app,
+								pipelineLayout);
 					},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
-									0, vk::DescriptorType::eStorageBuffer, 1,
-									vk::ShaderStageFlagBits::eCompute
+									0, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
 							},
 							vk::DescriptorSetLayoutBinding{
-									1, vk::DescriptorType::eStorageBuffer, 1,
-									vk::ShaderStageFlagBits::eCompute
+									1, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							}
+					}
+			},
+			graphPipeline{
+					device.get(),
+					descriptorPoll.get(),
+					[&](vk::PipelineLayout pipelineLayout) {
+						return createGraphsPipeline(
+								device,
+								app,
+								pipelineLayout);
+					},
+					std::array{
+							vk::DescriptorSetLayoutBinding{
+									0, vk::DescriptorType::eUniformBuffer,
+									1, vk::ShaderStageFlagBits::eVertex
+							},
+							vk::DescriptorSetLayoutBinding{
+									1, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eVertex
 							}
 					}
 			} {
@@ -79,12 +121,12 @@ namespace tt {
 		//vk::DescriptorBufferInfo test{Bsm.buffers()[0].buffer().get(),0,128};
 		std::array writeDes{
 				vk::WriteDescriptorSet{
-						compPipeline.getDescriptorSet(0), 0, 0, 1,
+						compPipeline.getDescriptorSet(), 0, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &Bsm.desAndBuffers()[0].descriptors()[0]
 				},
 				vk::WriteDescriptorSet{
-						compPipeline.getDescriptorSet(0), 1, 0, 1,
+						compPipeline.getDescriptorSet(), 1, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &Bsm.desAndBuffers()[0].descriptors()[1]
 				}
@@ -119,7 +161,7 @@ namespace tt {
 							vk::PipelineBindPoint::eCompute,
 							compPipeline.layout(),
 							0,
-							std::array{compPipeline.getDescriptorSet(0)},
+							std::array{compPipeline.getDescriptorSet()},
 							std::array{0u}
 					);
 
@@ -183,34 +225,62 @@ namespace tt {
 			MY_LOG(INFO) << outputMemoryPtr[i].pos[0];
 	}
 
-	JobDrawLine JobDrawLine::create(android_app *app, tt::Device &device) {
-		return JobDrawLine(
-				device.createJobBase(
-						{
-								vk::DescriptorPoolSize{
-										vk::DescriptorType::eUniformBuffer, 1
-								},
-								vk::DescriptorPoolSize{
-										vk::DescriptorType::eStorageBuffer, 3
-								}
-						},
-						2
-				),
-				app,
-				device
-		);
-	}
-
 
 	vk::UniqueRenderPass JobDrawLine::createRenderpass(tt::Device &) {
 		return vk::UniqueRenderPass();
 	}
 
-	vk::UniquePipeline JobDrawLine::createGraphsPipeline(tt::Device &, android_app *app) {
-		return vk::UniquePipeline();
+	vk::UniquePipeline JobDrawLine::createGraphsPipeline(tt::Device &device, android_app *app,
+	                                                     vk::PipelineLayout pipelineLayout) {
+
+		return vk::UniquePipeline{};
+		auto vertShaderModule = device.loadShaderFromAssets("shaders/mvp.vert.spv", app);
+		auto fargShaderModule = device.loadShaderFromAssets("shaders/copy.frag.spv", app);
+		std::array pipelineShaderStageCreateInfos{
+				vk::PipelineShaderStageCreateInfo{
+						vk::PipelineShaderStageCreateFlags(),
+						vk::ShaderStageFlagBits::eVertex,
+						vertShaderModule.get(),
+						"main"
+				},
+				vk::PipelineShaderStageCreateInfo{
+						vk::PipelineShaderStageCreateFlags(),
+						vk::ShaderStageFlagBits::eFragment,
+						fargShaderModule.get(),
+						"main"
+				}
+		};
+
+		std::array vertexInputBindingDescriptions{
+				vk::VertexInputBindingDescription{
+						0, sizeof(uint32_t),
+						vk::VertexInputRate::eVertex
+				}
+		};
+		std::array vertexInputAttributeDescriptions{
+				vk::VertexInputAttributeDescription{
+						0, 0, vk::Format::eR32G32B32A32Sfloat, 0
+				},
+				vk::VertexInputAttributeDescription{
+						1, 0, vk::Format::eR32G32Sfloat, 16
+				}//VK_FORMAT_R32G32_SFLOAT
+		};
+		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
+				vk::PipelineVertexInputStateCreateFlags(),
+				vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
+				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
+
+		};
+		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
+		                                   pipelineVertexInputStateCreateInfo,
+		                                   pipelineLayout,
+		                                   pipelineCache.get(),
+		                                   device.renderPass.get(),
+		                                   vk::PrimitiveTopology::eLineStrip);
 	}
 
-	vk::UniquePipeline JobDrawLine::createComputePipeline(tt::Device &device, android_app *app,vk::PipelineLayout pipelineLayout) {
+	vk::UniquePipeline JobDrawLine::createComputePipeline(tt::Device &device, android_app *app,
+	                                                      vk::PipelineLayout pipelineLayout) {
 		auto compShaderModule = device.loadShaderFromAssets("shaders/bline.comp.spv", app);
 
 		std::array specializationMapEntrys{

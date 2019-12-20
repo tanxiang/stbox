@@ -179,7 +179,7 @@ namespace tt {
 		handle.bindPipeline(vk::PipelineBindPoint::eGraphics, graphPipeline.get());
 		//std::array tmpDescriptorSets{descriptorSets[0].get()};
 		handle.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphPipeline.layout(), 0,
-		                          graphPipeline.getDescriptorSet(0), {});
+		                          graphPipeline.getDescriptorSet(), {});
 		handle.bindVertexBuffers(0, std::get<vk::UniqueBuffer>(BAMs[2]).get(), offsets);
 		handle.draw(4, 6, 0, 0);
 	}
@@ -258,15 +258,15 @@ namespace tt {
 
 		std::array descriptorWriteInfos{
 				vk::WriteDescriptorSet{
-						graphPipeline.getDescriptorSet(0), 0, 0, 1, vk::DescriptorType::eStorageBuffer,
+						graphPipeline.getDescriptorSet(), 0, 0, 1, vk::DescriptorType::eStorageBuffer,
 						nullptr, &std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[0]
 				},
 				vk::WriteDescriptorSet{
-						graphPipeline.getDescriptorSet(0), 1, 0, 1, vk::DescriptorType::eStorageBuffer,
+						graphPipeline.getDescriptorSet(), 1, 0, 1, vk::DescriptorType::eStorageBuffer,
 						nullptr, &std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[1]
 				},
 				vk::WriteDescriptorSet{
-						graphPipeline.getDescriptorSet(0), 2, 0, 1, vk::DescriptorType::eStorageBuffer,
+						graphPipeline.getDescriptorSet(), 2, 0, 1, vk::DescriptorType::eStorageBuffer,
 						nullptr, &std::get<std::vector<vk::DescriptorBufferInfo>>(fontBVM)[2]
 				}
 		};

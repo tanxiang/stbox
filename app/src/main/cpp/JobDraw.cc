@@ -228,12 +228,12 @@ namespace tt {
 
 		std::array writeDes{
 				vk::WriteDescriptorSet{
-						graphPipeline.getDescriptorSet(0), 0, 0, 1,
+						graphPipeline.getDescriptorSet(), 0, 0, 1,
 						vk::DescriptorType::eUniformBuffer,
 						nullptr, &descriptorBufferInfo
 				},
 				vk::WriteDescriptorSet{
-						graphPipeline.getDescriptorSet(0), 1, 0, 1,
+						graphPipeline.getDescriptorSet(), 1, 0, 1,
 						vk::DescriptorType::eCombinedImageSampler,
 						&descriptorImageInfo
 				}

@@ -466,10 +466,11 @@ namespace tt {
 			vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo,
 			vk::PipelineLayout pipelineLayout,
 			vk::PipelineCache pipelineCache,
-			vk::RenderPass jobRenderPass) {
+			vk::RenderPass jobRenderPass,
+			vk::PrimitiveTopology primitiveTopology) {
 
 		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo{
-				vk::PipelineInputAssemblyStateCreateFlags(), vk::PrimitiveTopology::eTriangleStrip
+				vk::PipelineInputAssemblyStateCreateFlags(), primitiveTopology
 		};
 
 		std::array dynamicStates{vk::DynamicState::eViewport, vk::DynamicState::eScissor};

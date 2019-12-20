@@ -375,7 +375,8 @@ namespace tt {
 				vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo,
 				vk::PipelineLayout pipelineLayout,
 				vk::PipelineCache pipelineCache,
-				vk::RenderPass jobRenderPass
+				vk::RenderPass jobRenderPass,
+				vk::PrimitiveTopology primitiveTopology = vk::PrimitiveTopology::eTriangleStrip
 		);
 
 		std::vector<vk::UniqueCommandBuffer>

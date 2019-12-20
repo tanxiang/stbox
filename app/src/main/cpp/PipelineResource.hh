@@ -75,7 +75,7 @@ namespace tt {
 			return descriptorSets;
 		}
 
-		auto getDescriptorSet(size_t index){
+		auto getDescriptorSet(size_t index = 0){
 			return descriptorSets[index];
 		}
 

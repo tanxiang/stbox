@@ -22,13 +22,14 @@ namespace tt {
 		};
 
 		PipelineResource compPipeline;
-		vk::UniquePipeline gPipeline,cPipeline;//todo vector
+		PipelineResource graphPipeline;
+
 
 		BuffersMemory<> Bsm;
 		BufferMemory outputMemory;
 		vk::UniqueCommandBuffer cCommandBuffer;
 
-		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app);
+		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 
 		static JobDrawLine create(android_app *app, tt::Device &device);
