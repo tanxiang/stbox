@@ -233,9 +233,8 @@ namespace tt {
 	vk::UniquePipeline JobDrawLine::createGraphsPipeline(tt::Device &device, android_app *app,
 	                                                     vk::PipelineLayout pipelineLayout) {
 
-		return vk::UniquePipeline{};
-		auto vertShaderModule = device.loadShaderFromAssets("shaders/mvp.vert.spv", app);
-		auto fargShaderModule = device.loadShaderFromAssets("shaders/copy.frag.spv", app);
+		auto vertShaderModule = device.loadShaderFromAssets("shaders/indir.vert.spv", app);
+		auto fargShaderModule = device.loadShaderFromAssets("shaders/indir.frag.spv", app);
 		std::array pipelineShaderStageCreateInfos{
 				vk::PipelineShaderStageCreateInfo{
 						vk::PipelineShaderStageCreateFlags(),
@@ -253,24 +252,34 @@ namespace tt {
 
 		std::array vertexInputBindingDescriptions{
 				vk::VertexInputBindingDescription{
-						0, sizeof(uint32_t),
+						0, sizeof(float)*8,
 						vk::VertexInputRate::eVertex
-				}
+				},
+				vk::VertexInputBindingDescription{
+						1, sizeof(glm::mat4),
+						vk::VertexInputRate::eInstance
+				},
 		};
 		std::array vertexInputAttributeDescriptions{
 				vk::VertexInputAttributeDescription{
 						0, 0, vk::Format::eR32G32B32A32Sfloat, 0
 				},
 				vk::VertexInputAttributeDescription{
-						1, 0, vk::Format::eR32G32Sfloat, 16
-				}//VK_FORMAT_R32G32_SFLOAT
+						1, 0, vk::Format::eR32G32B32A32Sfloat, 16
+				},
+				vk::VertexInputAttributeDescription{
+						2, 1, vk::Format::eR32G32B32A32Sfloat, 0
+				},//VK_FORMAT_R32G32_SFLOAT
 		};
+
 		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
 				vk::PipelineVertexInputStateCreateFlags(),
 				vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
 				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
 
 		};
+		//return vk::UniquePipeline{};
+
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
 		                                   pipelineVertexInputStateCreateInfo,
 		                                   pipelineLayout,
