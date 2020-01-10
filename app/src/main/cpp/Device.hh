@@ -8,6 +8,7 @@
 #include "util.hh"
 #include "Window.hh"
 #include "JobBase.hh"
+#include "JobDrawLine.hh"
 #include <type_traits>
 
 
@@ -39,8 +40,7 @@ namespace tt {
 					>,
 					void
 			>
-	> : public std::true_type {
-	};
+	> : public std::true_type {};
 
 	class Device : public vk::UniqueDevice {
 		vk::PhysicalDevice physicalDevice;
@@ -73,9 +73,10 @@ namespace tt {
 	public:
 		//Device(){}
 
-		Device(vk::DeviceCreateInfo deviceCreateInfo, vk::PhysicalDevice &phy) :
+		Device(vk::DeviceCreateInfo deviceCreateInfo, vk::PhysicalDevice &phy,android_app* app) :
 				vk::UniqueDevice{phy.createDeviceUnique(deviceCreateInfo)}, physicalDevice{phy},
-				gQueueFamilyIndex{deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex} {
+				gQueueFamilyIndex{deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex},
+				Jobs{JobDrawLine::create(app,*this)}{
 
 		}
 
@@ -412,6 +413,10 @@ namespace tt {
 			                                       renderSemaphore.get());
 			waitFence(renderFence.get());
 		}
+
+
+		//std::vector<JobDraw> drawJobs;
+		std::tuple<JobDrawLine> Jobs;
 	};
 
 }

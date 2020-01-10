@@ -26,7 +26,7 @@ namespace tt {
 		}
 
 		tt::Device
-		connectToDevice(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface);
+		connectToDevice(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface,android_app *app);
 
 	};
 	Instance createInstance();

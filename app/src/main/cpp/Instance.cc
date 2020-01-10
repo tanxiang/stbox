@@ -107,7 +107,7 @@ namespace tt{
 	}
 
 	tt::Device
-	Instance::connectToDevice(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface) {
+	Instance::connectToDevice(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface,android_app *app) {
 		std::array<float, 1> queuePriorities{0.0};
 		std::vector<vk::DeviceQueueCreateInfo> deviceQueueCreateInfos;
 		auto queueFamilyProperties = phyDevice.getQueueFamilyProperties();
@@ -162,7 +162,7 @@ namespace tt{
 						deviceExtensionNames.size(),
 						deviceExtensionNames.data()
 				},
-				phyDevice);
+				phyDevice,app);
 	}
 
 }

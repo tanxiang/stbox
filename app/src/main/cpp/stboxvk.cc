@@ -39,7 +39,8 @@ namespace tt {
 
 	Device &stboxvk::initDevice(android_app *app, tt::Instance &instance,
 	                            vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR surface) {
-		auto &device = devices.emplace_back(instance.connectToDevice(physicalDevice, surface));//reconnect
+		auto &device = devices.emplace_back(
+				instance.connectToDevice(physicalDevice, surface,app));//reconnect
 		auto defaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
 		//for (auto &phdFormat:defaultDeviceFormats) {
 		//	MY_LOG(INFO) << vk::to_string(phdFormat.colorSpace) << "@"
@@ -57,7 +58,7 @@ namespace tt {
 		if (devices.empty()) {
 			auto phyDevices = instance->enumeratePhysicalDevices()[0];
 			auto phyFeatures = phyDevices.getFeatures();
-			MY_LOG(INFO) << "geometryShader : " <<phyFeatures.geometryShader;
+			MY_LOG(INFO) << "geometryShader : " << phyFeatures.geometryShader;
 			//phyDevices[0].getSurfaceCapabilities2KHR(vk::PhysicalDeviceSurfaceInfo2KHR{surface.get()});
 			//auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevices[0],
 			//                                                         vk::QueueFlagBits::eGraphics,
@@ -67,7 +68,20 @@ namespace tt {
 
 			drawJobs.emplace_back(JobDraw::create(app, device));
 			//fontJobs.emplace_back(JobFont::create(app, device));
-			drawLineJobs.emplace_back(JobDrawLine::create(app,device));
+			drawLineJobs.emplace_back(
+					device.createJobBase(
+							{
+									vk::DescriptorPoolSize{
+											vk::DescriptorType::eUniformBuffer, 1
+									},
+									vk::DescriptorPoolSize{
+											vk::DescriptorType::eStorageBuffer, 3
+									}
+							},
+							2
+					),
+					app,
+					device);
 		}
 
 		auto &window = windows.emplace_back(std::move(surface), devices[0],

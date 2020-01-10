@@ -6,8 +6,11 @@
 #define STBOX_JOBDRAWLINE_HH
 
 #include "util.hh"
-#include "Device.hh"
+//#include "Device.hh"
 #include "PipelineResource.hh"
+#include "thread.hh"
+#include "JobBase.hh"
+
 #include <android_native_app_glue.h>
 
 
@@ -28,6 +31,7 @@ namespace tt {
 		BuffersMemory<> Bsm;
 		BufferMemory outputMemory;
 		vk::UniqueCommandBuffer cCommandBuffer;
+		//Thread worker;
 
 		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
@@ -35,6 +39,8 @@ namespace tt {
 		static JobDrawLine create(android_app *app, tt::Device &device);
 
 		JobDrawLine(JobBase&& j,android_app *app,tt::Device &device);
+
+		//JobDrawLine(JobDrawLine&& j) = default;
 	};
 }
 

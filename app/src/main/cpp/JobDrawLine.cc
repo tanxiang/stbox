@@ -3,6 +3,7 @@
 //
 
 #include "JobDrawLine.hh"
+#include "Device.hh"
 
 
 struct Vertex {
