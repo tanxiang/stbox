@@ -72,12 +72,24 @@ namespace tt {
 		loadShaderFromAssetsDir(const char *dirPath,
 		                        android_app *androidAppCtx);
 
+		vk::UniqueDevice initHander(vk::PhysicalDevice &phy,vk::SurfaceKHR &surface);
+
 	public:
 		//Device(){}
 
 		auto createJobBase(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes, size_t maxSet) {
 			return tt::JobBase{get(), gQueueFamilyIndex, descriptorPoolSizes, maxSet};
 		}
+
+		Device(vk::PhysicalDevice &phy, vk::SurfaceKHR &surface ,android_app *app) :
+				vk::UniqueDevice{initHander(phy,surface)}, physicalDevice{phy},
+				//gQueueFamilyIndex{deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex},
+				renderPassFormat{physicalDevice.getSurfaceFormatsKHR(surface)[0].format},
+				renderPass{createRenderpass(renderPassFormat)},
+				Jobs{JobDrawLine::create(app,*this),JobDraw::create(app, *this)} {
+
+		}
+
 
 		Device(vk::DeviceCreateInfo deviceCreateInfo, vk::PhysicalDevice &phy, vk::SurfaceKHR &surface ,android_app *app) :
 				vk::UniqueDevice{phy.createDeviceUnique(deviceCreateInfo)}, physicalDevice{phy},
@@ -87,6 +99,7 @@ namespace tt {
 				Jobs{JobDrawLine::create(app,*this),JobDraw::create(app, *this)} {
 
 		}
+
 
 		auto phyDevice() {
 			return physicalDevice;

@@ -239,5 +239,6 @@ namespace tt {
 				}
 		};
 		device->updateDescriptorSets(writeDes, nullptr);
+		//MY_LOG(INFO)<<__FUNCTION__<<" run out";
 	}
 };

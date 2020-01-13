@@ -587,12 +587,71 @@ namespace tt {
 						vk::BufferUsageFlagBits::eTransferDst}
 		);
 		get().bindBufferMemory(bufferDst.get(), memory, 0);
-		return flushBufferToBuffer(buffer,bufferDst.get(),size,srcoff,decoff);
+		return flushBufferToBuffer(buffer, bufferDst.get(), size, srcoff, decoff);
 	}
 
 	void Device::bindBsm(BuffersMemory<> &BsM) {
 		for (auto &buffer:BsM.desAndBuffers()) {
-			get().bindBufferMemory(buffer.buffer().get(),BsM.memory().get(),buffer.off());
+			get().bindBufferMemory(buffer.buffer().get(), BsM.memory().get(), buffer.off());
 		}
+	}
+
+	vk::UniqueDevice Device::initHander(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface) {
+		std::array<float, 1> queuePriorities{0.0};
+		std::vector<vk::DeviceQueueCreateInfo> deviceQueueCreateInfos;
+		auto queueFamilyProperties = phyDevice.getQueueFamilyProperties();
+		for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {//fixme queue count priorities
+			//MY_LOG(INFO) << "QueueFamilyProperties : " << i << "\tflags:"
+			//              << vk::to_string(queueFamilyProperties[i].queueFlags);
+			if (phyDevice.getSurfaceSupportKHR(i, surface) &&
+			    (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics)) {
+				MY_LOG(ERROR) << "fixme default_queue_index :" << i
+				              << "\tgetSurfaceSupportKHR:true";
+				deviceQueueCreateInfos.emplace_back(
+						vk::DeviceQueueCreateFlags(), i,
+						queueFamilyProperties[i].queueCount, queuePriorities.data()
+				);
+				continue;
+			}//todo multi queue
+			//if(queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eTransfer){}
+			//if(queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eCompute){ }
+		}
+
+		gQueueFamilyIndex = deviceQueueCreateInfos[0].queueFamilyIndex;
+
+		auto deviceLayerProperties = phyDevice.enumerateDeviceLayerProperties();
+		//auto deviceFeatures = phyDevice.getFeatures();
+		//MY_LOG(INFO) << "deviceFeatures.samplerAnisotropy = "<<deviceFeatures.samplerAnisotropy;
+		//MY_LOG(INFO) << "phyDeviceDeviceLayerProperties : " << deviceLayerProperties.size();
+		std::vector<const char *> deviceLayerPropertiesName;
+		for (auto &deviceLayerPropertie :deviceLayerProperties) {
+			MY_LOG(INFO) << "phyDeviceDeviceLayerPropertie : " << deviceLayerPropertie.layerName;
+			deviceLayerPropertiesName.emplace_back(deviceLayerPropertie.layerName);
+		}
+		auto deviceExtensionProperties = phyDevice.enumerateDeviceExtensionProperties();
+		//for (auto &deviceExtensionPropertie:deviceExtensionProperties)
+		//	MY_LOG(INFO) << "PhyDeviceExtensionPropertie : "
+		//	             << deviceExtensionPropertie.extensionName;
+		std::array deviceExtensionNames{
+				VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+				VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
+				VK_KHR_DESCRIPTOR_UPDATE_TEMPLATE_EXTENSION_NAME,
+				VK_KHR_SHARED_PRESENTABLE_IMAGE_EXTENSION_NAME,
+				//VK_EXT_DEBUG_MARKER_EXTENSION_NAME
+				//VK_KHR_INCREMENTAL_PRESENT_EXTENSION_NAME,
+				//VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME
+		};
+
+		return phyDevice.createDeviceUnique(
+				vk::DeviceCreateInfo{
+						vk::DeviceCreateFlags(),
+						deviceQueueCreateInfos.size(),
+						deviceQueueCreateInfos.data(),
+						deviceLayerPropertiesName.size(),
+						deviceLayerPropertiesName.data(),
+						deviceExtensionNames.size(),
+						deviceExtensionNames.data()
+				}
+		);
 	}
 }

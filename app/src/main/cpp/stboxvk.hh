@@ -15,7 +15,7 @@ namespace tt {
 	class JobDraw;
 	class JobFont;
 	class stboxvk {
-        std::vector<Device> devices;
+        std::unique_ptr<Device> devices;
 		//std::vector<JobDraw> drawJobs;
 		//std::vector<JobDrawLine> drawLineJobs;
 		//std::vector<JobFont> fontJobs;
