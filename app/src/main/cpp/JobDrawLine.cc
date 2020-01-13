@@ -279,7 +279,7 @@ namespace tt {
 				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
 
 		};
-		//return vk::UniquePipeline{};
+		return vk::UniquePipeline{};
 
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
 		                                   pipelineVertexInputStateCreateInfo,

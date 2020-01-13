@@ -6,10 +6,10 @@
 #define STBOX_JOBDRAW_HH
 
 #include "util.hh"
-#include "Device.hh"
+//#include "Device.hh"
 #include "JobBase.hh"
 #include "PipelineResource.hh"
-
+#include "Window.hh"
 
 namespace tt {
 	struct JobDraw : public JobBase{

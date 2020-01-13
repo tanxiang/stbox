@@ -39,15 +39,8 @@ namespace tt {
 
 	Device &stboxvk::initDevice(android_app *app, tt::Instance &instance,
 	                            vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR surface) {
-		auto &device = devices.emplace_back(
+		return devices.emplace_back(
 				instance.connectToDevice(physicalDevice, surface,app));//reconnect
-		auto defaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
-		//for (auto &phdFormat:defaultDeviceFormats) {
-		//	MY_LOG(INFO) << vk::to_string(phdFormat.colorSpace) << "@"
-		//	             << vk::to_string(phdFormat.format);
-		//}
-		device.renderPass = device.createRenderpass(defaultDeviceFormats[0].format);
-		return device;
 	}
 
 	void stboxvk::initWindow(android_app *app, tt::Instance &instance) {
@@ -66,9 +59,9 @@ namespace tt {
 			auto &device = initDevice(app, instance, phyDevices, surface.get());
 			//
 
-			drawJobs.emplace_back(JobDraw::create(app, device));
+			//drawJobs.emplace_back(JobDraw::create(app, device));
 			//fontJobs.emplace_back(JobFont::create(app, device));
-			drawLineJobs.emplace_back(
+			/*drawLineJobs.emplace_back(
 					device.createJobBase(
 							{
 									vk::DescriptorPoolSize{
@@ -81,24 +74,24 @@ namespace tt {
 							2
 					),
 					app,
-					device);
+					device);*/
 		}
 
 		auto &window = windows.emplace_back(std::move(surface), devices[0],
 		                                    AndroidGetWindowSize(app));
-		drawJobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
-		drawJobs[0].setPv();
+		devices[0].Job<JobDraw>().buildCmdBuffer(window, devices[0].renderPass.get());
+		devices[0].Job<JobDraw>().setPv();
 		//fontJobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
 		return;
 	}
 
 	void stboxvk::draw() {
-		devices[0].runJobOnWindow(drawJobs[0], windows[0]);
+		devices[0].runJobOnWindow(devices[0].Job<JobDraw>(), windows[0]);
 		//devices[0].runJobOnWindow(fontJobs[0], windows[0]);
 	}
 
 	void stboxvk::draw(float dx, float dy) {
-		drawJobs[0].setPv(dx, dy);
+		devices[0].Job<JobDraw>().setPv(dx, dy);
 		draw();
 	}
 

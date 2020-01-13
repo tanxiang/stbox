@@ -162,7 +162,7 @@ namespace tt{
 						deviceExtensionNames.size(),
 						deviceExtensionNames.data()
 				},
-				phyDevice,app);
+				phyDevice,surface,app);
 	}
 
 }

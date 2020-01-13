@@ -9,6 +9,7 @@
 #include "Window.hh"
 #include "JobBase.hh"
 #include "JobDrawLine.hh"
+#include "JobDraw.hh"
 #include <type_traits>
 
 
@@ -40,7 +41,8 @@ namespace tt {
 					>,
 					void
 			>
-	> : public std::true_type {};
+	> : public std::true_type {
+	};
 
 	class Device : public vk::UniqueDevice {
 		vk::PhysicalDevice physicalDevice;
@@ -73,19 +75,21 @@ namespace tt {
 	public:
 		//Device(){}
 
-		Device(vk::DeviceCreateInfo deviceCreateInfo, vk::PhysicalDevice &phy,android_app* app) :
+		auto createJobBase(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes, size_t maxSet) {
+			return tt::JobBase{get(), gQueueFamilyIndex, descriptorPoolSizes, maxSet};
+		}
+
+		Device(vk::DeviceCreateInfo deviceCreateInfo, vk::PhysicalDevice &phy, vk::SurfaceKHR &surface ,android_app *app) :
 				vk::UniqueDevice{phy.createDeviceUnique(deviceCreateInfo)}, physicalDevice{phy},
 				gQueueFamilyIndex{deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex},
-				Jobs{JobDrawLine::create(app,*this)}{
+				renderPassFormat{physicalDevice.getSurfaceFormatsKHR(surface)[0].format},
+				renderPass{createRenderpass(renderPassFormat)},
+				Jobs{JobDrawLine::create(app,*this),JobDraw::create(app, *this)} {
 
 		}
 
 		auto phyDevice() {
 			return physicalDevice;
-		}
-
-		auto createJobBase(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,size_t maxSet) {
-			return tt::JobBase{get(), gQueueFamilyIndex, descriptorPoolSizes, maxSet};
 		}
 
 		auto transQueue() {
@@ -212,7 +216,8 @@ namespace tt {
 			return t.size() * sizeof(typename T::value_type);
 		}
 
-		template<typename T, typename std::enable_if<!is_container<T>::value&&!std::is_integral<T>::value, int>::type = 0>
+		template<typename T, typename std::enable_if<
+				!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
 		auto objSize(uint32_t alig, const T &t) {
 			return sizeof(t);
 		}
@@ -224,7 +229,8 @@ namespace tt {
 
 		template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
 		vk::DescriptorBufferInfo
-		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,uint32_t &off,
+		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,
+		         uint32_t &off,
 		         const T &t) {
 			auto size = t;
 			//memcpy(static_cast<char *>(ptr.get()) + off, t.data(), size);
@@ -236,7 +242,8 @@ namespace tt {
 
 		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
 		vk::DescriptorBufferInfo
-		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,uint32_t &off,
+		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,
+		         uint32_t &off,
 		         const T &t) {
 			auto size = t.size() * sizeof(typename T::value_type);
 			memcpy(static_cast<char *>(ptr.get()) + off, t.data(), size);
@@ -246,9 +253,11 @@ namespace tt {
 			return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
 		}
 
-		template<typename T, typename std::enable_if<!is_container<T>::value&&!std::is_integral<T>::value, int>::type = 0>
+		template<typename T, typename std::enable_if<
+				!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
 		vk::DescriptorBufferInfo
-		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff, uint32_t &off,
+		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,
+		         uint32_t &off,
 		         const T &t) {
 			auto size = sizeof(t);
 			memcpy(static_cast<char *>(ptr.get()) + off, &t, size);
@@ -258,13 +267,14 @@ namespace tt {
 			return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
 		}
 
-		template<typename TP,typename ... Ts>
-		auto writeObjsDescriptorBufferInfo(BufferMemoryPtr &bufferPtr, TP& tp, uint32_t &off,
-		               const Ts &... objs) {
+		template<typename TP, typename ... Ts>
+		auto writeObjsDescriptorBufferInfo(BufferMemoryPtr &bufferPtr, TP &tp, uint32_t &off,
+		                                   const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			auto m_off = off;
 			tp.off() = off;
-			tp.descriptors() = std::vector{writeObj(bufferPtr, tp.buffer().get(), alig,off, m_off, objs)...};
+			tp.descriptors() = std::vector{
+					writeObj(bufferPtr, tp.buffer().get(), alig, off, m_off, objs)...};
 			return get().getBufferMemoryRequirements(tp.buffer().get()).size;
 		}
 
@@ -416,7 +426,13 @@ namespace tt {
 
 
 		//std::vector<JobDraw> drawJobs;
-		std::tuple<JobDrawLine> Jobs;
+	private:
+		std::tuple<JobDrawLine,JobDraw> Jobs;
+	public:
+		template <typename JobType>
+		auto & Job(int index = 0){
+			return std::get<JobType>(Jobs);
+		}
 	};
 
 }
