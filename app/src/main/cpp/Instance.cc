@@ -105,7 +105,7 @@ namespace tt{
 		//assert(vkDestroyDebugReportCallbackEXT);
 		return tt::Instance{std::move(ins)};
 	}
-
+/*
 	tt::Device
 	Instance::connectToDevice(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface,android_app *app) {
 		std::array<float, 1> queuePriorities{0.0};
@@ -163,6 +163,6 @@ namespace tt{
 						deviceExtensionNames.data()
 				},
 				phyDevice,surface,app);
-	}
+	}*/
 
 }

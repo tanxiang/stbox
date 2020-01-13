@@ -31,7 +31,7 @@ namespace tt {
 		BuffersMemory<> Bsm;
 		BufferMemory outputMemory;
 		vk::UniqueCommandBuffer cCommandBuffer;
-		//Thread worker;
+		Thread worker;
 
 		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
@@ -39,6 +39,11 @@ namespace tt {
 		static JobDrawLine create(android_app *app, tt::Device &device);
 
 		JobDrawLine(JobBase&& j,android_app *app,tt::Device &device);
+
+		template <typename tupleType>
+		JobDrawLine(tupleType args):JobDrawLine(std::move(std::get<JobBase>(args)),std::get<android_app*>(args),*std::get<tt::Device*>(args)){}
+
+
 
 		//JobDrawLine(JobDrawLine&& j) = default;
 	};

@@ -39,7 +39,7 @@ namespace tt {
 
 	Device& stboxvk::initDevice(android_app *app, tt::Instance &instance,
 	                            vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR surface) {
-		devices = std::make_unique<Device>(tt::Device{physicalDevice, surface,app});//reconnect
+		devices = std::make_unique<Device>(physicalDevice, surface,app);//reconnect
 		return *devices;
 		//devices.release();
 		//devices = std::make_unique<Device>(instance.connectToDevice(physicalDevice, surface,app));

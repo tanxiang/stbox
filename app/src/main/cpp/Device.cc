@@ -617,7 +617,7 @@ namespace tt {
 			//if(queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eCompute){ }
 		}
 
-		gQueueFamilyIndex = deviceQueueCreateInfos[0].queueFamilyIndex;
+		gQueueFamilyIndex = deviceQueueCreateInfos[0].queueFamilyIndex;//FIXME QueueFamilyIndexs need manager
 
 		auto deviceLayerProperties = phyDevice.enumerateDeviceLayerProperties();
 		//auto deviceFeatures = phyDevice.getFeatures();

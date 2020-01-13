@@ -72,7 +72,7 @@ namespace tt {
 		loadShaderFromAssetsDir(const char *dirPath,
 		                        android_app *androidAppCtx);
 
-		vk::UniqueDevice initHander(vk::PhysicalDevice &phy,vk::SurfaceKHR &surface);
+		vk::UniqueDevice initHander(vk::PhysicalDevice &phy, vk::SurfaceKHR &surface);
 
 	public:
 		//Device(){}
@@ -81,25 +81,40 @@ namespace tt {
 			return tt::JobBase{get(), gQueueFamilyIndex, descriptorPoolSizes, maxSet};
 		}
 
-		Device(vk::PhysicalDevice &phy, vk::SurfaceKHR &surface ,android_app *app) :
-				vk::UniqueDevice{initHander(phy,surface)}, physicalDevice{phy},
+		Device(vk::PhysicalDevice &phy, vk::SurfaceKHR &surface, android_app *app) :
+				vk::UniqueDevice{initHander(phy, surface)}, physicalDevice{phy},
 				//gQueueFamilyIndex{deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex},
 				renderPassFormat{physicalDevice.getSurfaceFormatsKHR(surface)[0].format},
 				renderPass{createRenderpass(renderPassFormat)},
-				Jobs{JobDrawLine::create(app,*this),JobDraw::create(app, *this)} {
+				Jobs{std::make_tuple(
+						createJobBase(
+								{
+										vk::DescriptorPoolSize{
+												vk::DescriptorType::eUniformBuffer, 1
+										},
+										vk::DescriptorPoolSize{
+												vk::DescriptorType::eStorageBuffer, 3
+										}
+								},
+								2
+						),
+						app,
+						this),
+				     JobDraw::create(app, *this)} {
 
 		}
 
-
-		Device(vk::DeviceCreateInfo deviceCreateInfo, vk::PhysicalDevice &phy, vk::SurfaceKHR &surface ,android_app *app) :
+/*
+		Device(vk::DeviceCreateInfo deviceCreateInfo, vk::PhysicalDevice &phy,
+		       vk::SurfaceKHR &surface, android_app *app) :
 				vk::UniqueDevice{phy.createDeviceUnique(deviceCreateInfo)}, physicalDevice{phy},
 				gQueueFamilyIndex{deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex},
 				renderPassFormat{physicalDevice.getSurfaceFormatsKHR(surface)[0].format},
 				renderPass{createRenderpass(renderPassFormat)},
-				Jobs{JobDrawLine::create(app,*this),JobDraw::create(app, *this)} {
+				Jobs{JobDrawLine::create(app, *this), JobDraw::create(app, *this)} {
 
 		}
-
+*/
 
 		auto phyDevice() {
 			return physicalDevice;
@@ -440,10 +455,10 @@ namespace tt {
 
 		//std::vector<JobDraw> drawJobs;
 	private:
-		std::tuple<JobDrawLine,JobDraw> Jobs;
+		std::tuple<JobDrawLine, JobDraw> Jobs;
 	public:
-		template <typename JobType>
-		auto & Job(int index = 0){
+		template<typename JobType>
+		auto &Job(int index = 0) {
 			return std::get<JobType>(Jobs);
 		}
 	};
