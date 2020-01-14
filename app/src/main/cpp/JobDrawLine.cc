@@ -15,19 +15,23 @@ namespace tt {
 
 	JobDrawLine JobDrawLine::create(android_app *app, tt::Device &device) {
 		return JobDrawLine(
-				device.createJobBase(
-						{
-								vk::DescriptorPoolSize{
-										vk::DescriptorType::eUniformBuffer, 1
-								},
-								vk::DescriptorPoolSize{
-										vk::DescriptorType::eStorageBuffer, 3
-								}
-						},
-						2
-				),
+				createBase(device),
 				app,
 				device
+		);
+	}
+
+	JobBase JobDrawLine::createBase(tt::Device &device) {
+		return device.createJobBase(
+				{
+						vk::DescriptorPoolSize{
+								vk::DescriptorType::eUniformBuffer, 1
+						},
+						vk::DescriptorPoolSize{
+								vk::DescriptorType::eStorageBuffer, 3
+						}
+				},
+				2
 		);
 	}
 
@@ -335,5 +339,6 @@ namespace tt {
 
 		return device->createComputePipelineUnique(pipelineCache.get(), computePipelineCreateInfo);
 	}
+
 
 }

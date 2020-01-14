@@ -38,6 +38,8 @@ namespace tt {
 
 		static JobDrawLine create(android_app *app, tt::Device &device);
 
+		static JobBase createBase(tt::Device &device);
+
 		JobDrawLine(JobBase&& j,android_app *app,tt::Device &device);
 
 		template <typename tupleType>

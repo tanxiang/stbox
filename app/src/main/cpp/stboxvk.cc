@@ -41,8 +41,6 @@ namespace tt {
 	                            vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR surface) {
 		devices = std::make_unique<Device>(physicalDevice, surface,app);//reconnect
 		return *devices;
-		//devices.release();
-		//devices = std::make_unique<Device>(instance.connectToDevice(physicalDevice, surface,app));
 	}
 
 	void stboxvk::initWindow(android_app *app, tt::Instance &instance) {
@@ -54,29 +52,7 @@ namespace tt {
 			auto phyDevices = instance->enumeratePhysicalDevices()[0];
 			auto phyFeatures = phyDevices.getFeatures();
 			MY_LOG(INFO) << "geometryShader : " << phyFeatures.geometryShader;
-			//phyDevices[0].getSurfaceCapabilities2KHR(vk::PhysicalDeviceSurfaceInfo2KHR{surface.get()});
-			//auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevices[0],
-			//                                                         vk::QueueFlagBits::eGraphics,
-			//                                                         surface.get());
 			auto &device = initDevice(app, instance, phyDevices, surface.get());
-			//
-
-			//drawJobs.emplace_back(JobDraw::create(app, device));
-			//fontJobs.emplace_back(JobFont::create(app, device));
-			/*drawLineJobs.emplace_back(
-					device.createJobBase(
-							{
-									vk::DescriptorPoolSize{
-											vk::DescriptorType::eUniformBuffer, 1
-									},
-									vk::DescriptorPoolSize{
-											vk::DescriptorType::eStorageBuffer, 3
-									}
-							},
-							2
-					),
-					app,
-					device);*/
 		}
 
 		auto &window = windows.emplace_back(std::move(surface), *devices,
