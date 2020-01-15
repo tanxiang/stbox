@@ -52,7 +52,7 @@ namespace tt {
 			auto phyDevices = instance->enumeratePhysicalDevices()[0];
 			auto phyFeatures = phyDevices.getFeatures();
 			MY_LOG(INFO) << "geometryShader : " << phyFeatures.geometryShader;
-			auto &device = initDevice(app, instance, phyDevices, surface.get());
+			initDevice(app, instance, phyDevices, surface.get());
 		}
 
 		auto &window = windows.emplace_back(std::move(surface), *devices,

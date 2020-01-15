@@ -16,9 +16,6 @@ namespace tt {
 	class JobFont;
 	class stboxvk {
         std::unique_ptr<Device> devices;
-		//std::vector<JobDraw> drawJobs;
-		//std::vector<JobDrawLine> drawLineJobs;
-		//std::vector<JobFont> fontJobs;
 		std::vector<Window> windows;
 
     public:
