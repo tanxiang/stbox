@@ -10,7 +10,7 @@
 #include "PipelineResource.hh"
 #include "thread.hh"
 #include "JobBase.hh"
-
+#include "Window.hh"
 #include <android_native_app_glue.h>
 
 
@@ -32,6 +32,8 @@ namespace tt {
 		BufferMemory outputMemory;
 		vk::UniqueCommandBuffer cCommandBuffer;
 		Thread worker;
+		std::vector<vk::UniqueCommandBuffer> gcmdBuffers;
+
 
 		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
@@ -45,7 +47,10 @@ namespace tt {
 		template <typename tupleType>
 		JobDrawLine(tupleType args):JobDrawLine(std::move(std::get<JobBase>(args)),std::get<android_app*>(args),*std::get<tt::Device*>(args)){}
 
+		void buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass);
 
+		void CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleBegin,
+		                                       vk::Extent2D win);
 
 		//JobDrawLine(JobDrawLine&& j) = default;
 	};

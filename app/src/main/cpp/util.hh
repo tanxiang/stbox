@@ -83,10 +83,10 @@ namespace tt {
 	struct CommandBufferBeginHandle : public vk::CommandBuffer {
 		CommandBufferBeginHandle(
 				vk::UniqueCommandBuffer &uniqueCommandBuffer,
-				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits{})
-				:
+				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits{},
+				vk::CommandBufferInheritanceInfo *pCommandBufferInheritanceInfo = nullptr) :
 				vk::CommandBuffer{uniqueCommandBuffer.get()} {
-			begin(vk::CommandBufferBeginInfo{commandBufferUsageFlags});
+			begin(vk::CommandBufferBeginInfo{commandBufferUsageFlags,pCommandBufferInheritanceInfo});
 		}
 
 		~CommandBufferBeginHandle() {
@@ -228,6 +228,37 @@ namespace tt {
 			}
 			return commandBuffers;
 		}
+
+
+		template<typename JobType>
+		auto createCmdBuffersSub(vk::Device device,
+		                      vk::RenderPass renderPass,
+		                      JobType &job,
+		                      std::vector<vk::UniqueFramebuffer> &framebuffers,
+		                      vk::Extent2D extent2D,
+		                      vk::CommandPool pool) {
+			MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << framebuffers.size();
+			std::vector commandBuffers = device.allocateCommandBuffersUnique(
+					vk::CommandBufferAllocateInfo{
+							pool,
+							vk::CommandBufferLevel::ePrimary,
+							framebuffers.size()
+					}
+			);
+
+			uint32_t frameIndex = 0;
+			for (auto &cmdBuffer : commandBuffers) {
+				//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+				{
+					vk::CommandBufferInheritanceInfo commandBufferInheritanceInfo{renderPass,0,framebuffers[frameIndex].get()};
+					CommandBufferBeginHandle cmdHandleRenderpassBegin{cmdBuffer,vk::CommandBufferUsageFlagBits::eRenderPassContinue,&commandBufferInheritanceInfo};
+					job.CmdBufferRenderPassContinueBegin(cmdHandleRenderpassBegin, extent2D);
+				}
+				++frameIndex;
+			}
+			return commandBuffers;
+		}
+
 	}
 }
 

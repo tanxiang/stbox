@@ -57,6 +57,7 @@ namespace tt {
 
 		auto &window = windows.emplace_back(std::move(surface), *devices,
 		                                    AndroidGetWindowSize(app));
+		devices->Job<JobDrawLine>().buildCmdBuffer(window, devices->renderPass.get());
 		devices->Job<JobDraw>().buildCmdBuffer(window, devices->renderPass.get());
 		devices->Job<JobDraw>().setPv();
 		//fontJobs[0].buildCmdBuffer(window, devices[0].renderPass.get());

@@ -40,7 +40,7 @@ namespace tt {
 			renderPass{createRenderpass(device)},
 			compPipeline{
 					device.get(),
-					descriptorPoll.get(),
+					descriptorPool.get(),
 					[&](vk::PipelineLayout pipelineLayout) {
 						return createComputePipeline(
 								device,
@@ -60,7 +60,7 @@ namespace tt {
 			},
 			graphPipeline{
 					device.get(),
-					descriptorPoll.get(),
+					descriptorPool.get(),
 					[&](vk::PipelineLayout pipelineLayout) {
 						return createGraphsPipeline(
 								device,
@@ -92,8 +92,13 @@ namespace tt {
 
 		//std::vector<Vertex> verticesOut{32};
 
-		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eStorageBuffer, vertices,
-		                        sizeof(Vertex) * 32);
+		device.buildBufferOnBsM(
+				Bsm,
+				vk::BufferUsageFlagBits::eStorageBuffer |
+				vk::BufferUsageFlagBits::eIndirectBuffer,
+				vertices,
+				sizeof(Vertex) * 32,
+				sizeof(vk::DrawIndirectCommand) * 32);
 		//MY_LOG(INFO) << " buffer:" << sizeof(Vertex) * 32 << sizeof(Vertex) * 4;
 		{
 			auto localeBufferMemory = device.createLocalBufferMemoryOnBsM(Bsm);
@@ -109,7 +114,6 @@ namespace tt {
 				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[0], off,
 				                                            vertices, sizeof(Vertex) * 32);
 			}
-			//Bsm.memory() = std::move(localMemory);
 			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
 			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),
 			                           Bsm.memory().get(), Bsm.size());
@@ -257,7 +261,7 @@ namespace tt {
 
 		std::array vertexInputBindingDescriptions{
 				vk::VertexInputBindingDescription{
-						0, sizeof(float)*8,
+						0, sizeof(float) * 8,
 						vk::VertexInputRate::eVertex
 				},
 				vk::VertexInputBindingDescription{
@@ -283,7 +287,7 @@ namespace tt {
 				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
 
 		};
-		return vk::UniquePipeline{};
+		//return vk::UniquePipeline{};
 
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
 		                                   pipelineVertexInputStateCreateInfo,
@@ -338,6 +342,50 @@ namespace tt {
 		};
 
 		return device->createComputePipelineUnique(pipelineCache.get(), computePipelineCreateInfo);
+	}
+
+	void JobDrawLine::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
+
+
+		gcmdBuffers = helper::createCmdBuffersSub(ownerDevice(), renderPass,
+		                                          *this,
+		                                          swapchain.getFrameBuffer(),
+		                                          swapchain.getSwapchainExtent(),
+		                                          commandPool.get());
+
+	}
+
+	void JobDrawLine::CmdBufferRenderPassContinueBegin(
+			CommandBufferBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win) {
+
+		cmdHandleRenderpassBegin.setViewport(
+				0,
+				std::array{
+						vk::Viewport{
+								0, 0,
+								win.width,
+								win.height,
+								0.0f, 1.0f
+						}
+				}
+		);
+
+		cmdHandleRenderpassBegin.setScissor(0, std::array{vk::Rect2D{vk::Offset2D{}, win}});
+
+		cmdHandleRenderpassBegin.bindPipeline(
+				vk::PipelineBindPoint::eGraphics,
+				graphPipeline.get());
+
+
+		cmdHandleRenderpassBegin.bindDescriptorSets(
+				vk::PipelineBindPoint::eGraphics,
+				graphPipeline.layout(),
+				0,
+				std::array{graphPipeline.getDescriptorSet()},
+				std::array{0u}
+		);
+
+		//cmdHandleRenderpassBegin.drawIndirect();
 	}
 
 

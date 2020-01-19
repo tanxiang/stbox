@@ -11,9 +11,9 @@ namespace tt {
 
 	struct JobBase {
 	protected:
-		vk::UniqueDescriptorPool descriptorPoll;
+		vk::UniqueDescriptorPool descriptorPool;
 		auto ownerDevice() {
-			return descriptorPoll.getOwner();
+			return descriptorPool.getOwner();
 		}
 
 		vk::UniquePipelineCache pipelineCache;
@@ -22,7 +22,7 @@ namespace tt {
 	public:
 		JobBase(vk::Device device, uint32_t queueIndex,
 		        vk::ArrayProxy<vk::DescriptorPoolSize> descriptorPoolSizes, size_t maxSet) :
-				descriptorPoll{
+				descriptorPool{
 						device.createDescriptorPoolUnique(
 								vk::DescriptorPoolCreateInfo{
 										vk::DescriptorPoolCreateFlags(),

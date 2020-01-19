@@ -53,8 +53,10 @@ namespace tt {
 		}
 
 		void addJob(std::function<void()> function) {
-			std::lock_guard<std::mutex> lock(queueMutex);
-			jobQueue.push(std::move(function));
+			{
+				std::lock_guard<std::mutex> lock(queueMutex);
+				jobQueue.push(std::move(function));
+			}
 			condition.notify_one();
 		}
 

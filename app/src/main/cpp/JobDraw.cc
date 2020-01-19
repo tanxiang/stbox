@@ -80,7 +80,7 @@ namespace tt {
 	void JobDraw::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
 //		MY_LOG(INFO)<<"jobaddr:"<<(void const *)this<<std::endl;
 
-		cmdBuffers = helper::createCmdBuffers(descriptorPoll.getOwner(), renderPass,
+		cmdBuffers = helper::createCmdBuffers(descriptorPool.getOwner(), renderPass,
 		                                      *this,
 		                                      swapchain.getFrameBuffer(),
 		                                      swapchain.getSwapchainExtent(),
@@ -143,8 +143,8 @@ namespace tt {
 				Bsm.desAndBuffers()[0].buffer().get(),
 				offsets);
 		cmdHandleRenderpassBegin.bindIndexBuffer(
-				Bsm.desAndBuffers()[1].buffer().get(),
-				0, vk::IndexType::eUint32);
+				Bsm.desAndBuffers()[0].buffer().get(),
+				Bsm.desAndBuffers()[0].descriptors()[1].offset, vk::IndexType::eUint32);
 		cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
 	}
 
@@ -152,7 +152,7 @@ namespace tt {
 			JobBase{std::move(j)},
 			graphPipeline{
 					device.get(),
-					descriptorPoll.get(),
+					descriptorPool.get(),
 					[&](vk::PipelineLayout pipelineLayout) {
 						return createPipeline(device, app, pipelineLayout);
 					},
@@ -181,8 +181,9 @@ namespace tt {
 				{{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
 		};
 		std::array indexes{0u, 1u, 2u, 2u, 3u, 0u};
-		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eVertexBuffer, vertices);
-		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eIndexBuffer, indexes);
+		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eVertexBuffer |
+		                             vk::BufferUsageFlagBits::eIndexBuffer, vertices,indexes);
+		//device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eIndexBuffer, indexes);
 		{
 			auto localeBufferMemory = device.createLocalBufferMemoryOnBsM(Bsm);
 
@@ -193,20 +194,11 @@ namespace tt {
 						device->getBufferMemoryRequirements(
 								std::get<vk::UniqueBuffer>(localeBufferMemory).get()).size
 				);
-				//Bsm.buffers()[0].descriptors() =
-				//		device.writeObjs(memoryPtr, Bsm.buffers()[0].buffer().get(), off, vertices);
-
 				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[0], off,
-				                                            vertices);
-				//MY_LOG(INFO)<<"descriptors:" << Bsm.buffers()[0].descriptors().size() <<" off:"<<Bsm.buffers()[0].descriptors()[0].offset
-				//<<" size:"<<Bsm.buffers()[0].descriptors()[0].range;
-				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[1], off,
-				                                            indexes);
+				                                            vertices,indexes);
 
-				//Bsm.buffers()[1].descriptors() =
-				//		device.writeObjs(memoryPtr, Bsm.buffers()[1].buffer().get(), off, indexes);
+
 			}
-			//Bsm.memory() = std::move(localMemory);
 			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
 			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),
 			                           Bsm.memory().get(), Bsm.size());

@@ -100,11 +100,6 @@ namespace tt {
 				  descriptorSetLayouts{createDescriptorSetLayouts(objs...)},
 				  pipeline{func(pipelineLayout.get())} {}
 
-/*
-		PipelineResource(vk::Device dev, vk::DescriptorPool desPool,
-		                 std::initializer_list<vk::ArrayProxy<vk::DescriptorSetLayoutBinding>> objs)
-				: device{dev}, pool{desPool},
-				descriptorSetLayouts{createDescriptorSetLayouts(objs)} {}*/
 
 		PipelineResource(PipelineResource &&) = default;
 	};

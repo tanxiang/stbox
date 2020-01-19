@@ -232,7 +232,7 @@ namespace tt {
 			renderPass{createRenderpass(device)},
 			graphPipeline{
 					device.get(),
-					descriptorPoll.get(),
+					descriptorPool.get(),
 					[&](vk::PipelineLayout pipelineLayout) {
 						return createPipeline(device, app, pipelineLayout);
 					},
