@@ -6,13 +6,16 @@
 #define STBOX_JOBDRAW_HH
 
 #include "util.hh"
-#include "Device.hh"
+//#include "Device.hh"
 #include "JobBase.hh"
+#include "PipelineResource.hh"
+#include "Window.hh"
 
 namespace tt {
 	struct JobDraw : public JobBase{
-		vk::UniquePipeline createPipeline(tt::Device&,android_app* app);
-		vk::UniquePipeline uniquePipeline;//todo vector
+		vk::UniquePipeline createPipeline(tt::Device&,android_app* app,vk::PipelineLayout pipelineLayout);
+		PipelineResource graphPipeline;
+
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
 
 		glm::mat4 perspective;
@@ -31,9 +34,6 @@ namespace tt {
 		                   		CommandBufferBeginHandle &,
 		                   		vk::Extent2D) {};
 
-		auto clearCmdBuffer() {
-			return cmdBuffers.clear();
-		}
 
 		void buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass);
 
@@ -43,6 +43,7 @@ namespace tt {
 
 		//memory using
 		std::vector<BufferMemory> BAMs;
+		BuffersMemory<> Bsm;
 		std::vector<ImageViewMemory> IVMs;
 		vk::UniqueSampler sampler;
 

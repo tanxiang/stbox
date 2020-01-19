@@ -9,23 +9,34 @@
 
 namespace tt {
 	struct JobBase {
-		//tt::Device &device;
-		vk::PhysicalDevice physicalDevice;
-		vk::UniqueDescriptorPool descriptorPoll;
-		vk::UniqueDescriptorSetLayout descriptorSetLayout;//todo vector UniqueDescriptorSetLayout
-		std::vector<vk::UniqueDescriptorSet> descriptorSets;
-		//vk::UniqueRenderPass renderPass;
-		vk::UniquePipelineCache pipelineCache;
-		vk::UniquePipelineLayout pipelineLayout;//todo vector
-		vk::UniqueCommandPool commandPool;
-
-		JobBase(tt::Device &device, uint32_t queueIndex,
-		    std::vector<vk::DescriptorPoolSize> &&descriptorPoolSizes,
-		    std::vector<vk::DescriptorSetLayoutBinding> &&descriptorSetLayoutBindings);
-
-		auto ownerDevice(){
-			return descriptorPoll.getOwner();
+	protected:
+		vk::UniqueDescriptorPool descriptorPool;
+		auto ownerDevice() {
+			return descriptorPool.getOwner();
 		}
+
+		vk::UniquePipelineCache pipelineCache;
+
+		vk::UniqueCommandPool commandPool;
+	public:
+		JobBase(vk::Device device, uint32_t queueIndex,
+		        vk::ArrayProxy<vk::DescriptorPoolSize> descriptorPoolSizes, size_t maxSet) :
+				descriptorPool{
+						device.createDescriptorPoolUnique(
+								vk::DescriptorPoolCreateInfo{
+										vk::DescriptorPoolCreateFlags(),
+										maxSet,
+										descriptorPoolSizes.size(),
+										descriptorPoolSizes.data()
+								}
+						)
+				},
+				commandPool{
+						ownerDevice().createCommandPoolUnique(vk::CommandPoolCreateInfo{
+								vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueIndex}
+						)
+				} {}
+
 	};
 }
 

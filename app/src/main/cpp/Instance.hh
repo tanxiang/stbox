@@ -27,9 +27,6 @@ namespace tt {
 		}
 
 
-		tt::Device
-		connectToDevice(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface);
-
 	};
 	Instance createInstance();
 }

@@ -5,7 +5,9 @@
 #include "JobBase.hh"
 #include "Device.hh"
 #include "Window.hh"
-namespace tt{
+
+
+namespace tt {
 	vk::UniqueShaderModule Device::loadShaderFromAssets(const std::string &filePath,
 	                                                    android_app *androidAppCtx) {
 		// Read the file
@@ -153,6 +155,7 @@ namespace tt{
 				subpassDeps.size(), subpassDeps.data()
 		});
 	}
+
 /*
 	std::vector<vk::UniqueCommandBuffer>
 	Device::createCmdBuffers(tt::Window &swapchain, vk::CommandPool pool,
@@ -203,11 +206,11 @@ namespace tt{
 	Device::createCmdBuffers(size_t cmdNum, vk::CommandPool pool,
 	                         std::function<void(CommandBufferBeginHandle &)> functionBegin,
 	                         vk::CommandBufferUsageFlags commandBufferUsageFlags) {
-		MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << cmdNum;
+		//MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << cmdNum;
 		std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
 				vk::CommandBufferAllocateInfo{pool, vk::CommandBufferLevel::ePrimary, cmdNum});
 		for (auto &cmdBuffer : commandBuffers) {
-			CommandBufferBeginHandle cmdBeginHandle{cmdBuffer,commandBufferUsageFlags};
+			CommandBufferBeginHandle cmdBeginHandle{cmdBuffer, commandBufferUsageFlags};
 			functionBegin(cmdBeginHandle);
 		}
 		return commandBuffers;
@@ -252,9 +255,9 @@ namespace tt{
 	}
 
 
-
 	ImageViewMemory
-	Device::createImageAndMemoryFromMemory(gli::texture2d t2d, vk::ImageUsageFlags imageUsageFlags) {
+	Device::createImageAndMemoryFromMemory(gli::texture2d t2d,
+	                                       vk::ImageUsageFlags imageUsageFlags) {
 		vk::ImageSubresourceRange imageSubresourceRange{
 				vk::ImageAspectFlagBits::eColor,
 				0, t2d.levels(), 0, 1
@@ -286,7 +289,7 @@ namespace tt{
 				0, t2d.levels(), 0, 1
 		};
 		//todo check t2d.format();
-		MY_LOG(INFO)<<"t2d Format:"<<vk::to_string(static_cast<vk::Format >(t2d.format()));
+		//MY_LOG(INFO) << "t2d Format:" << vk::to_string(static_cast<vk::Format >(t2d.format()));
 		auto imageAndMemory = createImageAndMemory(
 				static_cast<vk::Format >(t2d.format()), vk::Extent3D{
 						static_cast<uint32_t>(t2d[0].extent().x),
@@ -301,7 +304,8 @@ namespace tt{
 						vk::ComponentSwizzle::eB,
 						vk::ComponentSwizzle::eA
 				},
-				imageSubresourceRange);
+				imageSubresourceRange
+		);
 		{
 			auto transferSrcBuffer = createBufferAndMemory(
 					t2d.size(),
@@ -363,7 +367,7 @@ namespace tt{
 								1, &imageMemoryBarrierToGeneral);
 					},
 					vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-					);
+			);
 
 			auto copyFence = submitCmdBuffer(copyCmd[0].get());
 			waitFence(copyFence.get());
@@ -395,64 +399,260 @@ namespace tt{
 		return BM;
 	}
 
-	BufferMemory Device::createBufferAndMemoryFromAssets(android_app *androidAppCtx,std::vector<std::string> names,
+	BufferMemory Device::createBufferAndMemoryFromAssets(android_app *androidAppCtx,
+	                                                     std::vector<std::string> names,
 	                                                     vk::BufferUsageFlags bufferUsageFlags,
 	                                                     vk::MemoryPropertyFlags memoryPropertyFlags) {
 		auto alignment = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 		off_t offset = 0;
-		std::vector <std::tuple<AAssetHander,off_t ,off_t >> fileHanders;
-		for(auto&name:names){
-			auto file = AAssetManagerFileOpen(androidAppCtx->activity->assetManager,name);
-			if(!file)
+		std::vector<std::tuple<AAssetHander, off_t, off_t >> fileHanders;
+		for (auto &name:names) {
+			auto file = AAssetManagerFileOpen(androidAppCtx->activity->assetManager, name);
+			if (!file)
 				throw std::runtime_error{"asset not found"};
-			auto length =  AAsset_getLength(file.get());
-			fileHanders.emplace_back(std::move(file),offset,length);
-			length += (alignment - 1) - ((length - 1) % alignment) ;
+			auto length = AAsset_getLength(file.get());
+			fileHanders.emplace_back(std::move(file), offset, length);
+			length += (alignment - 1) - ((length - 1) % alignment);
 			offset += length;
 		}
-		if(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
-			auto BAM = createBufferAndMemory(offset,vk::BufferUsageFlagBits::eTransferSrc,vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
+		if (memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
+			auto BAM = createBufferAndMemory(offset, vk::BufferUsageFlagBits::eTransferSrc,
+			                                 vk::MemoryPropertyFlagBits::eHostVisible |
+			                                 vk::MemoryPropertyFlagBits::eHostCoherent);
 			{
 				auto bufferPtr = mapMemoryAndSize(BAM);
 				for (auto &file:fileHanders) {
 					AAsset_read(std::get<0>(file).get(),
-					            (char *) bufferPtr.get() + std::get<1>(file), std::get<2>(file));
+					            (char *) bufferPtr.get() + std::get<1>(file),
+					            std::get<2>(file));
 					MY_LOG(INFO) << "off " << std::get<1>(file) << " size " << std::get<2>(file)
 					             << " Align" << alignment;
 				}
 			}
-			auto BAM2 = createBufferAndMemory(offset,bufferUsageFlags,memoryPropertyFlags);
+			auto BAM2 = createBufferAndMemory(offset, bufferUsageFlags, memoryPropertyFlags);
 			auto copyCmd = createCmdBuffers(
 					1, gPoolUnique.get(),
-					[&](CommandBufferBeginHandle &commandBufferBeginHandle){
+					[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
 						commandBufferBeginHandle.copyBuffer(std::get<vk::UniqueBuffer>(BAM).get(),
-								std::get<vk::UniqueBuffer>(BAM2).get(),
-								{vk::BufferCopy{0,0,offset}});
+						                                    std::get<vk::UniqueBuffer>(BAM2).get(),
+						                                    {vk::BufferCopy{0, 0, offset}});
 					},
 					vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 
 			auto copyFence = submitCmdBuffer(copyCmd[0].get());
 			waitFence(copyFence.get());
-			for(auto&file:fileHanders){
-				std::get<std::vector<vk::DescriptorBufferInfo>>(BAM2).emplace_back(std::get<vk::UniqueBuffer>(BAM2).get(),std::get<1>(file),std::get<2>(file));
+			for (auto &file:fileHanders) {
+				std::get<std::vector<vk::DescriptorBufferInfo>>(BAM2).emplace_back(
+						std::get<vk::UniqueBuffer>(BAM2).get(), std::get<1>(file),
+						std::get<2>(file));
 			}
 			return BAM2;
 		}
 
-		auto BAM = createBufferAndMemory(offset,bufferUsageFlags,memoryPropertyFlags);
+		auto BAM = createBufferAndMemory(offset, bufferUsageFlags, memoryPropertyFlags);
 		auto bufferPtr = mapMemoryAndSize(BAM);
-		for(auto&file:fileHanders){
-			AAsset_read(std::get<0>(file).get(),(char*)bufferPtr.get()+std::get<1>(file),std::get<2>(file));
-			std::get<std::vector<vk::DescriptorBufferInfo>>(BAM).emplace_back(std::get<vk::UniqueBuffer>(BAM).get(),std::get<1>(file),std::get<2>(file));
-			MY_LOG(INFO) << "off "<< std::get<1>(file) <<" size "<< std::get<2>(file) <<" Align" << alignment;
+		for (auto &file:fileHanders) {
+			AAsset_read(std::get<0>(file).get(), (char *) bufferPtr.get() + std::get<1>(file),
+			            std::get<2>(file));
+			std::get<std::vector<vk::DescriptorBufferInfo>>(BAM).emplace_back(
+					std::get<vk::UniqueBuffer>(BAM).get(), std::get<1>(file), std::get<2>(file));
+			MY_LOG(INFO) << "off " << std::get<1>(file) << " size " << std::get<2>(file) << " Align"
+			             << alignment;
 		}
 		return BAM;
 	}
 
-	JobBase Device::createJob(std::vector<vk::DescriptorPoolSize> descriptorPoolSizes,
-	                       std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings) {
+	vk::UniquePipeline Device::createGraphsPipeline(
+			vk::ArrayProxy<vk::PipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos,
+			vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo,
+			vk::PipelineLayout pipelineLayout,
+			vk::PipelineCache pipelineCache,
+			vk::RenderPass jobRenderPass,
+			vk::PrimitiveTopology primitiveTopology) {
 
-		return tt::JobBase{*this, gQueueFamilyIndex, std::move(descriptorPoolSizes),
-		               std::move(descriptorSetLayoutBindings)};
+		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo{
+				vk::PipelineInputAssemblyStateCreateFlags(), primitiveTopology
+		};
+
+		std::array dynamicStates{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+		vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{
+				vk::PipelineDynamicStateCreateFlags(), dynamicStates.size(), dynamicStates.data()};
+
+
+		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo{
+				vk::PipelineRasterizationStateCreateFlags(),
+				0, 0, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
+				vk::FrontFace::eClockwise, 0,
+				0, 0, 0, 1.0f
+		};
+
+		vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{
+				vk::PipelineDepthStencilStateCreateFlags(),
+				true, true,
+				vk::CompareOp::eLessOrEqual,
+				false, false,
+				vk::StencilOpState{
+						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
+						vk::StencilOp::eKeep, vk::CompareOp::eNever
+				},
+				vk::StencilOpState{
+						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
+						vk::StencilOp::eKeep, vk::CompareOp::eAlways
+				},
+				0, 0
+		};
+		vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{
+				true,
+				vk::BlendFactor::eSrcAlpha,
+				vk::BlendFactor::eOneMinusSrcAlpha,
+				vk::BlendOp::eAdd,
+				vk::BlendFactor::eSrcAlpha,
+				vk::BlendFactor::eDstAlpha,
+				vk::BlendOp::eMax,
+				vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+				vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+		};
+
+		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo{
+				vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eCopy, 1,
+				&pipelineColorBlendAttachmentState
+		};
+		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{
+				vk::PipelineMultisampleStateCreateFlags(), vk::SampleCountFlagBits::e1};
+
+		vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
+				vk::PipelineCreateFlags(),
+				pipelineShaderStageCreateInfos.size(), pipelineShaderStageCreateInfos.data(),
+				&pipelineVertexInputStateCreateInfo,
+				&pipelineInputAssemblyStateCreateInfo,
+				nullptr,
+				nullptr,
+				&pipelineRasterizationStateCreateInfo,
+				&pipelineMultisampleStateCreateInfo,
+				&pipelineDepthStencilStateCreateInfo,
+				&pipelineColorBlendStateCreateInfo,
+				&pipelineDynamicStateCreateInfo,
+				pipelineLayout,
+				jobRenderPass
+		};
+		//return vk::UniquePipeline{};
+		return get().createGraphicsPipelineUnique(pipelineCache, pipelineCreateInfo);
+	}
+
+	BufferMemory Device::flushBufferToDevMemory(vk::BufferUsageFlags bufferUsageFlags,
+	                                            vk::MemoryPropertyFlags memoryPropertyFlags,
+	                                            size_t size,
+	                                            BufferMemory &&bufferMemory) {
+		auto BAM = createBufferAndMemory(
+				size,
+				bufferUsageFlags,
+				memoryPropertyFlags
+		);
+
+		auto copyCmd = createCmdBuffers(
+				1, gPoolUnique.get(),
+				[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
+					commandBufferBeginHandle.copyBuffer(
+							std::get<vk::UniqueBuffer>(bufferMemory).get(),
+							std::get<vk::UniqueBuffer>(BAM).get(),
+							{vk::BufferCopy{0, 0, size}});
+				},
+				vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+
+		auto copyFence = submitCmdBuffer(copyCmd[0].get());
+		waitFence(copyFence.get());
+
+		return BAM;
+	}
+
+	void Device::flushBufferToBuffer(vk::Buffer srcbuffer, vk::Buffer decbuffer,
+	                                 size_t size, size_t srcoff, size_t decoff) {
+		auto copyCmd = createCmdBuffers(
+				1, gPoolUnique.get(),
+				[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
+					commandBufferBeginHandle.copyBuffer(srcbuffer, decbuffer,
+					                                    {vk::BufferCopy{srcoff, decoff, size}});
+				},
+				vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+		);
+		auto copyFence = submitCmdBuffer(copyCmd[0].get());
+		waitFence(copyFence.get());
+	}
+
+	void Device::flushBufferToMemory(vk::Buffer buffer, vk::DeviceMemory memory, size_t size,
+	                                 size_t srcoff, size_t decoff) {
+		auto bufferDst = get().createBufferUnique(
+				vk::BufferCreateInfo{
+						vk::BufferCreateFlags(),
+						size,
+						vk::BufferUsageFlagBits::eTransferDst}
+		);
+		get().bindBufferMemory(bufferDst.get(), memory, 0);
+		return flushBufferToBuffer(buffer, bufferDst.get(), size, srcoff, decoff);
+	}
+
+	void Device::bindBsm(BuffersMemory<> &BsM) {
+		for (auto &buffer:BsM.desAndBuffers()) {
+			get().bindBufferMemory(buffer.buffer().get(), BsM.memory().get(), buffer.off());
+		}
+	}
+
+	vk::UniqueDevice Device::initHander(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface) {
+		std::array<float, 1> queuePriorities{0.0};
+		std::vector<vk::DeviceQueueCreateInfo> deviceQueueCreateInfos;
+		auto queueFamilyProperties = phyDevice.getQueueFamilyProperties();
+		for (uint32_t i = 0; i < queueFamilyProperties.size(); ++i) {//fixme queue count priorities
+			//MY_LOG(INFO) << "QueueFamilyProperties : " << i << "\tflags:"
+			//              << vk::to_string(queueFamilyProperties[i].queueFlags);
+			if (phyDevice.getSurfaceSupportKHR(i, surface) &&
+			    (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics)) {
+				MY_LOG(ERROR) << "fixme default_queue_index :" << i
+				              << "\tgetSurfaceSupportKHR:true";
+				deviceQueueCreateInfos.emplace_back(
+						vk::DeviceQueueCreateFlags(), i,
+						queueFamilyProperties[i].queueCount, queuePriorities.data()
+				);
+				continue;
+			}//todo multi queue
+			//if(queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eTransfer){}
+			//if(queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eCompute){ }
+		}
+
+		gQueueFamilyIndex = deviceQueueCreateInfos[0].queueFamilyIndex;//FIXME QueueFamilyIndexs need manager
+
+		auto deviceLayerProperties = phyDevice.enumerateDeviceLayerProperties();
+		//auto deviceFeatures = phyDevice.getFeatures();
+		//MY_LOG(INFO) << "deviceFeatures.samplerAnisotropy = "<<deviceFeatures.samplerAnisotropy;
+		//MY_LOG(INFO) << "phyDeviceDeviceLayerProperties : " << deviceLayerProperties.size();
+		std::vector<const char *> deviceLayerPropertiesName;
+		for (auto &deviceLayerPropertie :deviceLayerProperties) {
+			MY_LOG(INFO) << "phyDeviceDeviceLayerPropertie : " << deviceLayerPropertie.layerName;
+			deviceLayerPropertiesName.emplace_back(deviceLayerPropertie.layerName);
+		}
+		auto deviceExtensionProperties = phyDevice.enumerateDeviceExtensionProperties();
+		//for (auto &deviceExtensionPropertie:deviceExtensionProperties)
+		//	MY_LOG(INFO) << "PhyDeviceExtensionPropertie : "
+		//	             << deviceExtensionPropertie.extensionName;
+		std::array deviceExtensionNames{
+				VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+				VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
+				VK_KHR_DESCRIPTOR_UPDATE_TEMPLATE_EXTENSION_NAME,
+				VK_KHR_SHARED_PRESENTABLE_IMAGE_EXTENSION_NAME,
+				//VK_EXT_DEBUG_MARKER_EXTENSION_NAME
+				//VK_KHR_INCREMENTAL_PRESENT_EXTENSION_NAME,
+				//VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME
+		};
+
+		return phyDevice.createDeviceUnique(
+				vk::DeviceCreateInfo{
+						vk::DeviceCreateFlags(),
+						deviceQueueCreateInfos.size(),
+						deviceQueueCreateInfos.data(),
+						deviceLayerPropertiesName.size(),
+						deviceLayerPropertiesName.data(),
+						deviceExtensionNames.size(),
+						deviceExtensionNames.data()
+				}
+		);
 	}
 }

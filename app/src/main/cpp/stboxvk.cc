@@ -17,9 +17,9 @@
 
 #include "util.hh"
 #include "Instance.hh"
-#include "JobBase.hh"
 #include "Device.hh"
-#include "Window.hh"
+#include "JobFont.hh"
+#include "JobDraw.hh"
 #include "onnx.hh"
 #include <functional>
 
@@ -37,17 +37,10 @@ namespace tt {
 		Onnx nf{"/storage/0123-4567/nw/mobilenetv2-1.0.onnx"};
 	}
 
-	Device &stboxvk::initDevice(android_app *app, tt::Instance &instance,
+	Device& stboxvk::initDevice(android_app *app, tt::Instance &instance,
 	                            vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR surface) {
-		auto &device = devices.emplace_back(
-				instance.connectToDevice(physicalDevice, surface));//reconnect
-		auto defaultDeviceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
-		for (auto &phdFormat:defaultDeviceFormats) {
-			MY_LOG(INFO) << vk::to_string(phdFormat.colorSpace) << "@"
-			             << vk::to_string(phdFormat.format);
-		}
-		device.renderPass = device.createRenderpass(defaultDeviceFormats[0].format);
-		return device;
+		devices = std::make_unique<Device>(physicalDevice, surface,app);//reconnect
+		return *devices;
 	}
 
 	void stboxvk::initWindow(android_app *app, tt::Instance &instance) {
@@ -55,34 +48,29 @@ namespace tt {
 		//initData(app,instance);
 		auto surface = instance.connectToWSI(app->window);
 
-		if (devices.empty()) {
-			auto phyDevices = instance->enumeratePhysicalDevices();
-			//phyDevices[0].getSurfaceCapabilities2KHR(vk::PhysicalDeviceSurfaceInfo2KHR{surface.get()});
-			//auto graphicsQueueIndex = queueFamilyPropertiesFindFlags(phyDevices[0],
-			//                                                         vk::QueueFlagBits::eGraphics,
-			//                                                         surface.get());
-			auto &device = initDevice(app, instance, phyDevices[0], surface.get());
-			//
-
-			drawJobs.emplace_back(JobDraw::create(app, device));
-			fontJobs.emplace_back(JobFont::create(app, device));
+		if (!devices) {
+			auto phyDevices = instance->enumeratePhysicalDevices()[0];
+			auto phyFeatures = phyDevices.getFeatures();
+			MY_LOG(INFO) << "geometryShader : " << phyFeatures.geometryShader;
+			initDevice(app, instance, phyDevices, surface.get());
 		}
 
-		auto &window = windows.emplace_back(std::move(surface), devices[0],
+		auto &window = windows.emplace_back(std::move(surface), *devices,
 		                                    AndroidGetWindowSize(app));
-		drawJobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
-		drawJobs[0].setPv();
-		fontJobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
+		devices->Job<JobDrawLine>().buildCmdBuffer(window, devices->renderPass.get());
+		devices->Job<JobDraw>().buildCmdBuffer(window, devices->renderPass.get());
+		devices->Job<JobDraw>().setPv();
+		//fontJobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
 		return;
 	}
 
 	void stboxvk::draw() {
-		devices[0].runJobOnWindow(drawJobs[0], windows[0]);
+		devices->runJobOnWindow(devices->Job<JobDraw>(), windows[0]);
 		//devices[0].runJobOnWindow(fontJobs[0], windows[0]);
 	}
 
 	void stboxvk::draw(float dx, float dy) {
-		drawJobs[0].setPv(dx, dy);
+		devices->Job<JobDraw>().setPv(dx, dy);
 		draw();
 	}
 

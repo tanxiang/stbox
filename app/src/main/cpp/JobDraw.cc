@@ -9,11 +9,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <gli/gli.hpp>
 
-namespace tt{
+namespace tt {
 
 	JobDraw JobDraw::create(android_app *app, tt::Device &device) {
-		return JobDraw {
-				device.createJob(
+		return JobDraw{
+				device.createJobBase(
 						{
 								vk::DescriptorPoolSize{
 										vk::DescriptorType::eUniformBuffer, 1
@@ -21,42 +21,33 @@ namespace tt{
 								vk::DescriptorPoolSize{
 										vk::DescriptorType::eCombinedImageSampler, 1
 								},
-						},
-						{
-								vk::DescriptorSetLayoutBinding{
-										0, vk::DescriptorType::eUniformBuffer,
-										1, vk::ShaderStageFlagBits::eVertex
-								},
-								vk::DescriptorSetLayoutBinding{
-										1, vk::DescriptorType::eCombinedImageSampler,
-										1, vk::ShaderStageFlagBits::eFragment
-								}
-						}
+						}, 1
 				),
 				app,
 				device
 		};
 	}
 
-	vk::UniquePipeline JobDraw::createPipeline(Device& device,android_app* app) {
+	vk::UniquePipeline
+	JobDraw::createPipeline(Device &device, android_app *app, vk::PipelineLayout pipelineLayout) {
 
 		auto vertShaderModule = device.loadShaderFromAssets("shaders/mvp.vert.spv", app);
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/copy.frag.spv", app);
-		std::array shaderStageCreateInfos
-		{
-			vk::PipelineShaderStageCreateInfo{
-				vk::PipelineShaderStageCreateFlags(),
-				vk::ShaderStageFlagBits::eVertex,
-				vertShaderModule.get(),
-				"main"
-			},
-			vk::PipelineShaderStageCreateInfo{
-				vk::PipelineShaderStageCreateFlags(),
-				vk::ShaderStageFlagBits::eFragment,
-				fargShaderModule.get(),
-				"main"
-			}
-		};
+		std::array pipelineShaderStageCreateInfos
+				{
+						vk::PipelineShaderStageCreateInfo{
+								vk::PipelineShaderStageCreateFlags(),
+								vk::ShaderStageFlagBits::eVertex,
+								vertShaderModule.get(),
+								"main"
+						},
+						vk::PipelineShaderStageCreateInfo{
+								vk::PipelineShaderStageCreateFlags(),
+								vk::ShaderStageFlagBits::eFragment,
+								fargShaderModule.get(),
+								"main"
+						}
+				};
 
 
 		std::array vertexInputBindingDescriptions{
@@ -79,77 +70,17 @@ namespace tt{
 				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
 
 		};
+		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
+		                                   pipelineVertexInputStateCreateInfo,
+		                                   pipelineLayout,
+		                                   pipelineCache.get(), device.renderPass.get());
 
-		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo{
-				vk::PipelineInputAssemblyStateCreateFlags(), vk::PrimitiveTopology::eTriangleList
-		};
-		//vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{};
-
-		std::array dynamicStates{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-		vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{
-				vk::PipelineDynamicStateCreateFlags(), dynamicStates.size(), dynamicStates.data()};
-
-		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo{
-				vk::PipelineRasterizationStateCreateFlags(),
-				0, 0, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
-				vk::FrontFace::eClockwise, 0,
-				0, 0, 0, 1.0f
-		};
-		vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{
-				vk::PipelineDepthStencilStateCreateFlags(),
-				true, true,
-				vk::CompareOp::eLessOrEqual,
-				false, false,
-				vk::StencilOpState{
-						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
-						vk::StencilOp::eKeep, vk::CompareOp::eNever
-				},
-				vk::StencilOpState{
-						vk::StencilOp::eKeep, vk::StencilOp::eKeep,
-						vk::StencilOp::eKeep, vk::CompareOp::eAlways
-				},
-				0, 0
-		};
-		vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{
-				true,
-				vk::BlendFactor::eSrcAlpha,
-				vk::BlendFactor::eOneMinusSrcAlpha,
-				vk::BlendOp::eAdd,
-				vk::BlendFactor::eSrcAlpha,
-				vk::BlendFactor::eDstAlpha,
-				vk::BlendOp::eMax,
-				vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-				vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-		};
-
-		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo{
-				vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eCopy, 1,
-				&pipelineColorBlendAttachmentState
-		};
-		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{
-				vk::PipelineMultisampleStateCreateFlags(), vk::SampleCountFlagBits::e1};
-
-		vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
-				vk::PipelineCreateFlags(),
-				shaderStageCreateInfos.size(), shaderStageCreateInfos.data(),
-				&pipelineVertexInputStateCreateInfo,
-				&pipelineInputAssemblyStateCreateInfo,
-				nullptr,
-				nullptr,
-				&pipelineRasterizationStateCreateInfo,
-				&pipelineMultisampleStateCreateInfo,
-				&pipelineDepthStencilStateCreateInfo,
-				&pipelineColorBlendStateCreateInfo,
-				&pipelineDynamicStateCreateInfo,
-				pipelineLayout.get(),
-				device.renderPass.get()
-		};
-		return device->createGraphicsPipelineUnique(pipelineCache.get(), pipelineCreateInfo);
 	}
+
 	void JobDraw::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
 //		MY_LOG(INFO)<<"jobaddr:"<<(void const *)this<<std::endl;
 
-		cmdBuffers = helper::createCmdBuffers(descriptorPoll.getOwner(), renderPass,
+		cmdBuffers = helper::createCmdBuffers(descriptorPool.getOwner(), renderPass,
 		                                      *this,
 		                                      swapchain.getFrameBuffer(),
 		                                      swapchain.getSwapchainExtent(),
@@ -171,14 +102,16 @@ namespace tt{
 	void JobDraw::setPv(float dx, float dy) {
 		camPos[0] -= dx * 0.1;
 		camPos[1] -= dy * 0.1;
-		helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(),BAMs[0])[0] = perspective * glm::lookAt(
-				camPos,  // Camera is at (-5,3,-10), in World Space
-				camTo,     // and looks at the origin
-				camUp     // Head is up (set to 0,-1,0 to look upside-down)
-		);
+		helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAMs[0])[0] =
+				perspective * glm::lookAt(
+						camPos,  // Camera is at (-5,3,-10), in World Space
+						camTo,     // and looks at the origin
+						camUp     // Head is up (set to 0,-1,0 to look upside-down)
+				);
 	}
 
-	void JobDraw::CmdBufferRenderpassBegin(RenderpassBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win) {
+	void JobDraw::CmdBufferRenderpassBegin(RenderpassBeginHandle &cmdHandleRenderpassBegin,
+	                                       vk::Extent2D win) {
 
 		cmdHandleRenderpassBegin.setViewport(
 				0,
@@ -192,29 +125,48 @@ namespace tt{
 				}
 		);
 
-		cmdHandleRenderpassBegin.setScissor(0, std::array {vk::Rect2D{vk::Offset2D{}, win}});
-
+		cmdHandleRenderpassBegin.setScissor(0, std::array{vk::Rect2D{vk::Offset2D{}, win}});
 		cmdHandleRenderpassBegin.bindPipeline(
-			vk::PipelineBindPoint::eGraphics,
-			uniquePipeline.get());
-		std::array tmpDescriptorSets{descriptorSets[0].get()};
+				vk::PipelineBindPoint::eGraphics,
+				graphPipeline.get());
+		//std::array tmpDescriptorSets{descriptorSets[0].get()};
 		cmdHandleRenderpassBegin.bindDescriptorSets(
-			vk::PipelineBindPoint::eGraphics,
-			pipelineLayout.get(), 0,
-			tmpDescriptorSets,
-			{});
-		std::array offsets { vk::DeviceSize{0} };
+				vk::PipelineBindPoint::eGraphics,
+				graphPipeline.layout(), 0,
+				graphPipeline.getDescriptorSets(),
+				{});
+		std::array offsets{vk::DeviceSize{0}};
 		//vk::DeviceSize offsets[1] = {0};
-		cmdHandleRenderpassBegin.bindVertexBuffers(0,
-				std::get<vk::UniqueBuffer>(BAMs[1]).get(),
+		cmdHandleRenderpassBegin.bindVertexBuffers(
+				0,
+				//std::get<vk::UniqueBuffer>(BAMs[1]).get(),
+				Bsm.desAndBuffers()[0].buffer().get(),
 				offsets);
 		cmdHandleRenderpassBegin.bindIndexBuffer(
-				std::get<vk::UniqueBuffer>(BAMs[2]).get(),
-				0, vk::IndexType::eUint32);
+				Bsm.desAndBuffers()[0].buffer().get(),
+				Bsm.desAndBuffers()[0].descriptors()[1].offset, vk::IndexType::eUint32);
 		cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
 	}
 
-JobDraw::JobDraw(JobBase &&j,android_app *app,tt::Device &device) :JobBase{std::move(j)}{
+	JobDraw::JobDraw(JobBase &&j, android_app *app, tt::Device &device) :
+			JobBase{std::move(j)},
+			graphPipeline{
+					device.get(),
+					descriptorPool.get(),
+					[&](vk::PipelineLayout pipelineLayout) {
+						return createPipeline(device, app, pipelineLayout);
+					},
+					std::array{
+							vk::DescriptorSetLayoutBinding{
+									0, vk::DescriptorType::eUniformBuffer,
+									1, vk::ShaderStageFlagBits::eVertex
+							},
+							vk::DescriptorSetLayoutBinding{
+									1, vk::DescriptorType::eCombinedImageSampler,
+									1, vk::ShaderStageFlagBits::eFragment
+							}
+					}
+			} {
 		BAMs.emplace_back(
 				device.createBufferAndMemory(
 						sizeof(glm::mat4),
@@ -228,18 +180,29 @@ JobDraw::JobDraw(JobBase &&j,android_app *app,tt::Device &device) :JobBase{std::
 				{{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
 				{{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
 		};
-		BAMs.emplace_back(
-				device.createBufferAndMemoryFromVector(
-						vertices, vk::BufferUsageFlagBits::eVertexBuffer,
-						vk::MemoryPropertyFlagBits::eHostVisible |
-						vk::MemoryPropertyFlagBits::eHostCoherent));
+		std::array indexes{0u, 1u, 2u, 2u, 3u, 0u};
+		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eVertexBuffer |
+		                             vk::BufferUsageFlagBits::eIndexBuffer, vertices,indexes);
+		//device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eIndexBuffer, indexes);
+		{
+			auto localeBufferMemory = device.createLocalBufferMemoryOnBsM(Bsm);
 
-		BAMs.emplace_back(
-				device.createBufferAndMemoryFromVector(
-						std::vector<uint32_t>{0, 1, 2, 2, 3, 0},
-						vk::BufferUsageFlagBits::eIndexBuffer,
-						vk::MemoryPropertyFlagBits::eHostVisible |
-						vk::MemoryPropertyFlagBits::eHostCoherent));
+			{
+				uint32_t off = 0;
+				auto memoryPtr = device.mapMemorySize(
+						std::get<vk::UniqueDeviceMemory>(localeBufferMemory).get(),
+						device->getBufferMemoryRequirements(
+								std::get<vk::UniqueBuffer>(localeBufferMemory).get()).size
+				);
+				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[0], off,
+				                                            vertices,indexes);
+
+
+			}
+			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
+			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),
+			                           Bsm.memory().get(), Bsm.size());
+		}
 
 		{
 			auto fileContent = loadDataFromAssets("textures/ic_launcher-web.ktx", app);
@@ -250,23 +213,24 @@ JobDraw::JobDraw(JobBase &&j,android_app *app,tt::Device &device) :JobBase{std::
 		}
 
 
-		uniquePipeline = createPipeline(device,app);
+		//uniquePipeline = createPipeline(device, app);
 
 		auto descriptorBufferInfo = device.getDescriptorBufferInfo(BAMs[0]);
 		auto descriptorImageInfo = device.getDescriptorImageInfo(IVMs[0], sampler.get());
 
 		std::array writeDes{
 				vk::WriteDescriptorSet{
-						descriptorSets[0].get(), 0, 0, 1,
+						graphPipeline.getDescriptorSet(), 0, 0, 1,
 						vk::DescriptorType::eUniformBuffer,
 						nullptr, &descriptorBufferInfo
 				},
 				vk::WriteDescriptorSet{
-						descriptorSets[0].get(), 1, 0, 1,
+						graphPipeline.getDescriptorSet(), 1, 0, 1,
 						vk::DescriptorType::eCombinedImageSampler,
 						&descriptorImageInfo
 				}
 		};
 		device->updateDescriptorSets(writeDes, nullptr);
+		//MY_LOG(INFO)<<__FUNCTION__<<" run out";
 	}
 };

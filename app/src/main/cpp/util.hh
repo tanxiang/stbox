@@ -31,10 +31,6 @@ namespace tt {
 
 	class Device;
 
-	class Window;
-
-	class JobBase;
-
 	class Instance;
 
 	std::vector<char> loadDataFromAssets(const std::string &filePath, android_app *androidAppCtx);
@@ -58,8 +54,9 @@ namespace tt {
 	}
 
 	using AAssetHander = std::unique_ptr<AAsset, std::function<void(AAsset *)>>;
-	inline auto AAssetManagerFileOpen(AAssetManager* assetManager,const std::string &filePath){
-		return AAssetHander {
+
+	inline auto AAssetManagerFileOpen(AAssetManager *assetManager, const std::string &filePath) {
+		return AAssetHander{
 				AAssetManager_open(assetManager, filePath.c_str(),
 				                   AASSET_MODE_STREAMING),
 				[](AAsset *AAsset) {
@@ -85,17 +82,21 @@ namespace tt {
 
 	struct CommandBufferBeginHandle : public vk::CommandBuffer {
 		CommandBufferBeginHandle(
-				vk::UniqueCommandBuffer &uniqueCommandBuffer,vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits {}) :
+				vk::UniqueCommandBuffer &uniqueCommandBuffer,
+				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits{},
+				vk::CommandBufferInheritanceInfo *pCommandBufferInheritanceInfo = nullptr) :
 				vk::CommandBuffer{uniqueCommandBuffer.get()} {
-			begin(vk::CommandBufferBeginInfo{commandBufferUsageFlags});
+			begin(vk::CommandBufferBeginInfo{commandBufferUsageFlags,pCommandBufferInheritanceInfo});
 		}
 
 		~CommandBufferBeginHandle() {
 			end();
 		}
 
-		CommandBufferBeginHandle(const CommandBufferBeginHandle &) = delete; // non construction-copyable
-		CommandBufferBeginHandle &operator=(const CommandBufferBeginHandle &) = delete; // non copyable
+		CommandBufferBeginHandle(
+				const CommandBufferBeginHandle &) = delete; // non construction-copyable
+		CommandBufferBeginHandle &
+		operator=(const CommandBufferBeginHandle &) = delete; // non copyable
 	};
 
 	uint32_t findMemoryTypeIndex(vk::PhysicalDevice physicalDevice, uint32_t memoryTypeBits,
@@ -106,23 +107,52 @@ namespace tt {
 
 	//using ImageViewSamplerMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueSampler, vk::UniqueDeviceMemory>;
 
-	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t ,std::vector<vk::DescriptorBufferInfo> >;
+	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t, std::vector<vk::DescriptorBufferInfo> >;
+
+
+	template <typename T = std::vector<vk::DescriptorBufferInfo>>
+	struct DescriptorsBuffer : public std::tuple<vk::UniqueBuffer, size_t ,T> {
+		auto& buffer(){
+			return std::get<vk::UniqueBuffer>(*this);
+		}
+		auto& off(){
+			return std::get<size_t>(*this);
+		}
+		auto& descriptors(){
+			return std::get<T>(*this);
+		}
+		using std::tuple<vk::UniqueBuffer, size_t ,T>::tuple;
+	};
+
+	template <typename T = std::vector<DescriptorsBuffer<>>>
+	struct BuffersMemory : public std::tuple<vk::UniqueDeviceMemory, size_t , T> {
+		auto& memory(){
+			return std::get<vk::UniqueDeviceMemory>(*this);
+		}
+		auto& size(){
+			return std::get<size_t>(*this);
+		}
+		auto& desAndBuffers(){
+			return std::get<T>(*this);
+		}
+		using std::tuple<vk::UniqueDeviceMemory, size_t , T>::tuple;
+	};
 
 
 	class BufferMemoryPtr : public std::unique_ptr<void, std::function<void(void *)> > {
 	public:
 		using std::unique_ptr<void, std::function<void(void *)> >::unique_ptr;
+
 		template<typename PodType>
-		PodType& PodTypeOnMemory(){
+		PodType &PodTypeOnMemory() {
 			return *static_cast<PodType *>(get());
 		}
 
 	};
 
 	template<typename PodType>
-	struct BufferTypePtr : public std::unique_ptr<PodType[], std::function<void(PodType*)> > {
+	struct BufferTypePtr : public std::unique_ptr<PodType[], std::function<void(PodType *)> > {
 		using std::unique_ptr<PodType[], std::function<void(PodType *)> >::unique_ptr;
-
 	};
 
 	namespace helper {
@@ -140,14 +170,15 @@ namespace tt {
 			};
 		}
 
-		template<typename PodType,typename Tuple>
+		template<typename PodType, typename Tuple>
 		auto mapTypeMemoryAndSize(vk::Device device, Tuple &tupleMemoryAndSize, size_t offset = 0) {
 			auto devMemory = std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get();
 			return BufferTypePtr<PodType>{
-					static_cast<PodType*>(device.mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
-					                 offset,
-					                 std::get<size_t>(tupleMemoryAndSize),
-					                 vk::MemoryMapFlagBits())),
+					static_cast<PodType *>(device.mapMemory(
+							std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
+							offset,
+							std::get<size_t>(tupleMemoryAndSize),
+							vk::MemoryMapFlagBits())),
 					[device, devMemory](PodType *pVoid) {
 						//FIXME call ~PodType in array
 						device.unmapMemory(devMemory);
@@ -155,13 +186,13 @@ namespace tt {
 			};
 		}
 
-		template <typename JobType>
+		template<typename JobType>
 		auto createCmdBuffers(vk::Device device,
-		                 vk::RenderPass renderPass,
-		                 JobType &job,
-		                 std::vector<vk::UniqueFramebuffer> &framebuffers,
-		                 vk::Extent2D extent2D,
-		                 vk::CommandPool pool){
+		                      vk::RenderPass renderPass,
+		                      JobType &job,
+		                      std::vector<vk::UniqueFramebuffer> &framebuffers,
+		                      vk::Extent2D extent2D,
+		                      vk::CommandPool pool) {
 			MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << framebuffers.size();
 			std::vector commandBuffers = device.allocateCommandBuffersUnique(
 					vk::CommandBufferAllocateInfo{
@@ -198,6 +229,37 @@ namespace tt {
 			}
 			return commandBuffers;
 		}
+
+
+		template<typename JobType>
+		auto createCmdBuffersSub(vk::Device device,
+		                      vk::RenderPass renderPass,
+		                      JobType &job,
+		                      std::vector<vk::UniqueFramebuffer> &framebuffers,
+		                      vk::Extent2D extent2D,
+		                      vk::CommandPool pool) {
+			MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << framebuffers.size();
+			std::vector commandBuffers = device.allocateCommandBuffersUnique(
+					vk::CommandBufferAllocateInfo{
+							pool,
+							vk::CommandBufferLevel::ePrimary,
+							framebuffers.size()
+					}
+			);
+
+			uint32_t frameIndex = 0;
+			for (auto &cmdBuffer : commandBuffers) {
+				//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+				{
+					vk::CommandBufferInheritanceInfo commandBufferInheritanceInfo{renderPass,0,framebuffers[frameIndex].get()};
+					CommandBufferBeginHandle cmdHandleRenderpassBegin{cmdBuffer,vk::CommandBufferUsageFlagBits::eRenderPassContinue,&commandBufferInheritanceInfo};
+					job.CmdBufferRenderPassContinueBegin(cmdHandleRenderpassBegin, extent2D);
+				}
+				++frameIndex;
+			}
+			return commandBuffers;
+		}
+
 	}
 }
 

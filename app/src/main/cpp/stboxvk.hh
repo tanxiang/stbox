@@ -7,16 +7,15 @@
 
 #include "util.hh"
 #include "onnx.hh"
-#include "main.hh"
-#include "JobDraw.hh"
-#include "JobFont.hh"
+#include "Window.hh"
+#include "JobDrawLine.hh"
 
 //uint32_t draw_run(tt::Device &ttInstance,vk::SurfaceKHR &surfaceKHR);
 namespace tt {
+	class JobDraw;
+	class JobFont;
 	class stboxvk {
-        std::vector<Device> devices;
-		std::vector<JobDraw> drawJobs;
-		std::vector<JobFont> fontJobs;
+        std::unique_ptr<Device> devices;
 		std::vector<Window> windows;
 
     public:
@@ -25,9 +24,6 @@ namespace tt {
 		Device& initDevice(android_app *app,tt::Instance &instance,vk::PhysicalDevice &physicalDevice,vk::SurfaceKHR surface);
 
         void initWindow(android_app *app, tt::Instance &instance);
-
-        //void initJobs(android_app *app,tt::Device &device);
-		//void initJobs2(android_app *app,tt::Device &device);
 
         void cleanWindow();
 
