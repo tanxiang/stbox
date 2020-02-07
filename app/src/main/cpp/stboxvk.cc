@@ -37,10 +37,9 @@ namespace tt {
 		Onnx nf{"/storage/0123-4567/nw/mobilenetv2-1.0.onnx"};
 	}
 
-	Device& stboxvk::initDevice(android_app *app, tt::Instance &instance,
+	void stboxvk::initDevice(android_app *app, tt::Instance &instance,
 	                            vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR surface) {
 		devices = std::make_unique<Device>(physicalDevice, surface,app);//reconnect
-		return *devices;
 	}
 
 	void stboxvk::initWindow(android_app *app, tt::Instance &instance) {
@@ -60,13 +59,10 @@ namespace tt {
 		devices->Job<JobDrawLine>().buildCmdBuffer(window, devices->renderPass.get());
 		devices->Job<JobDraw>().buildCmdBuffer(window, devices->renderPass.get());
 		devices->Job<JobDraw>().setPv();
-		//fontJobs[0].buildCmdBuffer(window, devices[0].renderPass.get());
-		return;
 	}
 
 	void stboxvk::draw() {
 		devices->runJobOnWindow(devices->Job<JobDraw>(), windows[0]);
-		//devices[0].runJobOnWindow(fontJobs[0], windows[0]);
 	}
 
 	void stboxvk::draw(float dx, float dy) {
@@ -75,9 +71,7 @@ namespace tt {
 	}
 
 	void stboxvk::cleanWindow() {
-		//MY_LOG(INFO) << __func__ ;
-		windows.clear();
-		//devices.reset();
+\		windows.clear();
 	}
 
 

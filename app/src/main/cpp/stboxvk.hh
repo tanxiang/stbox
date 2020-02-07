@@ -21,7 +21,7 @@ namespace tt {
     public:
         void initData(android_app *app, tt::Instance &instance);
 
-		Device& initDevice(android_app *app,tt::Instance &instance,vk::PhysicalDevice &physicalDevice,vk::SurfaceKHR surface);
+		void initDevice(android_app *app,tt::Instance &instance,vk::PhysicalDevice &physicalDevice,vk::SurfaceKHR surface);
 
         void initWindow(android_app *app, tt::Instance &instance);
 
