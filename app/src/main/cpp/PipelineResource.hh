@@ -28,20 +28,6 @@ namespace tt {
 			};
 		}
 
-/*
-		auto createDescriptorSetLayouts(
-				std::initializer_list<vk::ArrayProxy<vk::DescriptorSetLayoutBinding>> objs) {
-			std::vector<vk::DescriptorSetLayout> dSetLayouts;
-			for (auto &obj:objs)
-				dSetLayouts.emplace_back(device.createDescriptorSetLayout(
-						vk::DescriptorSetLayoutCreateInfo{
-								vk::DescriptorSetLayoutCreateFlags(),
-								obj.size(),
-								obj.data()
-						}));
-			return dSetLayouts;
-		}
-*/
 		std::vector<vk::DescriptorSet> createDescriptorSets() {
 			return device.allocateDescriptorSets(
 					vk::DescriptorSetAllocateInfo{

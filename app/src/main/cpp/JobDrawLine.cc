@@ -71,10 +71,6 @@ namespace tt {
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eUniformBuffer,
 									1, vk::ShaderStageFlagBits::eVertex
-							},
-							vk::DescriptorSetLayoutBinding{
-									1, vk::DescriptorType::eStorageBuffer,
-									1, vk::ShaderStageFlagBits::eVertex
 							}
 					}
 			} {

@@ -71,7 +71,7 @@ namespace tt {
 	}
 
 	void stboxvk::cleanWindow() {
-\		windows.clear();
+		windows.clear();
 	}
 
 
