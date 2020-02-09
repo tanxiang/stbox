@@ -224,6 +224,10 @@ namespace tt {
 		                      vk::MemoryPropertyFlags memoryPropertyFlags);
 
 
+		StagingBufferMemory
+		createStagingBufferMemory(size_t dataSize);
+
+
 		BufferMemory
 		createBufferAndMemoryFromAssets(android_app *androidAppCtx, std::vector<std::string> names,
 		                                vk::BufferUsageFlags bufferUsageFlags,
@@ -233,7 +237,7 @@ namespace tt {
 			return length + (alignment - 1) - ((length - 1) % alignment);
 		}
 
-
+/*
 		template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
 		auto objSize(uint32_t alig, const T &t) {
 			return t;
@@ -253,6 +257,28 @@ namespace tt {
 		template<typename T, typename ... Ts>
 		auto objSize(uint32_t alig, const T &t, const Ts &... ts) {
 			return alignment(alig, objSize(alig, t)) + objSize(alig, ts...);
+		}
+*/
+
+		template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
+		auto objSize(uint32_t alig, const T &t) {
+			return alignment(alig,t);
+		}
+
+		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
+		auto objSize(uint32_t alig, const T &t) {
+			return alignment(alig,t.size() * sizeof(typename T::value_type));
+		}
+
+		template<typename T, typename std::enable_if<
+				!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
+		auto objSize(uint32_t alig, const T &t) {
+			return alignment(alig,sizeof(t));
+		}
+
+		template<typename T, typename ... Ts>
+		auto objSize(uint32_t alig, const T &t, const Ts &... ts) {
+			return objSize(alig, t) + objSize(alig, ts...);
 		}
 
 		template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
@@ -334,6 +360,14 @@ namespace tt {
 									bufferUsageFlags}
 					)
 			);
+		}
+
+		template<typename ... Ts>
+		auto buildStagingBufferMemory(const Ts &... objs){
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			auto size = objSize(alig, objs...);
+			return createStagingBufferMemory(size);
+
 		}
 
 		auto createLocalBufferMemoryOnBsM(BuffersMemory<> &BsM) {

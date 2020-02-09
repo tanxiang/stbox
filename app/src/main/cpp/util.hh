@@ -109,6 +109,8 @@ namespace tt {
 
 	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t, std::vector<vk::DescriptorBufferInfo> >;
 
+	using StagingBufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory>;
+
 
 	template <typename T = std::vector<vk::DescriptorBufferInfo>>
 	struct DescriptorsBuffer : public std::tuple<vk::UniqueBuffer, size_t ,T> {
@@ -241,7 +243,7 @@ namespace tt {
 			std::vector commandBuffers = device.allocateCommandBuffersUnique(
 					vk::CommandBufferAllocateInfo{
 							pool,
-							vk::CommandBufferLevel::ePrimary,
+							vk::CommandBufferLevel::eSecondary,
 							framebuffers.size()
 					}
 			);

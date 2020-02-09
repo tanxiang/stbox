@@ -398,6 +398,27 @@ namespace tt {
 		return BM;
 	}
 
+	StagingBufferMemory
+	Device::createStagingBufferMemory(size_t dataSize){
+		vk::UniqueBuffer buffer = get().createBufferUnique(
+				vk::BufferCreateInfo{
+						vk::BufferCreateFlags(),
+						dataSize,
+						vk::BufferUsageFlagBits::eTransferSrc}
+		);
+
+		auto memoryRequirements = get().getBufferMemoryRequirements(buffer.get());
+		auto typeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits,
+		                                     vk::MemoryPropertyFlagBits::eHostVisible |
+		                                     vk::MemoryPropertyFlagBits::eHostCoherent);
+		vk::UniqueDeviceMemory memory = get().allocateMemoryUnique(vk::MemoryAllocateInfo{
+				memoryRequirements.size, typeIndex
+		});
+
+		get().bindBufferMemory(buffer.get(),memory.get(),0);
+		return StagingBufferMemory{std::move(buffer),std::move(memory)};
+	}
+
 	BufferMemory Device::createBufferAndMemoryFromAssets(android_app *androidAppCtx,
 	                                                     std::vector<std::string> names,
 	                                                     vk::BufferUsageFlags bufferUsageFlags,

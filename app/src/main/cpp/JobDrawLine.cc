@@ -91,10 +91,11 @@ namespace tt {
 		device.buildBufferOnBsM(
 				Bsm,
 				vk::BufferUsageFlagBits::eStorageBuffer |
+				vk::BufferUsageFlagBits::eVertexBuffer |
 				vk::BufferUsageFlagBits::eIndirectBuffer,
 				vertices,
 				sizeof(Vertex) * 32,
-				sizeof(vk::DrawIndirectCommand) * 32);
+				sizeof(vk::DrawIndirectCommand));
 		//MY_LOG(INFO) << " buffer:" << sizeof(Vertex) * 32 << sizeof(Vertex) * 4;
 		{
 			auto localeBufferMemory = device.createLocalBufferMemoryOnBsM(Bsm);
@@ -121,9 +122,6 @@ namespace tt {
 				vk::MemoryPropertyFlagBits::eHostVisible |
 				vk::MemoryPropertyFlagBits::eHostCoherent);
 
-		//MY_LOG(INFO)<<"descriptorSets"<<descriptorSets.size()<<"Bsm.buffers()"<<Bsm.buffers().size();
-		//MY_LOG(INFO)<<"offset="<<Bsm.buffers()[0].descriptors().size();//<<" range="<<Bsm.buffers()[0].descriptors()[0].range;
-		//vk::DescriptorBufferInfo test{Bsm.buffers()[0].buffer().get(),0,128};
 		std::array writeDes{
 				vk::WriteDescriptorSet{
 						compPipeline.getDescriptorSet(), 0, 0, 1,
@@ -381,7 +379,7 @@ namespace tt {
 				std::array{0u}
 		);
 
-		//cmdHandleRenderpassBegin.drawIndirect();
+		cmdHandleRenderpassBegin.draw(32,0,0,0);
 	}
 
 
