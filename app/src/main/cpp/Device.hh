@@ -212,6 +212,13 @@ namespace tt {
 			};
 		}
 
+		template<typename TupleType>
+		auto mapBufferMemory(const TupleType &tuple) {
+			return mapMemorySize(
+					std::get<vk::UniqueDeviceMemory>(tuple).get(),
+					get().getBufferMemoryRequirements(std::get<vk::UniqueBuffer>(tuple).get()).size);
+		}
+
 		ImageViewMemory createImageAndMemoryFromMemory(gli::texture2d t2d,
 		                                               vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 
@@ -262,18 +269,18 @@ namespace tt {
 
 		template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
 		auto objSize(uint32_t alig, const T &t) {
-			return alignment(alig,t);
+			return alignment(alig, t);
 		}
 
 		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
 		auto objSize(uint32_t alig, const T &t) {
-			return alignment(alig,t.size() * sizeof(typename T::value_type));
+			return alignment(alig, t.size() * sizeof(typename T::value_type));
 		}
 
 		template<typename T, typename std::enable_if<
 				!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
 		auto objSize(uint32_t alig, const T &t) {
-			return alignment(alig,sizeof(t));
+			return alignment(alig, sizeof(t));
 		}
 
 		template<typename T, typename ... Ts>
@@ -363,7 +370,7 @@ namespace tt {
 		}
 
 		template<typename ... Ts>
-		auto buildStagingBufferMemory(const Ts &... objs){
+		auto buildStagingBufferMemory(const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			auto size = objSize(alig, objs...);
 			return createStagingBufferMemory(size);
@@ -371,18 +378,20 @@ namespace tt {
 		}
 
 		auto createLocalBufferMemoryOnBsM(BuffersMemory<> &BsM) {
-
 			size_t size = 0;
 			for (auto &buffer:BsM.desAndBuffers()) {
 				auto memoryRequirements = get().getBufferMemoryRequirements(buffer.buffer().get());
 				size += memoryRequirements.size;
 			}
 			//MY_LOG(INFO) << "need locale mem :" << size;
-			return createBufferAndMemory(size,
-			                             vk::BufferUsageFlagBits::eTransferSrc,
-			                             vk::MemoryPropertyFlagBits::eHostVisible |
-			                             vk::MemoryPropertyFlagBits::eHostCoherent);
+			return createStagingBufferMemory(size);
+		}
 
+		template<typename ... Ts>
+		auto createLocalBufferMemoryOnObjs(const Ts &... objs) {
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			auto size = objSize(alig, objs...);
+			return createStagingBufferMemory(size);
 		}
 
 

@@ -185,15 +185,11 @@ namespace tt {
 		                             vk::BufferUsageFlagBits::eIndexBuffer, vertices,indexes);
 		//device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eIndexBuffer, indexes);
 		{
-			auto localeBufferMemory = device.createLocalBufferMemoryOnBsM(Bsm);
+			auto localeBufferMemory = device.createLocalBufferMemoryOnObjs(vertices,indexes);
 
 			{
 				uint32_t off = 0;
-				auto memoryPtr = device.mapMemorySize(
-						std::get<vk::UniqueDeviceMemory>(localeBufferMemory).get(),
-						device->getBufferMemoryRequirements(
-								std::get<vk::UniqueBuffer>(localeBufferMemory).get()).size
-				);
+				auto memoryPtr = device.mapBufferMemory(localeBufferMemory);
 				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[0], off,
 				                                            vertices,indexes);
 

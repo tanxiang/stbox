@@ -98,18 +98,13 @@ namespace tt {
 				sizeof(vk::DrawIndirectCommand));
 		//MY_LOG(INFO) << " buffer:" << sizeof(Vertex) * 32 << sizeof(Vertex) * 4;
 		{
-			auto localeBufferMemory = device.createLocalBufferMemoryOnBsM(Bsm);
+			auto localeBufferMemory = device.createLocalBufferMemoryOnObjs(vertices);
 
 			{
 				uint32_t off = 0;
-				auto memoryPtr = device.mapMemorySize(
-						std::get<vk::UniqueDeviceMemory>(localeBufferMemory).get(),
-						device->getBufferMemoryRequirements(
-								std::get<vk::UniqueBuffer>(localeBufferMemory).get()).size
-				);
-
+				auto memoryPtr = device.mapBufferMemory(localeBufferMemory);
 				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[0], off,
-				                                            vertices, sizeof(Vertex) * 32);
+				                                            vertices, sizeof(Vertex) * 32,sizeof(vk::DrawIndirectCommand));
 			}
 			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
 			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),
@@ -339,7 +334,6 @@ namespace tt {
 	}
 
 	void JobDrawLine::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
-
 
 		gcmdBuffers = helper::createCmdBuffersSub(ownerDevice(), renderPass,
 		                                          *this,
