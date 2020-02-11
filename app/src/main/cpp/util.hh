@@ -110,6 +110,9 @@ namespace tt {
 
 	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t, std::vector<vk::DescriptorBufferInfo> >;
 
+	template <uint N>
+	struct BufferMemoryWithParts :public std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory,std::array<size_t,N>>{};
+
 	using LocalBufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory>;
 
 	using StagingBufferMemory = LocalBufferMemory;

@@ -280,7 +280,7 @@ namespace tt {
 					)
 			);
 
-			auto inputPtr = helper::mapTypeMemoryAndSize<fd_GlyphInstance>(ownerDevice(), inputBM);
+			auto inputPtr = device.mapTypeBufferMemory<fd_GlyphInstance>(inputBM);
 
 			std::string c{"CLXLOD"};
 			for (int i = 0; i < c.size(); i++) {

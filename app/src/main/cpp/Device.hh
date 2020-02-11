@@ -197,7 +197,7 @@ namespace tt {
 					}
 			};
 		}
-
+/*
 		template<typename Tuple>
 		auto mapMemoryAndSize(Tuple &tupleMemoryAndSize, size_t offset = 0) {
 			auto dev = get();
@@ -205,14 +205,14 @@ namespace tt {
 			return mapMemorySize(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
 			                     std::get<size_t>(tupleMemoryAndSize), offset);
 		}
-
+*/
 
 		template<typename TupleType>
-		auto mapBufferMemory(const TupleType &tuple) {
+		auto mapBufferMemory(const TupleType &tuple, size_t offset = 0) {
 			return mapMemorySize(
 					std::get<vk::UniqueDeviceMemory>(tuple).get(),
 					get().getBufferMemoryRequirements(
-							std::get<vk::UniqueBuffer>(tuple).get()).size);
+							std::get<vk::UniqueBuffer>(tuple).get()).size-offset, offset);
 		}
 
 		template<typename PodType, typename TupleType>
@@ -220,11 +220,11 @@ namespace tt {
 			auto devMemory = std::get<vk::UniqueDeviceMemory>(tuple).get();
 			auto device = get();
 			return BufferTypePtr<PodType>{
-					static_cast<PodType *>(get().mapMemory(
+					static_cast<PodType *>(device.mapMemory(
 							std::get<vk::UniqueDeviceMemory>(tuple).get(),
 							offset,
 							get().getBufferMemoryRequirements(
-									std::get<vk::UniqueBuffer>(tuple).get()).size,
+									std::get<vk::UniqueBuffer>(tuple).get()).size - offset,
 							vk::MemoryMapFlagBits())),
 					[device, devMemory](PodType *pVoid) {
 						//FIXME call ~PodType in array
@@ -250,7 +250,7 @@ namespace tt {
 
 		StagingBufferMemory
 		createStagingBufferMemory(size_t dataSize) {
-			return createLocalBufferMemory(dataSize,vk::BufferUsageFlagBits::eTransferSrc);
+			return createLocalBufferMemory(dataSize, vk::BufferUsageFlagBits::eTransferSrc);
 		}
 
 

@@ -465,7 +465,7 @@ namespace tt {
 		}
 
 		auto BAM = createBufferAndMemory(offset, bufferUsageFlags, memoryPropertyFlags);
-		auto bufferPtr = mapMemoryAndSize(BAM);
+		auto bufferPtr = mapBufferMemory(BAM);
 		for (auto &file:fileHanders) {
 			AAsset_read(std::get<0>(file).get(), (char *) bufferPtr.get() + std::get<1>(file),
 			            std::get<2>(file));

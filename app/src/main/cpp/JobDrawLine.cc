@@ -218,7 +218,7 @@ namespace tt {
 		auto renderFence = device->createFenceUnique(vk::FenceCreateInfo{});
 		device.graphsQueue().submit(submitInfos, renderFence.get());
 		device.waitFence(renderFence.get());
-		auto outputMemoryPtr = helper::mapTypeMemoryAndSize<Vertex>(ownerDevice(), outputMemory);
+		auto outputMemoryPtr = device.mapTypeBufferMemory<Vertex>(outputMemory);
 		for (int i = 0; i < 32; i++)
 			MY_LOG(INFO) << outputMemoryPtr[i].pos[0];
 	}
