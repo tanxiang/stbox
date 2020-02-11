@@ -86,7 +86,8 @@ namespace tt {
 				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits{},
 				vk::CommandBufferInheritanceInfo *pCommandBufferInheritanceInfo = nullptr) :
 				vk::CommandBuffer{uniqueCommandBuffer.get()} {
-			begin(vk::CommandBufferBeginInfo{commandBufferUsageFlags,pCommandBufferInheritanceInfo});
+			begin(vk::CommandBufferBeginInfo{commandBufferUsageFlags,
+			                                 pCommandBufferInheritanceInfo});
 		}
 
 		~CommandBufferBeginHandle() {
@@ -109,35 +110,43 @@ namespace tt {
 
 	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t, std::vector<vk::DescriptorBufferInfo> >;
 
-	using StagingBufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory>;
+	using LocalBufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory>;
+
+	using StagingBufferMemory = LocalBufferMemory;
 
 
-	template <typename T = std::vector<vk::DescriptorBufferInfo>>
-	struct DescriptorsBuffer : public std::tuple<vk::UniqueBuffer, size_t ,T> {
-		auto& buffer(){
+	template<typename T = std::vector<vk::DescriptorBufferInfo>>
+	struct DescriptorsBuffer : public std::tuple<vk::UniqueBuffer, size_t, T> {
+		auto &buffer() {
 			return std::get<vk::UniqueBuffer>(*this);
 		}
-		auto& off(){
+
+		auto &off() {
 			return std::get<size_t>(*this);
 		}
-		auto& descriptors(){
+
+		auto &descriptors() {
 			return std::get<T>(*this);
 		}
-		using std::tuple<vk::UniqueBuffer, size_t ,T>::tuple;
+
+		using std::tuple<vk::UniqueBuffer, size_t, T>::tuple;
 	};
 
-	template <typename T = std::vector<DescriptorsBuffer<>>>
-	struct BuffersMemory : public std::tuple<vk::UniqueDeviceMemory, size_t , T> {
-		auto& memory(){
+	template<typename T = std::vector<DescriptorsBuffer<>>>
+	struct BuffersMemory : public std::tuple<vk::UniqueDeviceMemory, size_t, T> {
+		auto &memory() {
 			return std::get<vk::UniqueDeviceMemory>(*this);
 		}
-		auto& size(){
+
+		auto &size() {
 			return std::get<size_t>(*this);
 		}
-		auto& desAndBuffers(){
+
+		auto &desAndBuffers() {
 			return std::get<T>(*this);
 		}
-		using std::tuple<vk::UniqueDeviceMemory, size_t , T>::tuple;
+
+		using std::tuple<vk::UniqueDeviceMemory, size_t, T>::tuple;
 	};
 
 	class BufferMemoryPtr : public std::unique_ptr<void, std::function<void(void *)> > {
@@ -157,19 +166,6 @@ namespace tt {
 	};
 
 	namespace helper {
-		template<typename Tuple>
-		auto mapMemoryAndSize(vk::Device device, Tuple &tupleMemoryAndSize, size_t offset = 0) {
-			auto devMemory = std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get();
-			return BufferMemoryPtr{
-					device.mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
-					                 offset,
-					                 std::get<size_t>(tupleMemoryAndSize),
-					                 vk::MemoryMapFlagBits()),
-					[device, devMemory](void *pVoid) {
-						device.unmapMemory(devMemory);
-					}
-			};
-		}
 
 		template<typename PodType, typename Tuple>
 		auto mapTypeMemoryAndSize(vk::Device device, Tuple &tupleMemoryAndSize, size_t offset = 0) {
@@ -234,11 +230,11 @@ namespace tt {
 
 		template<typename JobType>
 		auto createCmdBuffersSub(vk::Device device,
-		                      vk::RenderPass renderPass,
-		                      JobType &job,
-		                      std::vector<vk::UniqueFramebuffer> &framebuffers,
-		                      vk::Extent2D extent2D,
-		                      vk::CommandPool pool) {
+		                         vk::RenderPass renderPass,
+		                         JobType &job,
+		                         std::vector<vk::UniqueFramebuffer> &framebuffers,
+		                         vk::Extent2D extent2D,
+		                         vk::CommandPool pool) {
 			MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << framebuffers.size();
 			std::vector commandBuffers = device.allocateCommandBuffersUnique(
 					vk::CommandBufferAllocateInfo{
@@ -252,8 +248,11 @@ namespace tt {
 			for (auto &cmdBuffer : commandBuffers) {
 				//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
 				{
-					vk::CommandBufferInheritanceInfo commandBufferInheritanceInfo{renderPass,0,framebuffers[frameIndex].get()};
-					CommandBufferBeginHandle cmdHandleRenderpassBegin{cmdBuffer,vk::CommandBufferUsageFlagBits::eRenderPassContinue,&commandBufferInheritanceInfo};
+					vk::CommandBufferInheritanceInfo commandBufferInheritanceInfo{renderPass, 0,
+					                                                              framebuffers[frameIndex].get()};
+					CommandBufferBeginHandle cmdHandleRenderpassBegin{cmdBuffer,
+					                                                  vk::CommandBufferUsageFlagBits::eRenderPassContinue,
+					                                                  &commandBufferInheritanceInfo};
 					job.CmdBufferRenderPassContinueBegin(cmdHandleRenderpassBegin, extent2D);
 				}
 				++frameIndex;

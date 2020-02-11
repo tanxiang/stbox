@@ -306,13 +306,9 @@ namespace tt {
 				imageSubresourceRange
 		);
 		{
-			auto transferSrcBuffer = createBufferAndMemory(
-					t2d.size(),
-					vk::BufferUsageFlagBits::eTransferSrc,
-					vk::MemoryPropertyFlagBits::eHostVisible |
-					vk::MemoryPropertyFlagBits::eHostCoherent);
+			auto transferSrcBuffer = createStagingBufferMemory(t2d.size());
 			{
-				auto sampleBufferPtr = mapMemoryAndSize(transferSrcBuffer);
+				auto sampleBufferPtr = mapBufferMemory(transferSrcBuffer);
 				memcpy(sampleBufferPtr.get(), t2d.data(), t2d.size());
 			}
 
@@ -398,13 +394,13 @@ namespace tt {
 		return BM;
 	}
 
-	StagingBufferMemory
-	Device::createStagingBufferMemory(size_t dataSize){
+	LocalBufferMemory
+	Device::createLocalBufferMemory(size_t dataSize,vk::BufferUsageFlags flags){
 		vk::UniqueBuffer buffer = get().createBufferUnique(
 				vk::BufferCreateInfo{
 						vk::BufferCreateFlags(),
 						dataSize,
-						vk::BufferUsageFlagBits::eTransferSrc}
+						flags}
 		);
 
 		auto memoryRequirements = get().getBufferMemoryRequirements(buffer.get());
@@ -416,8 +412,9 @@ namespace tt {
 		});
 
 		get().bindBufferMemory(buffer.get(),memory.get(),0);
-		return StagingBufferMemory{std::move(buffer),std::move(memory)};
+		return LocalBufferMemory{std::move(buffer),std::move(memory)};
 	}
+
 
 	BufferMemory Device::createBufferAndMemoryFromAssets(android_app *androidAppCtx,
 	                                                     std::vector<std::string> names,
@@ -436,11 +433,9 @@ namespace tt {
 			offset += length;
 		}
 		if (memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
-			auto BAM = createBufferAndMemory(offset, vk::BufferUsageFlagBits::eTransferSrc,
-			                                 vk::MemoryPropertyFlagBits::eHostVisible |
-			                                 vk::MemoryPropertyFlagBits::eHostCoherent);
+			auto StagingBufferMemory = createStagingBufferMemory(offset);
 			{
-				auto bufferPtr = mapMemoryAndSize(BAM);
+				auto bufferPtr = mapBufferMemory(StagingBufferMemory);
 				for (auto &file:fileHanders) {
 					AAsset_read(std::get<0>(file).get(),
 					            (char *) bufferPtr.get() + std::get<1>(file),
@@ -453,7 +448,7 @@ namespace tt {
 			auto copyCmd = createCmdBuffers(
 					1, gPoolUnique.get(),
 					[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
-						commandBufferBeginHandle.copyBuffer(std::get<vk::UniqueBuffer>(BAM).get(),
+						commandBufferBeginHandle.copyBuffer(std::get<vk::UniqueBuffer>(StagingBufferMemory).get(),
 						                                    std::get<vk::UniqueBuffer>(BAM2).get(),
 						                                    {vk::BufferCopy{0, 0, offset}});
 					},

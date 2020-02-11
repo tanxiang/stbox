@@ -186,20 +186,6 @@ namespace tt {
 				}
 		);
 
-		template<typename Tuple>
-		auto mapMemoryAndSize(Tuple &tupleMemoryAndSize, size_t offset = 0) {
-			auto dev = get();
-			auto devMemory = std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get();
-			return BufferMemoryPtr{
-					get().mapMemory(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
-					                offset,
-					                std::get<size_t>(tupleMemoryAndSize),
-					                vk::MemoryMapFlagBits()),
-					[dev, devMemory](void *pVoid) {
-						dev.unmapMemory(devMemory);
-					}
-			};
-		}
 
 		auto mapMemorySize(vk::DeviceMemory devMemory, size_t size, size_t offset = 0) {
 			auto dev = get();
@@ -212,11 +198,39 @@ namespace tt {
 			};
 		}
 
+		template<typename Tuple>
+		auto mapMemoryAndSize(Tuple &tupleMemoryAndSize, size_t offset = 0) {
+			auto dev = get();
+			auto devMemory = std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get();
+			return mapMemorySize(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
+			                     std::get<size_t>(tupleMemoryAndSize), offset);
+		}
+
+
 		template<typename TupleType>
 		auto mapBufferMemory(const TupleType &tuple) {
 			return mapMemorySize(
 					std::get<vk::UniqueDeviceMemory>(tuple).get(),
-					get().getBufferMemoryRequirements(std::get<vk::UniqueBuffer>(tuple).get()).size);
+					get().getBufferMemoryRequirements(
+							std::get<vk::UniqueBuffer>(tuple).get()).size);
+		}
+
+		template<typename PodType, typename TupleType>
+		auto mapTypeBufferMemory(const TupleType &tuple, size_t offset = 0) {
+			auto devMemory = std::get<vk::UniqueDeviceMemory>(tuple).get();
+			auto device = get();
+			return BufferTypePtr<PodType>{
+					static_cast<PodType *>(get().mapMemory(
+							std::get<vk::UniqueDeviceMemory>(tuple).get(),
+							offset,
+							get().getBufferMemoryRequirements(
+									std::get<vk::UniqueBuffer>(tuple).get()).size,
+							vk::MemoryMapFlagBits())),
+					[device, devMemory](PodType *pVoid) {
+						//FIXME call ~PodType in array
+						device.unmapMemory(devMemory);
+					}
+			};
 		}
 
 		ImageViewMemory createImageAndMemoryFromMemory(gli::texture2d t2d,
@@ -231,8 +245,13 @@ namespace tt {
 		                      vk::MemoryPropertyFlags memoryPropertyFlags);
 
 
+		LocalBufferMemory
+		createLocalBufferMemory(size_t dataSize, vk::BufferUsageFlags flags);
+
 		StagingBufferMemory
-		createStagingBufferMemory(size_t dataSize);
+		createStagingBufferMemory(size_t dataSize) {
+			return createLocalBufferMemory(dataSize,vk::BufferUsageFlagBits::eTransferSrc);
+		}
 
 
 		BufferMemory
@@ -375,16 +394,6 @@ namespace tt {
 			auto size = objSize(alig, objs...);
 			return createStagingBufferMemory(size);
 
-		}
-
-		auto createLocalBufferMemoryOnBsM(BuffersMemory<> &BsM) {
-			size_t size = 0;
-			for (auto &buffer:BsM.desAndBuffers()) {
-				auto memoryRequirements = get().getBufferMemoryRequirements(buffer.buffer().get());
-				size += memoryRequirements.size;
-			}
-			//MY_LOG(INFO) << "need locale mem :" << size;
-			return createStagingBufferMemory(size);
 		}
 
 		template<typename ... Ts>
