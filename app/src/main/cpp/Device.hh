@@ -197,6 +197,7 @@ namespace tt {
 					}
 			};
 		}
+
 /*
 		template<typename Tuple>
 		auto mapMemoryAndSize(Tuple &tupleMemoryAndSize, size_t offset = 0) {
@@ -212,7 +213,7 @@ namespace tt {
 			return mapMemorySize(
 					std::get<vk::UniqueDeviceMemory>(tuple).get(),
 					get().getBufferMemoryRequirements(
-							std::get<vk::UniqueBuffer>(tuple).get()).size-offset, offset);
+							std::get<vk::UniqueBuffer>(tuple).get()).size - offset, offset);
 		}
 
 		template<typename PodType, typename TupleType>
@@ -247,12 +248,6 @@ namespace tt {
 
 		LocalBufferMemory
 		createLocalBufferMemory(size_t dataSize, vk::BufferUsageFlags flags);
-
-		StagingBufferMemory
-		createStagingBufferMemory(size_t dataSize) {
-			return createLocalBufferMemory(dataSize, vk::BufferUsageFlagBits::eTransferSrc);
-		}
-
 
 		BufferMemory
 		createBufferAndMemoryFromAssets(android_app *androidAppCtx, std::vector<std::string> names,
@@ -389,18 +384,24 @@ namespace tt {
 		}
 
 		template<typename ... Ts>
-		auto buildStagingBufferMemory(const Ts &... objs) {
+		auto createStagingBufferMemoryOnObjs(const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			auto size = objSize(alig, objs...);
-			return createStagingBufferMemory(size);
-
+			return createLocalBufferMemory(size, vk::BufferUsageFlagBits::eTransferSrc);
 		}
 
 		template<typename ... Ts>
-		auto createLocalBufferMemoryOnObjs(const Ts &... objs) {
+		auto createLocalBufferMemoryOnObjs(vk::BufferUsageFlags flags, const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			auto size = objSize(alig, objs...);
-			return createStagingBufferMemory(size);
+			return createLocalBufferMemory(size, flags);
+		}
+
+		template<typename ... Ts>
+		auto createBufferPartsOnObjs(vk::BufferUsageFlags flags, const Ts &... objs) {
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			//auto parts = std::array{objSize(alig, objs)...};
+			return std::make_tuple(vk::UniqueBuffer{},vk::UniqueDeviceMemory{},std::array{objSize(alig, objs)...});
 		}
 
 

@@ -306,7 +306,7 @@ namespace tt {
 				imageSubresourceRange
 		);
 		{
-			auto transferSrcBuffer = createStagingBufferMemory(t2d.size());
+			auto transferSrcBuffer = createStagingBufferMemoryOnObjs(t2d.size());
 			{
 				auto sampleBufferPtr = mapBufferMemory(transferSrcBuffer);
 				memcpy(sampleBufferPtr.get(), t2d.data(), t2d.size());
@@ -433,7 +433,7 @@ namespace tt {
 			offset += length;
 		}
 		if (memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
-			auto StagingBufferMemory = createStagingBufferMemory(offset);
+			auto StagingBufferMemory = createStagingBufferMemoryOnObjs(offset);
 			{
 				auto bufferPtr = mapBufferMemory(StagingBufferMemory);
 				for (auto &file:fileHanders) {

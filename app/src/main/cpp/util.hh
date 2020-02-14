@@ -111,7 +111,9 @@ namespace tt {
 	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t, std::vector<vk::DescriptorBufferInfo> >;
 
 	template <uint N>
-	struct BufferMemoryWithParts :public std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory,std::array<size_t,N>>{};
+	struct BufferMemoryWithParts :public std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory,std::array<size_t,N>>{
+		using std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory,std::array<size_t,N>>::tuple;
+	};
 
 	using LocalBufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory>;
 

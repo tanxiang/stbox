@@ -88,6 +88,15 @@ namespace tt {
 
 		//std::vector<Vertex> verticesOut{32};
 
+		auto bufferparts = device.createBufferPartsOnObjs(
+				vk::BufferUsageFlagBits::eStorageBuffer |
+				vk::BufferUsageFlagBits::eVertexBuffer |
+				vk::BufferUsageFlagBits::eIndirectBuffer, vertices,
+				sizeof(Vertex) * 32,
+				sizeof(vk::DrawIndirectCommand));
+
+		//auto bufferpartsXX = createXXXX(1ul,3ul,4ul,8ul);
+
 		device.buildBufferOnBsM(
 				Bsm,
 				vk::BufferUsageFlagBits::eStorageBuffer |
@@ -98,13 +107,14 @@ namespace tt {
 				sizeof(vk::DrawIndirectCommand));
 		//MY_LOG(INFO) << " buffer:" << sizeof(Vertex) * 32 << sizeof(Vertex) * 4;
 		{
-			auto localeBufferMemory = device.createLocalBufferMemoryOnObjs(vertices);
+			auto localeBufferMemory = device.createStagingBufferMemoryOnObjs(vertices);
 
 			{
 				uint32_t off = 0;
 				auto memoryPtr = device.mapBufferMemory(localeBufferMemory);
 				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[0], off,
-				                                            vertices, sizeof(Vertex) * 32,sizeof(vk::DrawIndirectCommand));
+				                                            vertices, sizeof(Vertex) * 32,
+				                                            sizeof(vk::DrawIndirectCommand));
 			}
 			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
 			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),
@@ -253,10 +263,10 @@ namespace tt {
 						0, sizeof(float) * 8,
 						vk::VertexInputRate::eVertex
 				},
-				vk::VertexInputBindingDescription{
-						1, sizeof(glm::mat4),
-						vk::VertexInputRate::eInstance
-				},
+				//vk::VertexInputBindingDescription{
+				//		1, sizeof(glm::mat4),
+				//		vk::VertexInputRate::eInstance
+				//},
 		};
 		std::array vertexInputAttributeDescriptions{
 				vk::VertexInputAttributeDescription{
@@ -265,9 +275,9 @@ namespace tt {
 				vk::VertexInputAttributeDescription{
 						1, 0, vk::Format::eR32G32B32A32Sfloat, 16
 				},
-				vk::VertexInputAttributeDescription{
-						2, 1, vk::Format::eR32G32B32A32Sfloat, 0
-				},//VK_FORMAT_R32G32_SFLOAT
+				//vk::VertexInputAttributeDescription{
+				//		2, 1, vk::Format::eR32G32B32A32Sfloat, 0
+				//},//VK_FORMAT_R32G32_SFLOAT
 		};
 
 		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
@@ -373,7 +383,7 @@ namespace tt {
 				std::array{0u}
 		);
 
-		cmdHandleRenderpassBegin.draw(32,0,0,0);
+		cmdHandleRenderpassBegin.draw(32, 0, 0, 0);
 	}
 
 
