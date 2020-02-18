@@ -27,13 +27,12 @@ namespace tt {
 		PipelineResource compPipeline;
 		PipelineResource graphPipeline;
 
-
+		std::tuple<vk::UniqueBuffer,vk::UniqueDeviceMemory ,std::array<uint32_t,3>> bufferMemoryPart;
 		BuffersMemory<> Bsm;
 		BufferMemory outputMemory;
 		vk::UniqueCommandBuffer cCommandBuffer;
 		Thread worker;
 		std::vector<vk::UniqueCommandBuffer> gcmdBuffers;
-
 
 		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);

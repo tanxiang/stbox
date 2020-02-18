@@ -88,14 +88,14 @@ namespace tt {
 
 		//std::vector<Vertex> verticesOut{32};
 
-		auto bufferparts = device.createBufferPartsOnObjs(
+		bufferMemoryPart = device.createBufferPartsOnObjs(
 				vk::BufferUsageFlagBits::eStorageBuffer |
 				vk::BufferUsageFlagBits::eVertexBuffer |
-				vk::BufferUsageFlagBits::eIndirectBuffer, vertices,
+				vk::BufferUsageFlagBits::eIndirectBuffer,
+				vk::MemoryPropertyFlagBits::eDeviceLocal,
+				vertices,
 				sizeof(Vertex) * 32,
 				sizeof(vk::DrawIndirectCommand));
-
-		//auto bufferpartsXX = createXXXX(1ul,3ul,4ul,8ul);
 
 		device.buildBufferOnBsM(
 				Bsm,
@@ -119,6 +119,8 @@ namespace tt {
 			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
 			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),
 			                           Bsm.memory().get(), Bsm.size());
+
+			//device.flushBufferTuple(localeBufferMemory,bufferparts);
 		}
 
 		outputMemory = device.createBufferAndMemory(
