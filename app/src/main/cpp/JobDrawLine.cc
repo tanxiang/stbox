@@ -91,6 +91,8 @@ namespace tt {
 		bufferMemoryPart = device.createBufferPartsOnObjs(
 				vk::BufferUsageFlagBits::eStorageBuffer |
 				vk::BufferUsageFlagBits::eVertexBuffer |
+				vk::BufferUsageFlagBits::eTransferDst |
+				vk::BufferUsageFlagBits::eTransferSrc |
 				vk::BufferUsageFlagBits::eIndirectBuffer,
 				vk::MemoryPropertyFlagBits::eDeviceLocal,
 				vertices,

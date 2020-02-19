@@ -15,6 +15,11 @@
 
 
 namespace tt {
+	struct Vertex {
+		float pos[4];  // Position data
+		float color[4];              // Color
+	};
+
 	struct JobDrawLine : public JobBase{
 		vk::UniqueRenderPass renderPass;
 		vk::UniqueRenderPass createRenderpass(tt::Device &);
