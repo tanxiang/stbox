@@ -32,7 +32,6 @@ namespace tt {
 		PipelineResource compPipeline;
 		PipelineResource graphPipeline;
 		BufferMemoryWithParts<3> bufferMemoryPart;
-		BuffersMemory<> Bsm;
 		BufferMemory outputMemory;
 		vk::UniqueCommandBuffer cCommandBuffer;
 		Thread worker;
