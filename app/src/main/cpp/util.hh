@@ -111,13 +111,13 @@ namespace tt {
 	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t, std::vector<vk::DescriptorBufferInfo> >;
 
 	template <uint N>
-	struct BufferMemoryWithParts :public std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory,std::array<size_t,N>>{
-		using std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory,std::array<size_t,N>>::tuple;
+	struct BufferMemoryWithParts :public std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory,std::array<uint32_t ,N>>{
+		using std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory,std::array<uint32_t ,N>>::tuple;
 	};
 
 	template< template<uint> typename Tuple,uint N >
 	auto createDescriptorBufferInfoTuple(const Tuple<N> &tuple,uint32_t n){
-		auto &parts =std::get<std::array<size_t,N>>(tuple);
+		auto &parts =std::get<std::array<uint32_t ,N>>(tuple);
 		uint32_t offset =  n ? parts[n -1] : 0;
 		return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(tuple).get(),offset,parts[n] - offset};
 	}

@@ -482,7 +482,7 @@ namespace tt {
 		                             const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			uint32_t allSize = 0;
-			auto parts = std::array<size_t,sizeof...(objs)>{objSizeOffset(alig, allSize, objs)...};
+			//auto parts = std::array<size_t,sizeof...(objs)>{objSizeOffset(alig, allSize, objs)...};
 			auto tuple = BufferMemoryWithParts<sizeof...(objs)>(
 					get().createBufferUnique(
 							vk::BufferCreateInfo{
@@ -490,7 +490,7 @@ namespace tt {
 									allSize,
 									flags}
 					),
-					vk::UniqueDeviceMemory{},parts);
+					vk::UniqueDeviceMemory{},std::array{objSizeOffset(alig, allSize, objs)...});
 			bufferTupleCreateMemory(memoryPropertyFlags, tuple);
 			if(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
 				auto staging = createStagingBufferMemoryOnObjs2(objs...);
