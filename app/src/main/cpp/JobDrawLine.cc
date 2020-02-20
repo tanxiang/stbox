@@ -131,6 +131,10 @@ namespace tt {
 				vk::MemoryPropertyFlagBits::eHostVisible |
 				vk::MemoryPropertyFlagBits::eHostCoherent);
 
+		std::array descriptors{
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 0),
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 0)
+		};
 		std::array writeDes{
 				vk::WriteDescriptorSet{
 						compPipeline.getDescriptorSet(), 0, 0, 1,

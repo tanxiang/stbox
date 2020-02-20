@@ -31,8 +31,7 @@ namespace tt {
 
 		PipelineResource compPipeline;
 		PipelineResource graphPipeline;
-
-		std::tuple<vk::UniqueBuffer,vk::UniqueDeviceMemory ,std::array<uint32_t,3>> bufferMemoryPart;
+		BufferMemoryWithParts<3> bufferMemoryPart;
 		BuffersMemory<> Bsm;
 		BufferMemory outputMemory;
 		vk::UniqueCommandBuffer cCommandBuffer;
