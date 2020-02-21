@@ -262,10 +262,10 @@ namespace tt {
 				{
 					vk::CommandBufferInheritanceInfo commandBufferInheritanceInfo{renderPass, 0,
 					                                                              framebuffers[frameIndex].get()};
-					CommandBufferBeginHandle cmdHandleRenderpassBegin{cmdBuffer,
+					CommandBufferBeginHandle cmdHandleRenderpassContinue{cmdBuffer,
 					                                                  vk::CommandBufferUsageFlagBits::eRenderPassContinue,
 					                                                  &commandBufferInheritanceInfo};
-					job.CmdBufferRenderPassContinueBegin(cmdHandleRenderpassBegin, extent2D);
+					job.CmdBufferRenderPassContinueBegin(cmdHandleRenderpassContinue, extent2D);
 				}
 				++frameIndex;
 			}

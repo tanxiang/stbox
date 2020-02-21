@@ -88,6 +88,7 @@ namespace tt {
 
 		bufferMemoryPart = device.createBufferPartsOnObjs(
 				vk::BufferUsageFlagBits::eStorageBuffer |
+				vk::BufferUsageFlagBits::eUniformBuffer |
 				vk::BufferUsageFlagBits::eVertexBuffer |
 				vk::BufferUsageFlagBits::eTransferDst |
 				vk::BufferUsageFlagBits::eTransferSrc |
@@ -95,7 +96,8 @@ namespace tt {
 				vk::MemoryPropertyFlagBits::eDeviceLocal,
 				vertices,
 				sizeof(Vertex) * 32,
-				sizeof(vk::DrawIndirectCommand));
+				sizeof(vk::DrawIndirectCommand),
+				sizeof(glm::mat4));
 
 		outputMemory = device.createBufferAndMemory(
 				sizeof(Vertex) * 32,
@@ -175,8 +177,9 @@ namespace tt {
 					commandBufferBeginHandle.copyBuffer(
 							std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
 							std::get<vk::UniqueBuffer>(outputMemory).get(),
-							{vk::BufferCopy{createDescriptorBufferInfoTuple(bufferMemoryPart,1).offset, 0,
-							                sizeof(Vertex) * 32}});
+							{vk::BufferCopy{
+									createDescriptorBufferInfoTuple(bufferMemoryPart, 1).offset, 0,
+									sizeof(Vertex) * 32}});
 
 					std::array BarrierHostRead{
 							vk::BufferMemoryBarrier{
