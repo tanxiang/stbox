@@ -110,8 +110,12 @@ namespace tt {
 				);
 	}
 
+	void JobDraw::CmdBufferBegin(CommandBufferBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win) {
+	}
+
 	void JobDraw::CmdBufferRenderpassBegin(RenderpassBeginHandle &cmdHandleRenderpassBegin,
 	                                       vk::Extent2D win) {
+
 		cmdHandleRenderpassBegin.setViewport(
 				0,
 				std::array{
@@ -223,4 +227,6 @@ namespace tt {
 		device->updateDescriptorSets(writeDes, nullptr);
 		//MY_LOG(INFO)<<__FUNCTION__<<" run out";
 	}
+
+
 };

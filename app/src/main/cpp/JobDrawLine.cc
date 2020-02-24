@@ -365,7 +365,11 @@ namespace tt {
 				{}
 		);
 
-		//cmdHandleRenderpassBegin.bindVertexBuffers();
+		cmdHandleRenderpassBegin.bindVertexBuffers(
+				1,
+				{std::get<vk::UniqueBuffer>(bufferMemoryPart).get()},
+				{createDescriptorBufferInfoTuple(bufferMemoryPart, 1).offset}
+		);
 
 		cmdHandleRenderpassBegin.draw(32, 0, 0, 0);
 	}

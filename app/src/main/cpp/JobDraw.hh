@@ -28,12 +28,9 @@ namespace tt {
 				vk::ClearDepthStencilValue{1.0f, 0},
 		};
 
-		void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D);
-		std::function<void(CommandBufferBeginHandle &,
-		                   vk::Extent2D)> CmdBufferBegin = [](
-		                   		CommandBufferBeginHandle &,
-		                   		vk::Extent2D) {};
+		void CmdBufferBegin (CommandBufferBeginHandle &, vk::Extent2D);
 
+		void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D);
 
 		void buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass);
 
