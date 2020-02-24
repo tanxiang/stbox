@@ -40,9 +40,9 @@ namespace tt {
 		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 
-		static JobDrawLine create(android_app *app, tt::Device &device);
+		//static JobDrawLine create(android_app *app, tt::Device &device);
 
-		static JobBase createBase(tt::Device &device);
+		//static JobBase createBase(tt::Device &device);
 
 		JobDrawLine(JobBase&& j,android_app *app,tt::Device &device);
 

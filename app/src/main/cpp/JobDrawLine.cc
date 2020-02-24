@@ -12,7 +12,7 @@ struct Vertex {
 };
 
 namespace tt {
-
+/*
 	JobDrawLine JobDrawLine::create(android_app *app, tt::Device &device) {
 		return JobDrawLine(
 				createBase(device),
@@ -34,7 +34,7 @@ namespace tt {
 				2
 		);
 	}
-
+*/
 	JobDrawLine::JobDrawLine(JobBase &&j, android_app *app, tt::Device &device) :
 			JobBase{std::move(j)},
 			renderPass{createRenderpass(device)},
@@ -357,14 +357,15 @@ namespace tt {
 				vk::PipelineBindPoint::eGraphics,
 				graphPipeline.get());
 
-
 		cmdHandleRenderpassBegin.bindDescriptorSets(
 				vk::PipelineBindPoint::eGraphics,
 				graphPipeline.layout(),
 				0,
-				std::array{graphPipeline.getDescriptorSet()},
-				std::array{0u}
+				graphPipeline.getDescriptorSets(),
+				{}
 		);
+
+		//cmdHandleRenderpassBegin.bindVertexBuffers();
 
 		cmdHandleRenderpassBegin.draw(32, 0, 0, 0);
 	}
