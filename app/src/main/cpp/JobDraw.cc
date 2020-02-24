@@ -112,7 +112,6 @@ namespace tt {
 
 	void JobDraw::CmdBufferRenderpassBegin(RenderpassBeginHandle &cmdHandleRenderpassBegin,
 	                                       vk::Extent2D win) {
-
 		cmdHandleRenderpassBegin.setViewport(
 				0,
 				std::array{
@@ -129,17 +128,14 @@ namespace tt {
 		cmdHandleRenderpassBegin.bindPipeline(
 				vk::PipelineBindPoint::eGraphics,
 				graphPipeline.get());
-		//std::array tmpDescriptorSets{descriptorSets[0].get()};
 		cmdHandleRenderpassBegin.bindDescriptorSets(
 				vk::PipelineBindPoint::eGraphics,
 				graphPipeline.layout(), 0,
 				graphPipeline.getDescriptorSets(),
 				{});
 		std::array offsets{vk::DeviceSize{0}};
-		//vk::DeviceSize offsets[1] = {0};
 		cmdHandleRenderpassBegin.bindVertexBuffers(
 				0,
-				//std::get<vk::UniqueBuffer>(BAMs[1]).get(),
 				Bsm.desAndBuffers()[0].buffer().get(),
 				offsets);
 		cmdHandleRenderpassBegin.bindIndexBuffer(
