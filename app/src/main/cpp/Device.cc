@@ -155,52 +155,6 @@ namespace tt {
 		});
 	}
 
-/*
-	std::vector<vk::UniqueCommandBuffer>
-	Device::createCmdBuffers(tt::Window &swapchain, vk::CommandPool pool,
-	                         std::function<void(RenderpassBeginHandle &)> functionRenderpassBegin,
-	                         std::function<void(CommandBufferBeginHandle &)> functionBegin) {
-		MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << swapchain.getFrameBufferNum();
-		std::vector commandBuffers = get().allocateCommandBuffersUnique(
-				vk::CommandBufferAllocateInfo{
-						pool,
-						vk::CommandBufferLevel::ePrimary,
-						swapchain.getFrameBufferNum()
-				}
-		);
-
-		std::array clearValues{
-				vk::ClearValue{vk::ClearColorValue{std::array<float, 4>{0.1f, 0.2f, 0.2f, 0.2f}}},
-				vk::ClearValue{vk::ClearDepthStencilValue{1.0f, 0}},
-		};
-		uint32_t frameIndex = 0;
-		for (auto &cmdBuffer : commandBuffers) {
-			//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
-			{
-				CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
-				functionBegin(cmdBeginHandle);
-				{
-					RenderpassBeginHandle cmdHandleRenderpassBegin{
-							cmdBeginHandle,
-							vk::RenderPassBeginInfo{
-									renderPass.get(),
-									swapchain.getFrameBuffer()[frameIndex].get(),
-									vk::Rect2D{
-											vk::Offset2D{},
-											swapchain.getSwapchainExtent()
-									},
-									clearValues.size(), clearValues.data()
-							}
-					};
-					functionRenderpassBegin(cmdHandleRenderpassBegin);
-				}
-
-			}
-			++frameIndex;
-		}
-		return commandBuffers;
-	}
-*/
 	std::vector<vk::UniqueCommandBuffer>
 	Device::createCmdBuffers(size_t cmdNum, vk::CommandPool pool,
 	                         std::function<void(CommandBufferBeginHandle &)> functionBegin,

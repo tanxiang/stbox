@@ -12,29 +12,7 @@ struct Vertex {
 };
 
 namespace tt {
-/*
-	JobDrawLine JobDrawLine::create(android_app *app, tt::Device &device) {
-		return JobDrawLine(
-				createBase(device),
-				app,
-				device
-		);
-	}
 
-	JobBase JobDrawLine::createBase(tt::Device &device) {
-		return device.createJobBase(
-				{
-						vk::DescriptorPoolSize{
-								vk::DescriptorType::eUniformBuffer, 1
-						},
-						vk::DescriptorPoolSize{
-								vk::DescriptorType::eStorageBuffer, 3
-						}
-				},
-				2
-		);
-	}
-*/
 	JobDrawLine::JobDrawLine(JobBase &&j, android_app *app, tt::Device &device) :
 			JobBase{std::move(j)},
 			renderPass{createRenderpass(device)},
@@ -107,7 +85,9 @@ namespace tt {
 
 		std::array descriptors{
 				createDescriptorBufferInfoTuple(bufferMemoryPart, 0),
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 1)
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 1),
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 3)
+
 		};
 		std::array writeDes{
 				vk::WriteDescriptorSet{
@@ -119,6 +99,11 @@ namespace tt {
 						compPipeline.getDescriptorSet(), 1, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[1]
+				},
+				vk::WriteDescriptorSet{
+						graphPipeline.getDescriptorSet(), 0, 0, 1,
+						vk::DescriptorType::eUniformBuffer,
+						nullptr, &descriptors[2]
 				}
 		};
 
@@ -142,7 +127,6 @@ namespace tt {
 							vk::DependencyFlags{},
 							{},
 							BarrierHostWrite, {});
-
 
 					commandBufferBeginHandle.bindPipeline(vk::PipelineBindPoint::eCompute,
 					                                      compPipeline.get());
@@ -372,6 +356,15 @@ namespace tt {
 		);
 
 		cmdHandleRenderpassBegin.draw(32, 0, 0, 0);
+	}
+
+	void JobDrawLine::setMVP(tt::Device& device,vk::Buffer buffer) {
+		device.flushBufferToBuffer(
+				buffer,
+				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
+				device->getBufferMemoryRequirements(buffer).size,
+				0,
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 3).offset);
 	}
 
 

@@ -59,6 +59,8 @@ namespace tt {
 		devices->Job<JobDrawLine>().buildCmdBuffer(window, devices->renderPass.get());
 		devices->Job<JobDraw>().buildCmdBuffer(window, devices->renderPass.get());
 		devices->Job<JobDraw>().setPv();
+		devices->Job<JobDrawLine>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
+
 	}
 
 	void stboxvk::draw() {

@@ -51,6 +51,8 @@ namespace tt {
 
 		void buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass);
 
+		void setMVP(tt::Device &device,vk::Buffer buffer);
+
 		void CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleBegin,
 		                                       vk::Extent2D win);
 

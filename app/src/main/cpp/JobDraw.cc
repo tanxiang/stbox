@@ -86,8 +86,6 @@ namespace tt {
 		                                      swapchain.getSwapchainExtent(),
 		                                      commandPool.get());
 		setPerspective(swapchain);
-		//cmdBuffers = device.createCmdBuffers(swapchain, *commandPool, cmdbufferRenderpassBeginHandle,
-		//                                     cmdbufferCommandBufferBeginHandle);
 	}
 
 	void JobDraw::setPerspective(tt::Window &swapchain) {
@@ -146,6 +144,8 @@ namespace tt {
 				Bsm.desAndBuffers()[0].buffer().get(),
 				Bsm.desAndBuffers()[0].descriptors()[1].offset, vk::IndexType::eUint32);
 		cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
+
+		//cmdHandleRenderpassBegin.executeCommands();
 	}
 
 	JobDraw::JobDraw(JobBase &&j, android_app *app, tt::Device &device) :
@@ -170,7 +170,8 @@ namespace tt {
 		BAMs.emplace_back(
 				device.createBufferAndMemory(
 						sizeof(glm::mat4),
-						vk::BufferUsageFlagBits::eUniformBuffer,
+						vk::BufferUsageFlagBits::eUniformBuffer|
+						vk::BufferUsageFlagBits::eTransferSrc,
 						vk::MemoryPropertyFlagBits::eHostVisible |
 						vk::MemoryPropertyFlagBits::eHostCoherent));
 

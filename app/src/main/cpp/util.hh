@@ -69,7 +69,7 @@ namespace tt {
 		RenderpassBeginHandle(vk::CommandBuffer commandBuffer,
 		                      vk::RenderPassBeginInfo renderPassBeginInfo)
 				: vk::CommandBuffer{commandBuffer} {
-			beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+			beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eSecondaryCommandBuffers);
 		}
 
 		~RenderpassBeginHandle() {
