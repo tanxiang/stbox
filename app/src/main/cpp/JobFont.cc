@@ -161,7 +161,7 @@ namespace tt {
 		                                      swapchain.getSwapchainExtent(), commandPool.get());
 	}
 
-	void JobFont::CmdBufferRenderpassBegin(RenderpassBeginHandle &handle, vk::Extent2D win) {
+	void JobFont::CmdBufferRenderpassBegin(RenderpassBeginHandle &handle, vk::Extent2D win,uint32_t frameIndex) {
 
 		handle.setViewport(
 				0,
@@ -184,7 +184,7 @@ namespace tt {
 		handle.draw(4, 6, 0, 0);
 	}
 
-	void JobFont::CmdBufferBegin(CommandBufferBeginHandle &handle, vk::Extent2D) {
+	void JobFont::CmdBufferBegin(CommandBufferBeginHandle &handle, vk::Extent2D,uint32_t frameIndex) {
 		handle.pipelineBarrier(
 				vk::PipelineStageFlagBits::eVertexInput,
 				vk::PipelineStageFlagBits::eTransfer,

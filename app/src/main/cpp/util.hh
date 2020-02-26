@@ -216,7 +216,7 @@ namespace tt {
 				//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
 				{
 					CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
-					job.CmdBufferBegin(cmdBeginHandle, extent2D);
+					job.CmdBufferBegin(cmdBeginHandle, extent2D,frameIndex);
 					{
 						RenderpassBeginHandle cmdHandleRenderpassBegin{
 								cmdBeginHandle,
@@ -230,7 +230,7 @@ namespace tt {
 										job.clearValues.size(), job.clearValues.data()
 								}
 						};
-						job.CmdBufferRenderpassBegin(cmdHandleRenderpassBegin, extent2D);
+						job.CmdBufferRenderpassBegin(cmdHandleRenderpassBegin, extent2D,frameIndex);
 					}
 
 				}

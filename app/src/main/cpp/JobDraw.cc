@@ -80,7 +80,7 @@ namespace tt {
 	void JobDraw::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
 //		MY_LOG(INFO)<<"jobaddr:"<<(void const *)this<<std::endl;
 
-		cmdBuffers = helper::createCmdBuffers(descriptorPool.getOwner(), renderPass,
+		cmdBuffers = helper::createCmdBuffersSub(descriptorPool.getOwner(), renderPass,
 		                                      *this,
 		                                      swapchain.getFrameBuffer(),
 		                                      swapchain.getSwapchainExtent(),
@@ -107,7 +107,7 @@ namespace tt {
 						camUp     // Head is up (set to 0,-1,0 to look upside-down)
 				);
 	}
-
+/*
 	void JobDraw::CmdBufferBegin(CommandBufferBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win) {
 	}
 
@@ -147,7 +147,7 @@ namespace tt {
 
 		//cmdHandleRenderpassBegin.executeCommands();
 	}
-
+*/
 	JobDraw::JobDraw(JobBase &&j, android_app *app, tt::Device &device) :
 			JobBase{std::move(j)},
 			graphPipeline{
@@ -229,5 +229,37 @@ namespace tt {
 		//MY_LOG(INFO)<<__FUNCTION__<<" run out";
 	}
 
+	void JobDraw::CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleRenderpassContinue,
+	                                               vk::Extent2D win) {
+		cmdHandleRenderpassContinue.setViewport(
+				0,
+				std::array{
+						vk::Viewport{
+								0, 0,
+								win.width,
+								win.height,
+								0.0f, 1.0f
+						}
+				}
+		);
 
+		cmdHandleRenderpassContinue.setScissor(0, std::array{vk::Rect2D{vk::Offset2D{}, win}});
+		cmdHandleRenderpassContinue.bindPipeline(
+				vk::PipelineBindPoint::eGraphics,
+				graphPipeline.get());
+		cmdHandleRenderpassContinue.bindDescriptorSets(
+				vk::PipelineBindPoint::eGraphics,
+				graphPipeline.layout(), 0,
+				graphPipeline.getDescriptorSets(),
+				{});
+		std::array offsets{vk::DeviceSize{0}};
+		cmdHandleRenderpassContinue.bindVertexBuffers(
+				0,
+				Bsm.desAndBuffers()[0].buffer().get(),
+				offsets);
+		cmdHandleRenderpassContinue.bindIndexBuffer(
+				Bsm.desAndBuffers()[0].buffer().get(),
+				Bsm.desAndBuffers()[0].descriptors()[1].offset, vk::IndexType::eUint32);
+		cmdHandleRenderpassContinue.drawIndexed(6, 1, 0, 0, 0);
+	}
 };

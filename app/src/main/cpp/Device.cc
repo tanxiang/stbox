@@ -638,11 +638,11 @@ namespace tt {
 		                                          commandPool.get());
 	}
 
-	void Device::CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D) {
+	void Device::CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D,uint32_t frameIndex) {
 
 	}
 
-	void Device::CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D) {
-
+	void Device::CmdBufferRenderpassBegin(RenderpassBeginHandle & handle, vk::Extent2D,uint32_t frameIndex) {
+		handle.executeCommands(Job<JobDraw>().cmdBuffers[frameIndex].get());
 	}
 }

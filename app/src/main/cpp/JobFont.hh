@@ -26,9 +26,9 @@ namespace tt {
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
 		std::vector<BufferMemory> BAMs;
 
-		void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D);
+		void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D,uint32_t frameIndex);
 
-		void CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D);
+		void CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D,uint32_t frameIndex);
 
 		void buildCmdBuffer(tt::Window &swapchain);
 

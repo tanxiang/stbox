@@ -64,7 +64,7 @@ namespace tt {
 	}
 
 	void stboxvk::draw() {
-		devices->runJobOnWindow(devices->Job<JobDraw>(), windows[0]);
+		devices->runJobOnWindow(windows[0]);
 	}
 
 	void stboxvk::draw(float dx, float dy) {

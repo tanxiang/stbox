@@ -569,11 +569,11 @@ namespace tt {
 			return get().waitForFences(1, &Fence, true, 10000000);
 		}
 
-		template<typename Tjob>
-		void runJobOnWindow(Tjob &j, tt::Window &win) {
+		//template<typename Tjob>
+		void runJobOnWindow(tt::Window &win) {
 			auto imageAcquiredSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
 			auto renderSemaphore = get().createSemaphoreUnique(vk::SemaphoreCreateInfo{});
-			auto renderFence = win.submitCmdBuffer(*this, j.cmdBuffers,
+			auto renderFence = win.submitCmdBuffer(*this, mainCmdBuffers,
 			                                       imageAcquiredSemaphore.get(),
 			                                       renderSemaphore.get());
 			waitFence(renderFence.get());
@@ -596,9 +596,9 @@ namespace tt {
 				vk::ClearDepthStencilValue{1.0f, 0},
 		};
 
-		void CmdBufferBegin (CommandBufferBeginHandle &, vk::Extent2D);
+		void CmdBufferBegin (CommandBufferBeginHandle &, vk::Extent2D,uint32_t frameIndex);
 
-		void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D);
+		void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D,uint32_t frameIndex);
 
 		void buildCmdBuffer(tt::Window &window);
 	};
