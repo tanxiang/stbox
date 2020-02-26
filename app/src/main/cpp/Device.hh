@@ -102,6 +102,47 @@ namespace tt {
 		return offset;
 	}
 
+	template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
+	vk::DescriptorBufferInfo
+	writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,
+	         uint32_t &off,
+	         const T &t) {
+		auto size = t;
+		//memcpy(static_cast<char *>(ptr.get()) + off, t.data(), size);
+		auto m_off = off;
+		//off += get().getBufferMemoryRequirements(buffer).size;
+		off += alignment(alig, objSize(alig, t));
+		return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
+	}
+
+	template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
+	vk::DescriptorBufferInfo
+	writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,
+	         uint32_t &off,
+	         const T &t) {
+		auto size = t.size() * sizeof(typename T::value_type);
+		memcpy(static_cast<char *>(ptr.get()) + off, t.data(), size);
+		auto m_off = off;
+		//off += get().getBufferMemoryRequirements(buffer).size;
+		off += alignment(alig, objSize(alig, t));
+		return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
+	}
+
+	template<typename T, typename std::enable_if<
+			!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
+	vk::DescriptorBufferInfo
+	writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,
+	         uint32_t &off,
+	         const T &t) {
+		auto size = sizeof(t);
+		memcpy(static_cast<char *>(ptr.get()) + off, &t, size);
+		auto m_off = off;
+		//off += get().getBufferMemoryRequirements(buffer).size;
+		off += alignment(alig, objSize(alig, t));
+		return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
+	}
+
+
 
 	class Device : public vk::UniqueDevice {
 		vk::PhysicalDevice physicalDevice;
@@ -257,6 +298,27 @@ namespace tt {
 		}
 */
 
+
+		template<typename ... Ts>
+		auto writeObjsToPtr(BufferMemoryPtr &bufferPtr, uint32_t &off,
+		                    const Ts &... objs) {
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			auto m_off = off;
+			std::array{
+					writeObj(bufferPtr,{}, alig, off, m_off, objs)...};
+		}
+
+		template<typename TP, typename ... Ts>
+		auto writeObjsDescriptorBufferInfo(BufferMemoryPtr &bufferPtr, TP &tp, uint32_t &off,
+		                                   const Ts &... objs) {
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			auto m_off = off;
+			tp.off() = off;
+			tp.descriptors() = std::vector{
+					writeObj(bufferPtr, tp.buffer().get(), alig, off, m_off, objs)...};
+			return get().getBufferMemoryRequirements(tp.buffer().get()).size;
+		}
+
 		template<typename TupleType>
 		auto mapBufferMemory(const TupleType &tuple, size_t offset = 0) {
 			return mapMemorySize(
@@ -303,65 +365,7 @@ namespace tt {
 		                                vk::BufferUsageFlags bufferUsageFlags,
 		                                vk::MemoryPropertyFlags memoryPropertyFlags);
 
-		template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
-		vk::DescriptorBufferInfo
-		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,
-		         uint32_t &off,
-		         const T &t) {
-			auto size = t;
-			//memcpy(static_cast<char *>(ptr.get()) + off, t.data(), size);
-			auto m_off = off;
-			//off += get().getBufferMemoryRequirements(buffer).size;
-			off += alignment(alig, objSize(alig, t));
-			return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
-		}
 
-		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
-		vk::DescriptorBufferInfo
-		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,
-		         uint32_t &off,
-		         const T &t) {
-			auto size = t.size() * sizeof(typename T::value_type);
-			memcpy(static_cast<char *>(ptr.get()) + off, t.data(), size);
-			auto m_off = off;
-			//off += get().getBufferMemoryRequirements(buffer).size;
-			off += alignment(alig, objSize(alig, t));
-			return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
-		}
-
-		template<typename T, typename std::enable_if<
-				!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
-		vk::DescriptorBufferInfo
-		writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,
-		         uint32_t &off,
-		         const T &t) {
-			auto size = sizeof(t);
-			memcpy(static_cast<char *>(ptr.get()) + off, &t, size);
-			auto m_off = off;
-			//off += get().getBufferMemoryRequirements(buffer).size;
-			off += alignment(alig, objSize(alig, t));
-			return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
-		}
-
-		template<typename ... Ts>
-		auto writeObjsToPtr(BufferMemoryPtr &bufferPtr, uint32_t &off,
-		                                   const Ts &... objs) {
-			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
-			auto m_off = off;
-			std::array{
-					writeObj(bufferPtr,{}, alig, off, m_off, objs)...};
-		}
-
-		template<typename TP, typename ... Ts>
-		auto writeObjsDescriptorBufferInfo(BufferMemoryPtr &bufferPtr, TP &tp, uint32_t &off,
-		                                   const Ts &... objs) {
-			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
-			auto m_off = off;
-			tp.off() = off;
-			tp.descriptors() = std::vector{
-					writeObj(bufferPtr, tp.buffer().get(), alig, off, m_off, objs)...};
-			return get().getBufferMemoryRequirements(tp.buffer().get()).size;
-		}
 
 		BufferMemory flushBufferToDevMemory(vk::BufferUsageFlags bufferUsageFlags,
 		                                    vk::MemoryPropertyFlags memoryPropertyFlags,
