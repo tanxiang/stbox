@@ -143,7 +143,6 @@ namespace tt {
 	}
 
 
-
 	class Device : public vk::UniqueDevice {
 		vk::PhysicalDevice physicalDevice;
 		uint32_t gQueueFamilyIndex;
@@ -162,6 +161,7 @@ namespace tt {
 		                                            android_app *androidAppCtx);
 
 	private:
+		vk::UniqueCommandPool commandPool;
 
 		auto findMemoryTypeIndex(uint32_t memoryTypeBits, vk::MemoryPropertyFlags flags) {
 			return tt::findMemoryTypeIndex(physicalDevice, memoryTypeBits, flags);
@@ -186,6 +186,11 @@ namespace tt {
 				//gQueueFamilyIndex{deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex},
 				renderPassFormat{physicalDevice.getSurfaceFormatsKHR(surface)[0].format},
 				renderPass{createRenderpass(renderPassFormat)},
+				commandPool{
+						get().createCommandPoolUnique(vk::CommandPoolCreateInfo{
+								vk::CommandPoolCreateFlagBits::eResetCommandBuffer, gQueueFamilyIndex}
+						)
+				},
 				Jobs{std::make_tuple(
 						createJobBase(
 								{
@@ -203,7 +208,6 @@ namespace tt {
 				     JobDraw::create(app, *this)} {
 
 		}
-
 
 
 		auto phyDevice() {
@@ -305,7 +309,7 @@ namespace tt {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			auto m_off = off;
 			std::array{
-					writeObj(bufferPtr,{}, alig, off, m_off, objs)...};
+					writeObj(bufferPtr, {}, alig, off, m_off, objs)...};
 		}
 
 		template<typename TP, typename ... Ts>
@@ -366,7 +370,6 @@ namespace tt {
 		                                vk::MemoryPropertyFlags memoryPropertyFlags);
 
 
-
 		BufferMemory flushBufferToDevMemory(vk::BufferUsageFlags bufferUsageFlags,
 		                                    vk::MemoryPropertyFlags memoryPropertyFlags,
 		                                    size_t size, BufferMemory &&bufferMemory);
@@ -378,19 +381,23 @@ namespace tt {
 		void flushBufferToMemory(vk::Buffer buffer, vk::DeviceMemory memory, size_t size,
 		                         size_t srcoff = 0, size_t decoff = 0);
 
-		template <typename TupleFrom,typename TupleTo>
-		auto flushBufferTuple(const TupleFrom& from,const TupleTo& to,size_t srcoff = 0, size_t decoff = 0){
-			flushBufferToMemory(std::get<vk::UniqueBuffer>(from).get(),std::get<vk::UniqueDeviceMemory >(to).get(),
-			                    get().getBufferMemoryRequirements(std::get<vk::UniqueBuffer>(from).get()).size,srcoff,decoff);
+		template<typename TupleFrom, typename TupleTo>
+		auto flushBufferTuple(const TupleFrom &from, const TupleTo &to, size_t srcoff = 0,
+		                      size_t decoff = 0) {
+			flushBufferToMemory(std::get<vk::UniqueBuffer>(from).get(),
+			                    std::get<vk::UniqueDeviceMemory>(to).get(),
+			                    get().getBufferMemoryRequirements(
+					                    std::get<vk::UniqueBuffer>(from).get()).size, srcoff,
+			                    decoff);
 		}
 
 		void bindBsm(BuffersMemory<> &BsM);
 
-		template <typename Tuple>
-		void bindBufferMemory(const Tuple& tuple){
+		template<typename Tuple>
+		void bindBufferMemory(const Tuple &tuple) {
 			return get().bindBufferMemory(
 					std::get<vk::UniqueBuffer>(tuple).get(),
-					std::get<vk::UniqueDeviceMemory>(tuple).get(),0);
+					std::get<vk::UniqueDeviceMemory>(tuple).get(), 0);
 		}
 
 		template<typename ... Ts>
@@ -424,7 +431,7 @@ namespace tt {
 			auto tuple = createLocalBufferMemory(size, vk::BufferUsageFlagBits::eTransferSrc);
 			auto memoryPtr = mapBufferMemory(tuple);
 			uint32_t offset = 0;
-			writeObjsToPtr(memoryPtr,offset,objs...);
+			writeObjsToPtr(memoryPtr, offset, objs...);
 			return tuple;
 		}
 
@@ -438,7 +445,8 @@ namespace tt {
 		template<typename Tuple>
 		auto bufferTupleCreateMemory(vk::MemoryPropertyFlags memoryPropertyFlags,
 		                             Tuple &tuple) {
-			auto memoryReq = get().getBufferMemoryRequirements(std::get<vk::UniqueBuffer>(tuple).get());
+			auto memoryReq = get().getBufferMemoryRequirements(
+					std::get<vk::UniqueBuffer>(tuple).get());
 			std::get<vk::UniqueDeviceMemory>(tuple) =
 					get().allocateMemoryUnique(vk::MemoryAllocateInfo{
 							memoryReq.size,
@@ -461,11 +469,11 @@ namespace tt {
 									allSize,
 									flags}
 					),
-					vk::UniqueDeviceMemory{},std::array{objSizeOffset(alig, allSize, objs)...});
+					vk::UniqueDeviceMemory{}, std::array{objSizeOffset(alig, allSize, objs)...});
 			bufferTupleCreateMemory(memoryPropertyFlags, tuple);
-			if(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
+			if (memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
 				auto staging = createStagingBufferMemoryOnObjs2(objs...);
-				flushBufferTuple(staging,tuple);
+				flushBufferTuple(staging, tuple);
 			}
 			return tuple;
 		}
@@ -576,10 +584,23 @@ namespace tt {
 	private:
 		std::tuple<JobDrawLine, JobDraw> Jobs;
 	public:
+		std::vector<vk::UniqueCommandBuffer> mainCmdBuffers;
+
 		template<typename JobType>
 		auto &Job(int index = 0) {
 			return std::get<JobType>(Jobs);
 		}
+
+		std::array<vk::ClearValue,2> clearValues{
+				vk::ClearColorValue{std::array<float, 4>{0.1f, 0.2f, 0.2f, 0.2f}},
+				vk::ClearDepthStencilValue{1.0f, 0},
+		};
+
+		void CmdBufferBegin (CommandBufferBeginHandle &, vk::Extent2D);
+
+		void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D);
+
+		void buildCmdBuffer(tt::Window &window);
 	};
 
 }

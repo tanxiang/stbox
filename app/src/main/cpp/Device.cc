@@ -624,4 +624,25 @@ namespace tt {
 				}
 		);
 	}
+
+	void Device::buildCmdBuffer(tt::Window &window) {
+		//std::apply([&](auto& job){job.buildCmdBuffer(window,renderPass.get());},Jobs);
+
+		Job<JobDrawLine>().buildCmdBuffer(window, renderPass.get());
+		Job<JobDraw>().buildCmdBuffer(window, renderPass.get());
+
+		mainCmdBuffers = helper::createCmdBuffers(get(), renderPass.get(),
+		                                          *this,
+		                                          window.getFrameBuffer(),
+		                                          window.getSwapchainExtent(),
+		                                          commandPool.get());
+	}
+
+	void Device::CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D) {
+
+	}
+
+	void Device::CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D) {
+
+	}
 }
