@@ -644,5 +644,6 @@ namespace tt {
 
 	void Device::CmdBufferRenderpassBegin(RenderpassBeginHandle & handle, vk::Extent2D,uint32_t frameIndex) {
 		handle.executeCommands(Job<JobDraw>().cmdBuffers[frameIndex].get());
+		handle.executeCommands(Job<JobDrawLine>().gcmdBuffers[frameIndex].get());
 	}
 }
