@@ -44,6 +44,65 @@ namespace tt {
 	> : public std::true_type {
 	};
 
+	auto inline alignment(uint32_t alignment, uint32_t length) {
+		return length + (alignment - 1) - ((length - 1) % alignment);
+	}
+
+	template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
+	auto objSize(uint32_t alig, const T &t) {
+		return alignment(alig, t);
+	}
+
+	template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
+	auto objSize(uint32_t alig, const T &t) {
+		return alignment(alig, t.size() * sizeof(typename T::value_type));
+	}
+
+	template<typename T, typename std::enable_if<
+			!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
+	auto objSize(uint32_t alig, const T &t) {
+		return alignment(alig, sizeof(t));
+	}
+
+	template<typename T, typename ... Ts>
+	auto objSize(uint32_t alig, const T &t, const Ts &... ts) {
+		return objSize(alig, t) + objSize(alig, ts...);
+	}
+
+	template<typename T>
+	auto objSizeOffset(uint32_t alig, uint32_t &offset, const T &t) {
+		offset += objSize(alig, t);
+		return offset;
+	}
+
+	template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
+	auto objDataSize(uint32_t alig, const T &t) {
+		return 0;
+	}
+
+	template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
+	auto objDataSize(uint32_t alig, const T &t) {
+		return alignment(alig, t.size() * sizeof(typename T::value_type));
+	}
+
+	template<typename T, typename std::enable_if<
+			!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
+	auto objDataSize(uint32_t alig, const T &t) {
+		return alignment(alig, sizeof(t));
+	}
+
+	template<typename T, typename ... Ts>
+	auto objDataSize(uint32_t alig, const T &t, const Ts &... ts) {
+		return objDataSize(alig, t) + objDataSize(alig, ts...);
+	}
+
+	template<typename T>
+	auto objDataSizeOffset(uint32_t alig, uint32_t &offset, const T &t) {
+		offset += objDataSize(alig, t);
+		return offset;
+	}
+
+
 	class Device : public vk::UniqueDevice {
 		vk::PhysicalDevice physicalDevice;
 		uint32_t gQueueFamilyIndex;
@@ -104,17 +163,7 @@ namespace tt {
 
 		}
 
-/*
-		Device(vk::DeviceCreateInfo deviceCreateInfo, vk::PhysicalDevice &phy,
-		       vk::SurfaceKHR &surface, android_app *app) :
-				vk::UniqueDevice{phy.createDeviceUnique(deviceCreateInfo)}, physicalDevice{phy},
-				gQueueFamilyIndex{deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex},
-				renderPassFormat{physicalDevice.getSurfaceFormatsKHR(surface)[0].format},
-				renderPass{createRenderpass(renderPassFormat)},
-				Jobs{JobDrawLine::create(app, *this), JobDraw::create(app, *this)} {
 
-		}
-*/
 
 		auto phyDevice() {
 			return physicalDevice;
@@ -253,88 +302,6 @@ namespace tt {
 		createBufferAndMemoryFromAssets(android_app *androidAppCtx, std::vector<std::string> names,
 		                                vk::BufferUsageFlags bufferUsageFlags,
 		                                vk::MemoryPropertyFlags memoryPropertyFlags);
-
-		auto alignment(uint32_t alignment, uint32_t length) {
-			return length + (alignment - 1) - ((length - 1) % alignment);
-		}
-
-/*
-		template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
-		auto objSize(uint32_t alig, const T &t) {
-			return t;
-		}
-
-		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
-		auto objSize(uint32_t alig, const T &t) {
-			return t.size() * sizeof(typename T::value_type);
-		}
-
-		template<typename T, typename std::enable_if<
-				!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
-		auto objSize(uint32_t alig, const T &t) {
-			return sizeof(t);
-		}
-
-		template<typename T, typename ... Ts>
-		auto objSize(uint32_t alig, const T &t, const Ts &... ts) {
-			return alignment(alig, objSize(alig, t)) + objSize(alig, ts...);
-		}
-*/
-
-		template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
-		auto objSize(uint32_t alig, const T &t) {
-			return alignment(alig, t);
-		}
-
-		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
-		auto objSize(uint32_t alig, const T &t) {
-			return alignment(alig, t.size() * sizeof(typename T::value_type));
-		}
-
-		template<typename T, typename std::enable_if<
-				!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
-		auto objSize(uint32_t alig, const T &t) {
-			return alignment(alig, sizeof(t));
-		}
-
-		template<typename T, typename ... Ts>
-		auto objSize(uint32_t alig, const T &t, const Ts &... ts) {
-			return objSize(alig, t) + objSize(alig, ts...);
-		}
-
-		template<typename T>
-		auto objSizeOffset(uint32_t alig, uint32_t &offset, const T &t) {
-			offset += objSize(alig, t);
-			return offset;
-		}
-
-		template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
-		auto objDataSize(uint32_t alig, const T &t) {
-			return 0;
-		}
-
-		template<typename T, typename std::enable_if<is_container<T>::value, int>::type = 0>
-		auto objDataSize(uint32_t alig, const T &t) {
-			return alignment(alig, t.size() * sizeof(typename T::value_type));
-		}
-
-		template<typename T, typename std::enable_if<
-				!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
-		auto objDataSize(uint32_t alig, const T &t) {
-			return alignment(alig, sizeof(t));
-		}
-
-		template<typename T, typename ... Ts>
-		auto objDataSize(uint32_t alig, const T &t, const Ts &... ts) {
-			return objDataSize(alig, t) + objDataSize(alig, ts...);
-		}
-
-		template<typename T>
-		auto objDataSizeOffset(uint32_t alig, uint32_t &offset, const T &t) {
-			offset += objDataSize(alig, t);
-			return offset;
-		}
-
 
 		template<typename T, typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
 		vk::DescriptorBufferInfo
