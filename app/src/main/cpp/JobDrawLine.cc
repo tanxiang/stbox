@@ -321,7 +321,7 @@ namespace tt {
 	}
 
 	void JobDrawLine::CmdBufferRenderPassContinueBegin(
-			CommandBufferBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win) {
+			CommandBufferBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win,uint32_t frameIndex) {
 
 		cmdHandleRenderpassBegin.setViewport(
 				0,

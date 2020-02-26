@@ -265,7 +265,7 @@ namespace tt {
 					CommandBufferBeginHandle cmdHandleRenderpassContinue{cmdBuffer,
 					                                                  vk::CommandBufferUsageFlagBits::eRenderPassContinue,
 					                                                  &commandBufferInheritanceInfo};
-					job.CmdBufferRenderPassContinueBegin(cmdHandleRenderpassContinue, extent2D);
+					job.CmdBufferRenderPassContinueBegin(cmdHandleRenderpassContinue, extent2D,frameIndex);
 				}
 				++frameIndex;
 			}

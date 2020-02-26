@@ -230,7 +230,7 @@ namespace tt {
 	}
 
 	void JobDraw::CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleRenderpassContinue,
-	                                               vk::Extent2D win) {
+	                                               vk::Extent2D win,uint32_t frameIndex) {
 		cmdHandleRenderpassContinue.setViewport(
 				0,
 				std::array{

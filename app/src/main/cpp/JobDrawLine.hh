@@ -54,7 +54,7 @@ namespace tt {
 		void setMVP(tt::Device &device,vk::Buffer buffer);
 
 		void CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleBegin,
-		                                       vk::Extent2D win);
+		                                       vk::Extent2D win,uint32_t frameIndex);
 
 		//JobDrawLine(JobDrawLine&& j) = default;
 	};

@@ -34,7 +34,7 @@ namespace tt {
 
 
 		void CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleRenderpassContinue,
-		                                      vk::Extent2D win);
+		                                      vk::Extent2D win,uint32_t frameIndex);
 
 		void buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass);
 
