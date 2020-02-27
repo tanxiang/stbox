@@ -25,11 +25,6 @@ namespace tt {
 		glm::vec3 camTo = glm::vec3(0, 0, 0);
 		glm::vec3 camUp = glm::vec3(0, 1, 0);
 
-		std::array<vk::ClearValue,2> clearValues{
-				vk::ClearColorValue{std::array<float, 4>{0.1f, 0.2f, 0.2f, 0.2f}},
-				vk::ClearDepthStencilValue{1.0f, 0},
-		};
-
 		void CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleRenderpassContinue,
 		                                      vk::Extent2D win,uint32_t frameIndex);
 
