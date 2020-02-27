@@ -30,11 +30,6 @@ namespace tt {
 				vk::ClearDepthStencilValue{1.0f, 0},
 		};
 
-		//void CmdBufferBegin (CommandBufferBeginHandle &, vk::Extent2D);
-
-		//void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D);
-
-
 		void CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleRenderpassContinue,
 		                                      vk::Extent2D win,uint32_t frameIndex);
 

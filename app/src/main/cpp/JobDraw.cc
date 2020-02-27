@@ -107,47 +107,7 @@ namespace tt {
 						camUp     // Head is up (set to 0,-1,0 to look upside-down)
 				);
 	}
-/*
-	void JobDraw::CmdBufferBegin(CommandBufferBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win) {
-	}
 
-	void JobDraw::CmdBufferRenderpassBegin(RenderpassBeginHandle &cmdHandleRenderpassBegin,
-	                                       vk::Extent2D win) {
-
-		cmdHandleRenderpassBegin.setViewport(
-				0,
-				std::array{
-						vk::Viewport{
-								0, 0,
-								win.width,
-								win.height,
-								0.0f, 1.0f
-						}
-				}
-		);
-
-		cmdHandleRenderpassBegin.setScissor(0, std::array{vk::Rect2D{vk::Offset2D{}, win}});
-		cmdHandleRenderpassBegin.bindPipeline(
-				vk::PipelineBindPoint::eGraphics,
-				graphPipeline.get());
-		cmdHandleRenderpassBegin.bindDescriptorSets(
-				vk::PipelineBindPoint::eGraphics,
-				graphPipeline.layout(), 0,
-				graphPipeline.getDescriptorSets(),
-				{});
-		std::array offsets{vk::DeviceSize{0}};
-		cmdHandleRenderpassBegin.bindVertexBuffers(
-				0,
-				Bsm.desAndBuffers()[0].buffer().get(),
-				offsets);
-		cmdHandleRenderpassBegin.bindIndexBuffer(
-				Bsm.desAndBuffers()[0].buffer().get(),
-				Bsm.desAndBuffers()[0].descriptors()[1].offset, vk::IndexType::eUint32);
-		cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
-
-		//cmdHandleRenderpassBegin.executeCommands();
-	}
-*/
 	JobDraw::JobDraw(JobBase &&j, android_app *app, tt::Device &device) :
 			JobBase{std::move(j)},
 			graphPipeline{
