@@ -17,7 +17,9 @@ namespace tt {
 		PipelineResource graphPipeline;
 
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
-
+		auto getGraphisCmdBuffer(uint32_t index){
+			return cmdBuffers[index].get();
+		}
 		glm::mat4 perspective;
 		glm::vec3 camPos = glm::vec3(1, 3, 4);
 		glm::vec3 camTo = glm::vec3(0, 0, 0);

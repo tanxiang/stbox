@@ -625,11 +625,22 @@ namespace tt {
 		);
 	}
 
-	void Device::buildCmdBuffer(tt::Window &window) {
-		//std::apply([&](auto& job){job.buildCmdBuffer(window,renderPass.get());},Jobs);
+	template<typename T>
+	void buildCmdBufferHelper(tt::Window &window,const vk::RenderPass &renderPass,T& job){
+		job.buildCmdBuffer(window,renderPass);
+	}
 
-		Job<JobDrawLine>().buildCmdBuffer(window, renderPass.get());
-		Job<JobDraw>().buildCmdBuffer(window, renderPass.get());
+	template<typename T,typename ... Ts>
+	void buildCmdBufferHelper(tt::Window &window,const vk::RenderPass &renderPass,T& job,Ts &... jobs){
+		buildCmdBufferHelper(window,renderPass,job);
+		buildCmdBufferHelper(window,renderPass,jobs...);
+	}
+
+	void Device::buildCmdBuffer(tt::Window &window) {
+		std::apply([&](auto&... jobs){buildCmdBufferHelper(window,renderPass.get(),jobs...);},Jobs);
+
+		//Job<JobDrawLine>().buildCmdBuffer(window, renderPass.get());
+		//Job<JobDraw>().buildCmdBuffer(window, renderPass.get());
 
 		mainCmdBuffers = helper::createCmdBuffers(get(), renderPass.get(),
 		                                          *this,
@@ -638,12 +649,23 @@ namespace tt {
 		                                          commandPool.get());
 	}
 
+
+	template<typename T>
+	void execSubCmdBufferHelper(RenderpassBeginHandle & handle,uint32_t frameIndex,T& job){
+		handle.executeCommands(job.getGraphisCmdBuffer(frameIndex));
+	}
+
+	template<typename T,typename ... Ts>
+	void execSubCmdBufferHelper(RenderpassBeginHandle & handle,uint32_t frameIndex,T& job,Ts &... jobs){
+		execSubCmdBufferHelper(handle,frameIndex,job);
+		execSubCmdBufferHelper(handle,frameIndex,jobs...);
+	}
+
 	void Device::CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D,uint32_t frameIndex) {
 
 	}
 
 	void Device::CmdBufferRenderpassBegin(RenderpassBeginHandle & handle, vk::Extent2D,uint32_t frameIndex) {
-		handle.executeCommands(Job<JobDraw>().cmdBuffers[frameIndex].get());
-		handle.executeCommands(Job<JobDrawLine>().gcmdBuffers[frameIndex].get());
+		std::apply([&](auto&... jobs){execSubCmdBufferHelper(handle,frameIndex,jobs...);},Jobs);
 	}
 }

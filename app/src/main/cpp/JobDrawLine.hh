@@ -36,7 +36,9 @@ namespace tt {
 		vk::UniqueCommandBuffer cCommandBuffer;
 		Thread worker;
 		std::vector<vk::UniqueCommandBuffer> gcmdBuffers;
-
+		auto getGraphisCmdBuffer(uint32_t index){
+			return gcmdBuffers[index].get();
+		}
 		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 
