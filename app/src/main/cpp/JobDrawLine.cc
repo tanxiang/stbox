@@ -212,13 +212,13 @@ namespace tt {
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/indir.frag.spv", app);
 		std::array pipelineShaderStageCreateInfos{
 				vk::PipelineShaderStageCreateInfo{
-						vk::PipelineShaderStageCreateFlags(),
+						{},
 						vk::ShaderStageFlagBits::eVertex,
 						vertShaderModule.get(),
 						"main"
 				},
 				vk::PipelineShaderStageCreateInfo{
-						vk::PipelineShaderStageCreateFlags(),
+						{},
 						vk::ShaderStageFlagBits::eFragment,
 						fargShaderModule.get(),
 						"main"
@@ -241,8 +241,7 @@ namespace tt {
 		};
 
 		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
-				vk::PipelineVertexInputStateCreateFlags(),
-				vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
+				{}, vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
 				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
 		};
 		//return vk::UniquePipeline{};
@@ -286,7 +285,7 @@ namespace tt {
 		};
 
 		vk::PipelineShaderStageCreateInfo shaderStageCreateInfo{
-				vk::PipelineShaderStageCreateFlags(),
+				{},
 				vk::ShaderStageFlagBits::eCompute,
 				compShaderModule.get(),
 				"main",
@@ -294,7 +293,7 @@ namespace tt {
 		};
 
 		vk::ComputePipelineCreateInfo computePipelineCreateInfo{
-				vk::PipelineCreateFlags(),
+				{},
 				shaderStageCreateInfo,
 				pipelineLayout
 		};

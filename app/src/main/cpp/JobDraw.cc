@@ -36,13 +36,13 @@ namespace tt {
 		std::array pipelineShaderStageCreateInfos
 				{
 						vk::PipelineShaderStageCreateInfo{
-								vk::PipelineShaderStageCreateFlags(),
+								{},
 								vk::ShaderStageFlagBits::eVertex,
 								vertShaderModule.get(),
 								"main"
 						},
 						vk::PipelineShaderStageCreateInfo{
-								vk::PipelineShaderStageCreateFlags(),
+								{},
 								vk::ShaderStageFlagBits::eFragment,
 								fargShaderModule.get(),
 								"main"
@@ -65,15 +65,15 @@ namespace tt {
 				}//VK_FORMAT_R32G32_SFLOAT
 		};
 		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
-				vk::PipelineVertexInputStateCreateFlags(),
-				vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
+				{}, vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
 				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
 
 		};
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
 		                                   pipelineVertexInputStateCreateInfo,
 		                                   pipelineLayout,
-		                                   pipelineCache.get(), device.renderPass.get(),vk::PrimitiveTopology::eTriangleFan);
+		                                   pipelineCache.get(), device.renderPass.get(),
+		                                   vk::PrimitiveTopology::eTriangleFan);
 
 	}
 
@@ -81,10 +81,10 @@ namespace tt {
 //		MY_LOG(INFO)<<"jobaddr:"<<(void const *)this<<std::endl;
 
 		cmdBuffers = helper::createCmdBuffersSub(descriptorPool.getOwner(), renderPass,
-		                                      *this,
-		                                      swapchain.getFrameBuffer(),
-		                                      swapchain.getSwapchainExtent(),
-		                                      commandPool.get());
+		                                         *this,
+		                                         swapchain.getFrameBuffer(),
+		                                         swapchain.getSwapchainExtent(),
+		                                         commandPool.get());
 		setPerspective(swapchain);
 	}
 
@@ -130,13 +130,13 @@ namespace tt {
 		BAMs.emplace_back(
 				device.createBufferAndMemory(
 						sizeof(glm::mat4),
-						vk::BufferUsageFlagBits::eUniformBuffer|
+						vk::BufferUsageFlagBits::eUniformBuffer |
 						vk::BufferUsageFlagBits::eTransferSrc,
 						vk::MemoryPropertyFlagBits::eHostVisible |
 						vk::MemoryPropertyFlagBits::eHostCoherent));
 
 		std::vector<VertexUV> vertices{
-				{{0.5f,  0.5f,  0.0f, 1.0f}, {1.0f, 1.0f}},
+				{{0.5f, 0.5f, 0.0f, 1.0f}, {1.0f, 1.0f}},
 				{{-.5f, .5f,  0.0f, 1.0f}, {0.0f, 1.0f}},
 				{{-.5f, -.5f, 0.0f, 1.0f}, {0.0f, 0.0f}},
 				{{.5f,  -.5f, 0.0f, 1.0f}, {1.0f, 0.0f}}
@@ -171,7 +171,7 @@ namespace tt {
 		//uniquePipeline = createPipeline(device, app);
 
 		auto descriptorBufferInfo = //createDescriptorBufferInfoTuple(device.Job<JobDrawLine>().bufferMemoryPart, 3);
-			device.getDescriptorBufferInfo(BAMs[0]);
+				device.getDescriptorBufferInfo(BAMs[0]);
 		auto descriptorImageInfo = device.getDescriptorImageInfo(IVMs[0], sampler.get());
 
 		std::array writeDes{
@@ -190,8 +190,9 @@ namespace tt {
 		//MY_LOG(INFO)<<__FUNCTION__<<" run out";
 	}
 
-	void JobDraw::CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleRenderpassContinue,
-	                                               vk::Extent2D win,uint32_t frameIndex) {
+	void
+	JobDraw::CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleRenderpassContinue,
+	                                          vk::Extent2D win, uint32_t frameIndex) {
 		cmdHandleRenderpassContinue.setViewport(
 				0,
 				std::array{
