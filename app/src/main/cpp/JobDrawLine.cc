@@ -86,8 +86,8 @@ namespace tt {
 		std::array descriptors{
 				createDescriptorBufferInfoTuple(bufferMemoryPart, 0),
 				createDescriptorBufferInfoTuple(bufferMemoryPart, 1),
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 3)
-
+				//createDescriptorBufferInfoTuple(bufferMemoryPart, 3)
+				device.getDescriptorBufferInfo(device.Job<JobDraw>().BAMs[0])
 		};
 		std::array writeDes{
 				vk::WriteDescriptorSet{
@@ -229,11 +229,7 @@ namespace tt {
 				vk::VertexInputBindingDescription{
 						0, sizeof(float) * 8,
 						vk::VertexInputRate::eVertex
-				},
-				//vk::VertexInputBindingDescription{
-				//		1, sizeof(glm::mat4),
-				//		vk::VertexInputRate::eInstance
-				//},
+				}
 		};
 		std::array vertexInputAttributeDescriptions{
 				vk::VertexInputAttributeDescription{
@@ -241,17 +237,13 @@ namespace tt {
 				},
 				vk::VertexInputAttributeDescription{
 						1, 0, vk::Format::eR32G32B32A32Sfloat, 16
-				},
-				//vk::VertexInputAttributeDescription{
-				//		2, 1, vk::Format::eR32G32B32A32Sfloat, 0
-				//},//VK_FORMAT_R32G32_SFLOAT
+				}
 		};
 
 		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
 				vk::PipelineVertexInputStateCreateFlags(),
 				vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
 				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
-
 		};
 		//return vk::UniquePipeline{};
 
@@ -260,7 +252,7 @@ namespace tt {
 		                                   pipelineLayout,
 		                                   pipelineCache.get(),
 		                                   device.renderPass.get(),
-		                                   vk::PrimitiveTopology::eLineStrip);
+		                                   vk::PrimitiveTopology::eTriangleStrip);
 	}
 
 	vk::UniquePipeline JobDrawLine::createComputePipeline(tt::Device &device, android_app *app,

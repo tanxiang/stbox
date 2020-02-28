@@ -8,13 +8,11 @@ layout (binding = 0) uniform bufferVals {
 
 layout (location = 0) in vec4 inPos;
 layout (location = 1) in vec4 inColor;
-
 //layout (location = 2) in vec4 inIns;
-
 
 layout (location = 0) out vec4 outColor;
 
 void main() {
-    outColor = inColor;
+    outColor = vec4(0.8,0.8,0.8,0.5);
     gl_Position = myBufferVals.mvp * inPos;
 }

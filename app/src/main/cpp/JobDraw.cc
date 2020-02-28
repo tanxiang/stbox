@@ -73,7 +73,7 @@ namespace tt {
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
 		                                   pipelineVertexInputStateCreateInfo,
 		                                   pipelineLayout,
-		                                   pipelineCache.get(), device.renderPass.get());
+		                                   pipelineCache.get(), device.renderPass.get(),vk::PrimitiveTopology::eTriangleFan);
 
 	}
 
@@ -141,7 +141,7 @@ namespace tt {
 				{{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
 				{{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
 		};
-		std::array indexes{0u, 1u, 2u, 2u, 3u, 0u};
+		std::array indexes{0u, 1u, 2u, 3u};
 		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eVertexBuffer |
 		                             vk::BufferUsageFlagBits::eIndexBuffer, vertices, indexes);
 		//device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eIndexBuffer, indexes);
@@ -170,7 +170,8 @@ namespace tt {
 
 		//uniquePipeline = createPipeline(device, app);
 
-		auto descriptorBufferInfo = device.getDescriptorBufferInfo(BAMs[0]);
+		auto descriptorBufferInfo = //createDescriptorBufferInfoTuple(device.Job<JobDrawLine>().bufferMemoryPart, 3);
+			device.getDescriptorBufferInfo(BAMs[0]);
 		auto descriptorImageInfo = device.getDescriptorImageInfo(IVMs[0], sampler.get());
 
 		std::array writeDes{
@@ -220,6 +221,6 @@ namespace tt {
 		cmdHandleRenderpassContinue.bindIndexBuffer(
 				Bsm.desAndBuffers()[0].buffer().get(),
 				Bsm.desAndBuffers()[0].descriptors()[1].offset, vk::IndexType::eUint32);
-		cmdHandleRenderpassContinue.drawIndexed(6, 1, 0, 0, 0);
+		cmdHandleRenderpassContinue.drawIndexed(4, 1, 0, 0, 0);
 	}
 };

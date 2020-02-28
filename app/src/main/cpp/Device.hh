@@ -188,24 +188,28 @@ namespace tt {
 				renderPass{createRenderpass(renderPassFormat)},
 				commandPool{
 						get().createCommandPoolUnique(vk::CommandPoolCreateInfo{
-								vk::CommandPoolCreateFlagBits::eResetCommandBuffer, gQueueFamilyIndex}
+								vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+								gQueueFamilyIndex}
 						)
 				},
-				Jobs{std::make_tuple(
-						createJobBase(
-								{
-										vk::DescriptorPoolSize{
-												vk::DescriptorType::eUniformBuffer, 1
+				Jobs{
+						JobDraw::create(app, *this),
+						std::make_tuple(
+								createJobBase(
+										{
+												vk::DescriptorPoolSize{
+														vk::DescriptorType::eUniformBuffer, 1
+												},
+												vk::DescriptorPoolSize{
+														vk::DescriptorType::eStorageBuffer, 3
+												}
 										},
-										vk::DescriptorPoolSize{
-												vk::DescriptorType::eStorageBuffer, 3
-										}
-								},
-								2
+										2
+								),
+								app,
+								this
 						),
-						app,
-						this),
-				     JobDraw::create(app, *this)} {
+				} {
 
 		}
 
@@ -582,7 +586,7 @@ namespace tt {
 
 		//std::vector<JobDraw> drawJobs;
 	private:
-		std::tuple<JobDrawLine, JobDraw> Jobs;
+		std::tuple<JobDraw, JobDrawLine> Jobs;
 	public:
 		std::vector<vk::UniqueCommandBuffer> mainCmdBuffers;
 
@@ -591,14 +595,14 @@ namespace tt {
 			return std::get<JobType>(Jobs);
 		}
 
-		std::array<vk::ClearValue,2> clearValues{
+		std::array<vk::ClearValue, 2> clearValues{
 				vk::ClearColorValue{std::array<float, 4>{0.1f, 0.2f, 0.2f, 0.2f}},
 				vk::ClearDepthStencilValue{1.0f, 0},
 		};
 
-		void CmdBufferBegin (CommandBufferBeginHandle &, vk::Extent2D,uint32_t frameIndex);
+		void CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D, uint32_t frameIndex);
 
-		void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D,uint32_t frameIndex);
+		void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D, uint32_t frameIndex);
 
 		void buildCmdBuffer(tt::Window &window);
 	};
