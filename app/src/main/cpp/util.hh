@@ -195,10 +195,10 @@ namespace tt {
 			};
 		}
 
-		template<typename JobType>
+		template<typename Type>
 		auto createCmdBuffers(vk::Device device,
 		                      vk::RenderPass renderPass,
-		                      JobType &job,
+		                      Type &type,
 		                      std::vector<vk::UniqueFramebuffer> &framebuffers,
 		                      vk::Extent2D extent2D,
 		                      vk::CommandPool pool) {
@@ -216,7 +216,7 @@ namespace tt {
 				//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
 				{
 					CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
-					job.CmdBufferBegin(cmdBeginHandle, extent2D,frameIndex);
+					type.CmdBufferBegin(cmdBeginHandle, extent2D, frameIndex);
 					{
 						RenderpassBeginHandle cmdHandleRenderpassBegin{
 								cmdBeginHandle,
@@ -227,10 +227,10 @@ namespace tt {
 												vk::Offset2D{},
 												extent2D
 										},
-										job.clearValues.size(), job.clearValues.data()
+										type.clearValues.size(), type.clearValues.data()
 								}
 						};
-						job.CmdBufferRenderpassBegin(cmdHandleRenderpassBegin, extent2D,frameIndex);
+						type.CmdBufferRenderpassBegin(cmdHandleRenderpassBegin, extent2D, frameIndex);
 					}
 
 				}
