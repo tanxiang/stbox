@@ -12,7 +12,7 @@ namespace tt {
 		// Read the file
 		auto fileContent = loadDataFromAssets(filePath, androidAppCtx);
 		return get().createShaderModuleUnique(vk::ShaderModuleCreateInfo{
-				vk::ShaderModuleCreateFlags(), fileContent.size(),
+				{}, fileContent.size(),
 				reinterpret_cast<const uint32_t *>(fileContent.data())});
 
 	}
@@ -87,7 +87,7 @@ namespace tt {
 		renderPassFormat = surfaceDefaultFormat;
 		std::array attachDescs{
 				vk::AttachmentDescription{
-						vk::AttachmentDescriptionFlags(),
+						{},
 						renderPassFormat,
 						vk::SampleCountFlagBits::e1,
 						vk::AttachmentLoadOp::eClear,
@@ -98,7 +98,7 @@ namespace tt {
 						vk::ImageLayout::ePresentSrcKHR
 				},
 				vk::AttachmentDescription{
-						vk::AttachmentDescriptionFlags(),
+						{},
 						depthFormat,
 						vk::SampleCountFlagBits::e1,
 						vk::AttachmentLoadOp::eClear,
@@ -119,7 +119,7 @@ namespace tt {
 		};
 		std::array subpassDescs{
 				vk::SubpassDescription{
-						vk::SubpassDescriptionFlags(),
+						{},
 						vk::PipelineBindPoint::eGraphics,
 						0, nullptr,
 						attachmentRefs.size(), attachmentRefs.data(),
@@ -148,7 +148,7 @@ namespace tt {
 				}
 		};
 		return get().createRenderPassUnique(vk::RenderPassCreateInfo{
-				vk::RenderPassCreateFlags(),
+				{},
 				attachDescs.size(), attachDescs.data(),
 				subpassDescs.size(), subpassDescs.data(),
 				subpassDeps.size(), subpassDeps.data()
@@ -177,7 +177,7 @@ namespace tt {
 		ImageViewMemory IVM{};
 		std::get<vk::UniqueImage>(IVM) = get().createImageUnique(
 				vk::ImageCreateInfo{
-						vk::ImageCreateFlags(),
+						{},
 						vk::ImageType::e2D,
 						format,
 						extent3D,
@@ -198,7 +198,7 @@ namespace tt {
 		                      std::get<vk::UniqueDeviceMemory>(IVM).get(), 0);
 
 		std::get<vk::UniqueImageView>(IVM) = get().createImageViewUnique(
-				vk::ImageViewCreateInfo{vk::ImageViewCreateFlags(),
+				vk::ImageViewCreateInfo{{},
 				                        std::get<vk::UniqueImage>(IVM).get(),
 				                        vk::ImageViewType::e2D,
 				                        format,
@@ -331,7 +331,7 @@ namespace tt {
 		BufferMemory BM{};
 		std::get<vk::UniqueBuffer>(BM) = get().createBufferUnique(
 				vk::BufferCreateInfo{
-						vk::BufferCreateFlags(),
+						{},
 						dataSize,
 						bufferUsageFlags}
 		);
@@ -352,7 +352,7 @@ namespace tt {
 	Device::createLocalBufferMemory(size_t dataSize,vk::BufferUsageFlags flags){
 		vk::UniqueBuffer buffer = get().createBufferUnique(
 				vk::BufferCreateInfo{
-						vk::BufferCreateFlags(),
+						{},
 						dataSize,
 						flags}
 		);
@@ -550,7 +550,7 @@ namespace tt {
 	                                 size_t srcoff, size_t decoff) {
 		auto bufferDst = get().createBufferUnique(
 				vk::BufferCreateInfo{
-						vk::BufferCreateFlags(),
+						{},
 						size,
 						vk::BufferUsageFlagBits::eTransferDst}
 		);
@@ -576,7 +576,7 @@ namespace tt {
 				MY_LOG(ERROR) << "fixme default_queue_index :" << i
 				              << "\tgetSurfaceSupportKHR:true";
 				deviceQueueCreateInfos.emplace_back(
-						vk::DeviceQueueCreateFlags(), i,
+						vk::DeviceQueueCreateFlagBits{}, i,
 						queueFamilyProperties[i].queueCount, queuePriorities.data()
 				);
 				continue;
@@ -612,7 +612,7 @@ namespace tt {
 
 		return phyDevice.createDeviceUnique(
 				vk::DeviceCreateInfo{
-						vk::DeviceCreateFlags(),
+						{},
 						deviceQueueCreateInfos.size(),
 						deviceQueueCreateInfos.data(),
 						deviceLayerPropertiesName.size(),
