@@ -546,7 +546,8 @@ namespace tt {
 				vk::PipelineLayout pipelineLayout,
 				vk::PipelineCache pipelineCache,
 				vk::RenderPass jobRenderPass,
-				vk::PrimitiveTopology primitiveTopology = vk::PrimitiveTopology::eTriangleStrip
+				vk::PrimitiveTopology primitiveTopology = vk::PrimitiveTopology::eTriangleStrip,
+				vk::PolygonMode polygonMode = vk::PolygonMode::eFill
 		);
 
 		std::vector<vk::UniqueCommandBuffer>

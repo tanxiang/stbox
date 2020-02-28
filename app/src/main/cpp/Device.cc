@@ -437,27 +437,26 @@ namespace tt {
 			vk::PipelineLayout pipelineLayout,
 			vk::PipelineCache pipelineCache,
 			vk::RenderPass jobRenderPass,
-			vk::PrimitiveTopology primitiveTopology) {
+			vk::PrimitiveTopology primitiveTopology,
+			vk::PolygonMode polygonMode) {
 
 		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo{
-				vk::PipelineInputAssemblyStateCreateFlags(), primitiveTopology
+				{}, primitiveTopology
 		};
 
 		std::array dynamicStates{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 		vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{
-				vk::PipelineDynamicStateCreateFlags(), dynamicStates.size(), dynamicStates.data()};
+				{}, dynamicStates.size(), dynamicStates.data()};
 
 
 		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo{
-				vk::PipelineRasterizationStateCreateFlags(),
-				0, 0, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
+				{}, 0, 0,polygonMode, vk::CullModeFlagBits::eNone,
 				vk::FrontFace::eClockwise, 0,
 				0, 0, 0, 1.0f
 		};
 
 		vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{
-				vk::PipelineDepthStencilStateCreateFlags(),
-				true, true,
+				{}, true, true,
 				vk::CompareOp::eLessOrEqual,
 				false, false,
 				vk::StencilOpState{
@@ -483,15 +482,14 @@ namespace tt {
 		};
 
 		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo{
-				vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eCopy, 1,
+				{}, false, vk::LogicOp::eCopy, 1,
 				&pipelineColorBlendAttachmentState
 		};
 		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{
-				vk::PipelineMultisampleStateCreateFlags(), vk::SampleCountFlagBits::e1};
+				{}, vk::SampleCountFlagBits::e1};
 
 		vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
-				vk::PipelineCreateFlags(),
-				pipelineShaderStageCreateInfos.size(), pipelineShaderStageCreateInfos.data(),
+				{}, pipelineShaderStageCreateInfos.size(), pipelineShaderStageCreateInfos.data(),
 				&pipelineVertexInputStateCreateInfo,
 				&pipelineInputAssemblyStateCreateInfo,
 				nullptr,

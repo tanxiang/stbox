@@ -136,10 +136,10 @@ namespace tt {
 						vk::MemoryPropertyFlagBits::eHostCoherent));
 
 		std::vector<VertexUV> vertices{
-				{{1.0f,  1.0f,  0.0f, 1.0f}, {1.0f, 1.0f}},
-				{{-1.0f, 1.0f,  0.0f, 1.0f}, {0.0f, 1.0f}},
-				{{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-				{{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
+				{{0.5f,  0.5f,  0.0f, 1.0f}, {1.0f, 1.0f}},
+				{{-.5f, .5f,  0.0f, 1.0f}, {0.0f, 1.0f}},
+				{{-.5f, -.5f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+				{{.5f,  -.5f, 0.0f, 1.0f}, {1.0f, 0.0f}}
 		};
 		std::array indexes{0u, 1u, 2u, 3u};
 		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eVertexBuffer |
