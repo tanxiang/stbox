@@ -251,7 +251,7 @@ namespace tt {
 		                                   pipelineLayout,
 		                                   pipelineCache.get(),
 		                                   device.renderPass.get(),
-		                                   vk::PrimitiveTopology::eTriangleStrip);
+		                                   vk::PrimitiveTopology::eTriangleFan);
 	}
 
 	vk::UniquePipeline JobDrawLine::createComputePipeline(tt::Device &device, android_app *app,
@@ -325,28 +325,24 @@ namespace tt {
 						}
 				}
 		);
-
-		cmdHandleRenderpassBegin.setScissor(0, std::array{vk::Rect2D{vk::Offset2D{}, win}});
-
+		cmdHandleRenderpassBegin.setScissor(0, std::array{vk::Rect2D{{}, win}});
 		cmdHandleRenderpassBegin.bindPipeline(
 				vk::PipelineBindPoint::eGraphics,
 				graphPipeline.get());
 
 		cmdHandleRenderpassBegin.bindDescriptorSets(
 				vk::PipelineBindPoint::eGraphics,
-				graphPipeline.layout(),
-				0,
+				graphPipeline.layout(), 0,
 				graphPipeline.getDescriptorSets(),
 				{}
 		);
 
 		cmdHandleRenderpassBegin.bindVertexBuffers(
-				1,
-				{std::get<vk::UniqueBuffer>(bufferMemoryPart).get()},
+				0, {std::get<vk::UniqueBuffer>(bufferMemoryPart).get()},
 				{createDescriptorBufferInfoTuple(bufferMemoryPart, 1).offset}
 		);
 
-		cmdHandleRenderpassBegin.draw(32, 0, 0, 0);
+		cmdHandleRenderpassBegin.draw(32, 1, 0, 0);
 	}
 
 	void JobDrawLine::setMVP(tt::Device& device,vk::Buffer buffer) {

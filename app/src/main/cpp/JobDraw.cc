@@ -78,8 +78,6 @@ namespace tt {
 	}
 
 	void JobDraw::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
-//		MY_LOG(INFO)<<"jobaddr:"<<(void const *)this<<std::endl;
-
 		cmdBuffers = helper::createCmdBuffersSub(descriptorPool.getOwner(), renderPass,
 		                                         *this,
 		                                         swapchain.getFrameBuffer(),
@@ -205,7 +203,7 @@ namespace tt {
 				}
 		);
 
-		cmdHandleRenderpassContinue.setScissor(0, std::array{vk::Rect2D{vk::Offset2D{}, win}});
+		cmdHandleRenderpassContinue.setScissor(0, std::array{vk::Rect2D{{}, win}});
 		cmdHandleRenderpassContinue.bindPipeline(
 				vk::PipelineBindPoint::eGraphics,
 				graphPipeline.get());
