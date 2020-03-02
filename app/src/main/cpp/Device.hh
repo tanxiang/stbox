@@ -193,7 +193,6 @@ namespace tt {
 						)
 				},
 				Jobs{
-						JobDraw::create(app, *this),
 						std::make_tuple(
 								createJobBase(
 										{
@@ -209,6 +208,7 @@ namespace tt {
 								app,
 								this
 						),
+						JobDraw::create(app, *this),
 				} {
 
 		}
@@ -587,7 +587,7 @@ namespace tt {
 
 		//std::vector<JobDraw> drawJobs;
 	private:
-		std::tuple<JobDraw, JobDrawLine> Jobs;
+		std::tuple<JobDrawLine,JobDraw> Jobs;
 	public:
 		std::vector<vk::UniqueCommandBuffer> mainCmdBuffers;
 

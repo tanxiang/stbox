@@ -54,14 +54,14 @@ namespace tt {
 			} {
 
 		std::array vertices{
-				Vertex{{1.0f, 1.0f, 0.0f, 1.0f},
-				       {1.0f, 1.0f, 1.0f, 1.0f}},
-				Vertex{{-1.0f, 1.0f, 0.0f, 1.0f},
-				       {1.0f,  1.0f, 1.0f, 1.0f}},
+				Vertex{{1.0f, 1.0f, -1.0f, 1.0f},
+				       {1.0f, .0f, .0f, 1.0f}},
+				Vertex{{-1.0f, 1.0f, -1.0f, 1.0f},
+				       {.0f,  1.0f, .0f, 1.0f}},
 				Vertex{{-1.0f, -1.0f, 1.0f, 1.0f},
-				       {1.0f,  1.0f,  1.0f, 1.0f}},
+				       {.0f,  .0f,  1.0f, 1.0f}},
 				Vertex{{1.0f, 1.0f, 1.0f, 1.0f},
-				       {1.0f, 1.0f, 1.0f, 1.0f}}
+				       {1.0f, 1.0f, 1.0f, 0.0f}}
 		};
 
 		bufferMemoryPart = device.createBufferPartsOnObjs(
@@ -86,8 +86,8 @@ namespace tt {
 		std::array descriptors{
 				createDescriptorBufferInfoTuple(bufferMemoryPart, 0),
 				createDescriptorBufferInfoTuple(bufferMemoryPart, 1),
-				//createDescriptorBufferInfoTuple(bufferMemoryPart, 3)
-				device.getDescriptorBufferInfo(device.Job<JobDraw>().BAMs[0])
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 3)
+				//device.getDescriptorBufferInfo(device.Job<JobDraw>().BAMs[0])
 		};
 		std::array writeDes{
 				vk::WriteDescriptorSet{

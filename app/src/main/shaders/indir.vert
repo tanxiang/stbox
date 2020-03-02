@@ -13,6 +13,6 @@ layout (location = 1) in vec4 inColor;
 layout (location = 0) out vec4 outColor;
 
 void main() {
-    outColor = vec4(0.8,0.8,0.8,0.5);
+    outColor = inColor;
     gl_Position = myBufferVals.mvp * inPos;
 }
