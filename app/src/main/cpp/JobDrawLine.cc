@@ -33,6 +33,10 @@ namespace tt {
 							vk::DescriptorSetLayoutBinding{
 									1, vk::DescriptorType::eStorageBuffer,
 									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									2, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
 							}
 					}
 			},
@@ -86,6 +90,7 @@ namespace tt {
 		std::array descriptors{
 				createDescriptorBufferInfoTuple(bufferMemoryPart, 0),
 				createDescriptorBufferInfoTuple(bufferMemoryPart, 1),
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 2),
 				createDescriptorBufferInfoTuple(bufferMemoryPart, 3)
 				//device.getDescriptorBufferInfo(device.Job<JobDraw>().BAMs[0])
 		};
@@ -101,9 +106,14 @@ namespace tt {
 						nullptr, &descriptors[1]
 				},
 				vk::WriteDescriptorSet{
+						compPipeline.getDescriptorSet(), 2, 0, 1,
+						vk::DescriptorType::eStorageBuffer,
+						nullptr, &descriptors[2]
+				},
+				vk::WriteDescriptorSet{
 						graphPipeline.getDescriptorSet(), 0, 0, 1,
 						vk::DescriptorType::eUniformBuffer,
-						nullptr, &descriptors[2]
+						nullptr, &descriptors[3]
 				}
 		};
 
@@ -342,7 +352,8 @@ namespace tt {
 				{createDescriptorBufferInfoTuple(bufferMemoryPart, 1).offset}
 		);
 
-		cmdHandleRenderpassBegin.draw(32, 1, 0, 0);
+		cmdHandleRenderpassBegin.drawIndirect(std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),createDescriptorBufferInfoTuple(bufferMemoryPart, 2).offset,1,0);
+		//cmdHandleRenderpassBegin.draw(32, 1, 0, 0);
 	}
 
 	void JobDrawLine::setMVP(tt::Device& device,vk::Buffer buffer) {
