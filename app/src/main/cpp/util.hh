@@ -115,6 +115,11 @@ namespace tt {
 		using std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory,std::array<uint32_t ,N>>::tuple;
 	};
 
+	template <uint N>
+	struct BufferImageMemoryWithParts :public std::tuple<vk::UniqueBuffer,vk::UniqueImage, vk::UniqueDeviceMemory,std::array<uint32_t ,N>>{
+		using std::tuple<vk::UniqueBuffer,vk::UniqueImage,vk::UniqueDeviceMemory,std::array<uint32_t ,N>>::tuple;
+	};
+
 	template< template<uint> typename Tuple,uint N >
 	auto createDescriptorBufferInfoTuple(const Tuple<N> &tuple,uint32_t n){
 		auto &parts =std::get<std::array<uint32_t ,N>>(tuple);
@@ -272,6 +277,16 @@ namespace tt {
 			return commandBuffers;
 		}
 
+	}
+
+	template <typename textureType>
+	vk::ImageCreateInfo e2dImageCreateInfoByTextuer(textureType& texture,vk::ImageCreateFlags flags){
+	 return {
+	 	flags,vk::ImageType::e2D, static_cast<vk::Format >(texture.format()),
+	    {texture.extent().x,texture.extent().y,1},texture.levels(),texture.faces(),
+	    vk::SampleCountFlagBits::e1,vk::ImageTiling::eOptimal,
+	    vk::ImageUsageFlagBits::eSampled|vk::ImageUsageFlagBits::eTransferDst
+	 };
 	}
 }
 

@@ -13,9 +13,21 @@ struct Vertex {
 
 namespace tt {
 
-	JobDrawLine::JobDrawLine(JobBase &&j, android_app *app, tt::Device &device) :
-			JobBase{std::move(j)},
-			renderPass{createRenderpass(device)},
+	JobDrawLine::JobDrawLine(android_app *app, tt::Device &device) :
+			JobBase{
+					device.createJobBase(
+							{
+									vk::DescriptorPoolSize{
+											vk::DescriptorType::eUniformBuffer, 1
+									},
+									vk::DescriptorPoolSize{
+											vk::DescriptorType::eStorageBuffer, 3
+									}
+							},
+							2
+					)
+			},
+			//renderPass{createRenderpass(device)},
 			compPipeline{
 					device.get(),
 					descriptorPool.get(),
@@ -59,11 +71,11 @@ namespace tt {
 
 		std::array vertices{
 				Vertex{{1.0f, 1.0f, -1.0f, 1.0f},
-				       {1.0f, .0f, .0f, 1.0f}},
+				       {1.0f, .0f,  .0f,   1.0f}},
 				Vertex{{-1.0f, 1.0f, -1.0f, 1.0f},
-				       {.0f,  1.0f, .0f, 1.0f}},
+				       {.0f,   1.0f, .0f,   1.0f}},
 				Vertex{{-1.0f, -1.0f, 1.0f, 1.0f},
-				       {.0f,  .0f,  1.0f, 1.0f}},
+				       {.0f,   .0f,   1.0f, 1.0f}},
 				Vertex{{1.0f, 1.0f, 1.0f, 1.0f},
 				       {1.0f, 1.0f, 1.0f, 0.0f}}
 		};
@@ -92,7 +104,6 @@ namespace tt {
 				createDescriptorBufferInfoTuple(bufferMemoryPart, 1),
 				createDescriptorBufferInfoTuple(bufferMemoryPart, 2),
 				createDescriptorBufferInfoTuple(bufferMemoryPart, 3)
-				//device.getDescriptorBufferInfo(device.Job<JobDraw>().BAMs[0])
 		};
 		std::array writeDes{
 				vk::WriteDescriptorSet{
@@ -211,9 +222,9 @@ namespace tt {
 	}
 
 
-	vk::UniqueRenderPass JobDrawLine::createRenderpass(tt::Device &) {
-		return vk::UniqueRenderPass();
-	}
+	//vk::UniqueRenderPass JobDrawLine::createRenderpass(tt::Device &) {
+	//	return vk::UniqueRenderPass();
+	//}
 
 	vk::UniquePipeline JobDrawLine::createGraphsPipeline(tt::Device &device, android_app *app,
 	                                                     vk::PipelineLayout pipelineLayout) {
@@ -322,7 +333,8 @@ namespace tt {
 	}
 
 	void JobDrawLine::CmdBufferRenderPassContinueBegin(
-			CommandBufferBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win,uint32_t frameIndex) {
+			CommandBufferBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win,
+			uint32_t frameIndex) {
 
 		cmdHandleRenderpassBegin.setViewport(
 				0,
@@ -352,11 +364,13 @@ namespace tt {
 				{createDescriptorBufferInfoTuple(bufferMemoryPart, 1).offset}
 		);
 
-		cmdHandleRenderpassBegin.drawIndirect(std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),createDescriptorBufferInfoTuple(bufferMemoryPart, 2).offset,1,0);
+		cmdHandleRenderpassBegin.drawIndirect(std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
+		                                      createDescriptorBufferInfoTuple(bufferMemoryPart,
+		                                                                      2).offset, 1, 0);
 		//cmdHandleRenderpassBegin.draw(32, 1, 0, 0);
 	}
 
-	void JobDrawLine::setMVP(tt::Device& device,vk::Buffer buffer) {
+	void JobDrawLine::setMVP(tt::Device &device, vk::Buffer buffer) {
 		device.flushBufferToBuffer(
 				buffer,
 				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),

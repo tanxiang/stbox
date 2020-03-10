@@ -22,12 +22,7 @@ namespace tt {
 
 	struct JobDrawLine : public JobBase{
 		vk::UniqueRenderPass renderPass;
-		vk::UniqueRenderPass createRenderpass(tt::Device &);
-
-		std::array<vk::ClearValue, 2> clearValues{
-				vk::ClearColorValue{std::array<float, 4>{0.1f, 0.5f, 0.5f, 0.2f}},
-				vk::ClearDepthStencilValue{1.0f, 0},
-		};
+		//vk::UniqueRenderPass createRenderpass(tt::Device &);
 
 		PipelineResource compPipeline;
 		PipelineResource graphPipeline;
@@ -46,10 +41,10 @@ namespace tt {
 
 		//static JobBase createBase(tt::Device &device);
 
-		JobDrawLine(JobBase&& j,android_app *app,tt::Device &device);
+		JobDrawLine(android_app *app,tt::Device &device);
 
 		template <typename tupleType>
-		JobDrawLine(tupleType args):JobDrawLine(std::move(std::get<JobBase>(args)),std::get<android_app*>(args),*std::get<tt::Device*>(args)){}
+		JobDrawLine(tupleType args):JobDrawLine(std::get<android_app*>(args),*std::get<tt::Device*>(args)){}
 
 		void buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass);
 

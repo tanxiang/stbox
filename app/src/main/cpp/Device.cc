@@ -259,68 +259,7 @@ namespace tt {
 				},
 				imageSubresourceRange
 		);
-		{
-			auto transferSrcBuffer = createStagingBufferMemoryOnObjs(t2d.size());
-			{
-				auto sampleBufferPtr = mapBufferMemory(transferSrcBuffer);
-				memcpy(sampleBufferPtr.get(), t2d.data(), t2d.size());
-			}
-
-			vk::ImageMemoryBarrier imageMemoryBarrierToDest{
-					vk::AccessFlags{}, vk::AccessFlagBits::eTransferWrite,
-					vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 0, 0,
-					std::get<vk::UniqueImage>(imageAndMemory).get(),
-					imageSubresourceRange
-			};
-			std::vector<vk::BufferImageCopy> bufferCopyRegion;
-			for (int i = 0, offset = 0; i < t2d.levels(); ++i) {
-				MY_LOG(INFO) << "BufferImageCopy" << t2d[i].extent().x << 'X' << t2d[i].extent().y;
-				bufferCopyRegion.emplace_back(
-						offset, 0, 0,
-						vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, i, 0, 1},
-						vk::Offset3D{},
-						vk::Extent3D{t2d[i].extent().x, t2d[i].extent().y, 1});
-				offset += t2d[i].size();
-			}
-
-			auto copyCmd = createCmdBuffers(
-					1, gPoolUnique.get(),
-					[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
-						commandBufferBeginHandle.pipelineBarrier(
-								vk::PipelineStageFlagBits::eHost,
-								vk::PipelineStageFlagBits::eTransfer,
-								vk::DependencyFlags{},
-								0, nullptr,
-								0, nullptr,
-								1, &imageMemoryBarrierToDest);
-
-						commandBufferBeginHandle.copyBufferToImage(
-								std::get<vk::UniqueBuffer>(transferSrcBuffer).get(),
-								std::get<vk::UniqueImage>(imageAndMemory).get(),
-								vk::ImageLayout::eTransferDstOptimal,
-								bufferCopyRegion);
-						vk::ImageMemoryBarrier imageMemoryBarrierToGeneral{
-								vk::AccessFlagBits::eTransferWrite,
-								vk::AccessFlagBits::eShaderRead,
-								vk::ImageLayout::eTransferDstOptimal,
-								vk::ImageLayout::eShaderReadOnlyOptimal, 0, 0,
-								std::get<vk::UniqueImage>(imageAndMemory).get(),
-								imageSubresourceRange
-						};
-						commandBufferBeginHandle.pipelineBarrier(
-								vk::PipelineStageFlagBits::eTransfer,
-								vk::PipelineStageFlagBits::eFragmentShader,
-								vk::DependencyFlags{},
-								0, nullptr,
-								0, nullptr,
-								1, &imageMemoryBarrierToGeneral);
-					},
-					vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-			);
-
-			auto copyFence = submitCmdBuffer(copyCmd[0].get());
-			waitFence(copyFence.get());
-		}
+		writeTextureToImage(t2d,std::get<vk::UniqueImage>(imageAndMemory).get());
 		return imageAndMemory;
 	}
 
@@ -349,7 +288,7 @@ namespace tt {
 	}
 
 	LocalBufferMemory
-	Device::createLocalBufferMemory(size_t dataSize,vk::BufferUsageFlags flags){
+	Device::createLocalBufferMemory(size_t dataSize, vk::BufferUsageFlags flags) {
 		vk::UniqueBuffer buffer = get().createBufferUnique(
 				vk::BufferCreateInfo{
 						{},
@@ -365,8 +304,8 @@ namespace tt {
 				memoryRequirements.size, typeIndex
 		});
 
-		get().bindBufferMemory(buffer.get(),memory.get(),0);
-		return LocalBufferMemory{std::move(buffer),std::move(memory)};
+		get().bindBufferMemory(buffer.get(), memory.get(), 0);
+		return LocalBufferMemory{std::move(buffer), std::move(memory)};
 	}
 
 
@@ -402,9 +341,10 @@ namespace tt {
 			auto copyCmd = createCmdBuffers(
 					1, gPoolUnique.get(),
 					[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
-						commandBufferBeginHandle.copyBuffer(std::get<vk::UniqueBuffer>(StagingBufferMemory).get(),
-						                                    std::get<vk::UniqueBuffer>(BAM2).get(),
-						                                    {vk::BufferCopy{0, 0, offset}});
+						commandBufferBeginHandle.copyBuffer(
+								std::get<vk::UniqueBuffer>(StagingBufferMemory).get(),
+								std::get<vk::UniqueBuffer>(BAM2).get(),
+								{vk::BufferCopy{0, 0, offset}});
 					},
 					vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 
@@ -450,7 +390,7 @@ namespace tt {
 
 
 		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo{
-				{}, 0, 0,polygonMode, vk::CullModeFlagBits::eNone,
+				{}, 0, 0, polygonMode, vk::CullModeFlagBits::eNone,
 				vk::FrontFace::eClockwise, 0,
 				0, 0, 0, 1.0f
 		};
@@ -624,18 +564,20 @@ namespace tt {
 	}
 
 	template<typename T>
-	void buildCmdBufferHelper(tt::Window &window,const vk::RenderPass &renderPass,T& job){
-		job.buildCmdBuffer(window,renderPass);
+	void buildCmdBufferHelper(tt::Window &window, const vk::RenderPass &renderPass, T &job) {
+		job.buildCmdBuffer(window, renderPass);
 	}
 
-	template<typename T,typename ... Ts>
-	void buildCmdBufferHelper(tt::Window &window,const vk::RenderPass &renderPass,T& job,Ts &... jobs){
-		buildCmdBufferHelper(window,renderPass,job);
-		buildCmdBufferHelper(window,renderPass,jobs...);
+	template<typename T, typename ... Ts>
+	void buildCmdBufferHelper(tt::Window &window, const vk::RenderPass &renderPass, T &job,
+	                          Ts &... jobs) {
+		buildCmdBufferHelper(window, renderPass, job);
+		buildCmdBufferHelper(window, renderPass, jobs...);
 	}
 
 	void Device::buildCmdBuffer(tt::Window &window) {
-		std::apply([&](auto&... jobs){buildCmdBufferHelper(window,renderPass.get(),jobs...);},Jobs);
+		std::apply([&](auto &... jobs) { buildCmdBufferHelper(window, renderPass.get(), jobs...); },
+		           Jobs);
 
 		//Job<JobDrawLine>().buildCmdBuffer(window, renderPass.get());
 		//Job<JobDraw>().buildCmdBuffer(window, renderPass.get());
@@ -649,21 +591,160 @@ namespace tt {
 
 
 	template<typename T>
-	void execSubCmdBufferHelper(RenderpassBeginHandle & handle,uint32_t frameIndex,T& job){
+	void execSubCmdBufferHelper(RenderpassBeginHandle &handle, uint32_t frameIndex, T &job) {
 		handle.executeCommands(job.getGraphisCmdBuffer(frameIndex));
 	}
 
-	template<typename T,typename ... Ts>
-	void execSubCmdBufferHelper(RenderpassBeginHandle & handle,uint32_t frameIndex,T& job,Ts &... jobs){
-		execSubCmdBufferHelper(handle,frameIndex,job);
-		execSubCmdBufferHelper(handle,frameIndex,jobs...);
+	template<typename T, typename ... Ts>
+	void execSubCmdBufferHelper(RenderpassBeginHandle &handle, uint32_t frameIndex, T &job,
+	                            Ts &... jobs) {
+		execSubCmdBufferHelper(handle, frameIndex, job);
+		execSubCmdBufferHelper(handle, frameIndex, jobs...);
 	}
 
-	void Device::CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D,uint32_t frameIndex) {
+	void Device::CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D, uint32_t frameIndex) {
 
 	}
 
-	void Device::CmdBufferRenderpassBegin(RenderpassBeginHandle & handle, vk::Extent2D,uint32_t frameIndex) {
-		std::apply([&](auto&... jobs){execSubCmdBufferHelper(handle,frameIndex,jobs...);},Jobs);
+	void Device::CmdBufferRenderpassBegin(RenderpassBeginHandle &handle, vk::Extent2D,
+	                                      uint32_t frameIndex) {
+		std::apply([&](auto &... jobs) { execSubCmdBufferHelper(handle, frameIndex, jobs...); },
+		           Jobs);
+	}
+
+	void Device::writeTextureToImage(gli::texture_cube &texture, vk::Image image) {
+		vk::ImageSubresourceRange imageSubresourceRange{
+				vk::ImageAspectFlagBits::eColor,
+				0, texture.levels(), 0, 1
+		};
+
+		auto transferSrcBuffer = createStagingBufferMemoryOnObjs(texture.size());
+		{
+			auto sampleBufferPtr = mapBufferMemory(transferSrcBuffer);
+			memcpy(sampleBufferPtr.get(), texture.data(), texture.size());
+		}
+
+		vk::ImageMemoryBarrier imageMemoryBarrierToDest{
+				vk::AccessFlags{}, vk::AccessFlagBits::eTransferWrite,
+				vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 0, 0,
+				image, imageSubresourceRange
+		};
+		std::vector<vk::BufferImageCopy> bufferCopyRegion;
+		for (int i = 0, offset = 0; i < texture.levels(); ++i) {
+			MY_LOG(INFO) << "BufferImageCopy" << texture[i].extent().x << 'X' << texture[i].extent().y;
+			bufferCopyRegion.emplace_back(
+					offset, 0, 0,
+					vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, i, 0, 1},
+					vk::Offset3D{},
+					vk::Extent3D{texture[i].extent().x, texture[i].extent().y, 1});
+			offset += texture[i].size();
+		}
+
+		auto copyCmd = createCmdBuffers(
+				1, gPoolUnique.get(),
+				[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
+					commandBufferBeginHandle.pipelineBarrier(
+							vk::PipelineStageFlagBits::eHost,
+							vk::PipelineStageFlagBits::eTransfer,
+							vk::DependencyFlags{},
+							0, nullptr,
+							0, nullptr,
+							1, &imageMemoryBarrierToDest);
+
+					commandBufferBeginHandle.copyBufferToImage(
+							std::get<vk::UniqueBuffer>(transferSrcBuffer).get(),
+							image,
+							vk::ImageLayout::eTransferDstOptimal,
+							bufferCopyRegion);
+					vk::ImageMemoryBarrier imageMemoryBarrierToGeneral{
+							vk::AccessFlagBits::eTransferWrite,
+							vk::AccessFlagBits::eShaderRead,
+							vk::ImageLayout::eTransferDstOptimal,
+							vk::ImageLayout::eShaderReadOnlyOptimal, 0, 0,
+							image,
+							imageSubresourceRange
+					};
+					commandBufferBeginHandle.pipelineBarrier(
+							vk::PipelineStageFlagBits::eTransfer,
+							vk::PipelineStageFlagBits::eFragmentShader,
+							vk::DependencyFlags{},
+							0, nullptr,
+							0, nullptr,
+							1, &imageMemoryBarrierToGeneral);
+				},
+				vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+		);
+
+		auto copyFence = submitCmdBuffer(copyCmd[0].get());
+		waitFence(copyFence.get());
+
+
+	}
+
+	void Device::writeTextureToImage(gli::texture2d &texture, vk::Image image) {
+		vk::ImageSubresourceRange imageSubresourceRange{
+				vk::ImageAspectFlagBits::eColor,
+				0, texture.levels(), 0, 1
+		};
+
+		auto transferSrcBuffer = createStagingBufferMemoryOnObjs(texture.size());
+		{
+			auto sampleBufferPtr = mapBufferMemory(transferSrcBuffer);
+			memcpy(sampleBufferPtr.get(), texture.data(), texture.size());
+		}
+
+		vk::ImageMemoryBarrier imageMemoryBarrierToDest{
+				vk::AccessFlags{}, vk::AccessFlagBits::eTransferWrite,
+				vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 0, 0,
+				image, imageSubresourceRange
+		};
+		std::vector<vk::BufferImageCopy> bufferCopyRegion;
+		for (int i = 0, offset = 0; i < texture.levels(); ++i) {
+			MY_LOG(INFO) << "BufferImageCopy" << texture[i].extent().x << 'X' << texture[i].extent().y;
+			bufferCopyRegion.emplace_back(
+					offset, 0, 0,
+					vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, i, 0, 1},
+					vk::Offset3D{},
+					vk::Extent3D{texture[i].extent().x, texture[i].extent().y, 1});
+			offset += texture[i].size();
+		}
+
+		auto copyCmd = createCmdBuffers(
+				1, gPoolUnique.get(),
+				[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
+					commandBufferBeginHandle.pipelineBarrier(
+							vk::PipelineStageFlagBits::eHost,
+							vk::PipelineStageFlagBits::eTransfer,
+							vk::DependencyFlags{},
+							0, nullptr,
+							0, nullptr,
+							1, &imageMemoryBarrierToDest);
+
+					commandBufferBeginHandle.copyBufferToImage(
+							std::get<vk::UniqueBuffer>(transferSrcBuffer).get(),
+							image,
+							vk::ImageLayout::eTransferDstOptimal,
+							bufferCopyRegion);
+					vk::ImageMemoryBarrier imageMemoryBarrierToGeneral{
+							vk::AccessFlagBits::eTransferWrite,
+							vk::AccessFlagBits::eShaderRead,
+							vk::ImageLayout::eTransferDstOptimal,
+							vk::ImageLayout::eShaderReadOnlyOptimal, 0, 0,
+							image,
+							imageSubresourceRange
+					};
+					commandBufferBeginHandle.pipelineBarrier(
+							vk::PipelineStageFlagBits::eTransfer,
+							vk::PipelineStageFlagBits::eFragmentShader,
+							vk::DependencyFlags{},
+							0, nullptr,
+							0, nullptr,
+							1, &imageMemoryBarrierToGeneral);
+				},
+				vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+		);
+
+		auto copyFence = submitCmdBuffer(copyCmd[0].get());
+		waitFence(copyFence.get());
 	}
 }

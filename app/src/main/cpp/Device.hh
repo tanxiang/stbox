@@ -10,7 +10,9 @@
 #include "JobBase.hh"
 #include "JobDrawLine.hh"
 #include "JobDraw.hh"
+#include "JobSkyBox.hh"
 #include <type_traits>
+#include <gli/texture_cube.hpp>
 
 
 namespace tt {
@@ -194,17 +196,10 @@ namespace tt {
 				},
 				Jobs{
 						std::make_tuple(
-								createJobBase(
-										{
-												vk::DescriptorPoolSize{
-														vk::DescriptorType::eUniformBuffer, 1
-												},
-												vk::DescriptorPoolSize{
-														vk::DescriptorType::eStorageBuffer, 3
-												}
-										},
-										2
-								),
+								app,
+								this
+						),
+						std::make_tuple(
 								app,
 								this
 						),
@@ -356,6 +351,10 @@ namespace tt {
 		ImageViewMemory createImageAndMemoryFromMemory(gli::texture2d t2d,
 		                                               vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 
+		void writeTextureToImage(gli::texture_cube &texture,vk::Image image);
+		void writeTextureToImage(gli::texture2d &texture,vk::Image image);
+
+
 		ImageViewMemory createImageAndMemoryFromT2d(gli::texture2d t2d,
 		                                            vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 
@@ -482,6 +481,48 @@ namespace tt {
 			return tuple;
 		}
 
+		template<typename Tuple>
+		auto bufferImageTupleCreateMemory(vk::MemoryPropertyFlags memoryPropertyFlags,
+		                             Tuple &tuple) {
+			auto memoryReq = get().getBufferMemoryRequirements(
+					std::get<vk::UniqueBuffer>(tuple).get());
+			auto imageMemoryReq = get().getImageMemoryRequirements(
+					std::get<vk::UniqueImage>(tuple).get());
+			std::get<vk::UniqueDeviceMemory>(tuple) =
+					get().allocateMemoryUnique(vk::MemoryAllocateInfo{
+							memoryReq.size+imageMemoryReq.size,
+							findMemoryTypeIndex(memoryReq.memoryTypeBits|imageMemoryReq.memoryTypeBits, memoryPropertyFlags)
+					});
+			bindBufferMemory(tuple);
+			get().bindImageMemory(std::get<vk::UniqueImage>(tuple).get(),std::get<vk::UniqueDeviceMemory>(tuple).get(),memoryReq.size);
+		}
+
+		template<typename ... Ts>
+		auto createImageBufferPartsOnObjs(vk::BufferUsageFlags flags,
+		                             vk::MemoryPropertyFlags memoryPropertyFlags,
+		                             vk::ImageCreateInfo imageCreateInfo,
+		                             const Ts &... objs) {
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			uint32_t allSize = 0;
+			//auto parts = std::array<size_t,sizeof...(objs)>{objSizeOffset(alig, allSize, objs)...};
+			auto tuple = BufferImageMemoryWithParts<sizeof...(objs)>(
+					get().createBufferUnique(
+							vk::BufferCreateInfo{
+									vk::BufferCreateFlags(),
+									allSize,
+									flags}
+					),
+					get().createImageUnique(imageCreateInfo),
+					vk::UniqueDeviceMemory{}, std::array{objSizeOffset(alig, allSize, objs)...});
+			bufferImageTupleCreateMemory(memoryPropertyFlags, tuple);
+			if (memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
+				auto staging = createStagingBufferMemoryOnObjs2(objs...);
+				flushBufferTuple(staging, tuple);
+			}
+			return tuple;
+		}
+
+
 
 		void buildMemoryOnBsM(BuffersMemory<> &BsM,
 		                      vk::MemoryPropertyFlags memoryPropertyFlags) {
@@ -587,7 +628,7 @@ namespace tt {
 
 		//std::vector<JobDraw> drawJobs;
 	private:
-		std::tuple<JobDrawLine,JobDraw> Jobs;
+		std::tuple<JobSkyBox,JobDrawLine,JobDraw> Jobs;
 	public:
 		std::vector<vk::UniqueCommandBuffer> mainCmdBuffers;
 
