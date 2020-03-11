@@ -225,13 +225,10 @@ namespace tt {
 					{
 						RenderpassBeginHandle cmdHandleRenderpassBegin{
 								cmdBeginHandle,
-								vk::RenderPassBeginInfo{
+								{
 										renderPass,
 										framebuffers[frameIndex].get(),
-										vk::Rect2D{
-												vk::Offset2D{},
-												extent2D
-										},
+										{{}, extent2D},
 										type.clearValues.size(), type.clearValues.data()
 								}
 						};

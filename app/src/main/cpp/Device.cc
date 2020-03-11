@@ -613,7 +613,6 @@ namespace tt {
 	}
 
 	void Device::writeTextureToImage(gli::texture_cube &texture, vk::Image image) {
-
 		auto transferSrcBuffer = createStagingBufferMemoryOnObjs(texture.size());
 		{
 			auto sampleBufferPtr = mapBufferMemory(transferSrcBuffer);
