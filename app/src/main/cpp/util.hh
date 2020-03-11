@@ -115,9 +115,10 @@ namespace tt {
 		using std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory,std::array<uint32_t ,N>>::tuple;
 	};
 
-	template <uint N>
-	struct BufferImageMemoryWithParts :public std::tuple<vk::UniqueBuffer,vk::UniqueImage, vk::UniqueDeviceMemory,std::array<uint32_t ,N>>{
-		using std::tuple<vk::UniqueBuffer,vk::UniqueImage,vk::UniqueDeviceMemory,std::array<uint32_t ,N>>::tuple;
+	template <uint N,uint M=1>
+	struct BufferImageMemoryWithParts :
+			public std::tuple<vk::UniqueBuffer,vk::UniqueImage, vk::UniqueDeviceMemory,std::array<uint32_t ,N>,std::array<vk::UniqueImageView ,M>>{
+		using std::tuple<vk::UniqueBuffer,vk::UniqueImage,vk::UniqueDeviceMemory,std::array<uint32_t,N>,std::array<vk::UniqueImageView ,M>>::tuple;
 	};
 
 	template< template<uint> typename Tuple,uint N >
