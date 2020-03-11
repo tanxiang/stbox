@@ -61,9 +61,7 @@ namespace tt {
 				sizeof(Vertex) * 32,
 				sizeof(vk::DrawIndirectCommand),
 				sizeof(glm::mat4));
-
-
-
+		device.writeTextureToImage(textCube,std::get<vk::UniqueImage>(bufferMemoryPart).get());
 	}
 
 	void JobSkyBox::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
