@@ -168,7 +168,7 @@ namespace tt {
 
 		//uniquePipeline = createPipeline(device, app);
 
-		auto descriptorBufferInfo = //createDescriptorBufferInfoTuple(device.Job<JobDrawLine>().bufferMemoryPart, 3);
+		auto descriptorBufferInfo = //createDescriptorBufferInfoTuple(device.Job<JobDrawLine>().memoryWithParts, 3);
 				device.getDescriptorBufferInfo(BAMs[0]);
 		auto descriptorImageInfo = device.getDescriptorImageInfo(IVMs[0], sampler.get());
 

@@ -127,6 +127,22 @@ namespace tt {
 		uint32_t offset =  n ? parts[n -1] : 0;
 		return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(tuple).get(),offset,parts[n] - offset};
 	}
+	template< template<uint,uint> typename Tuple,uint N ,uint M>
+	auto createDescriptorBufferInfoTuple(const Tuple<N,M> &tuple,uint32_t n) {
+		auto &parts =std::get<std::array<uint32_t ,N>>(tuple);
+		uint32_t offset =  n ? parts[n -1] : 0;
+		return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(tuple).get(),offset,parts[n] - offset};
+	}
+
+	template< template<uint,uint> typename Tuple,uint N ,uint M>
+	auto& getUniqueImageViewTuple(Tuple<N,M> &tuple,uint32_t n=0){
+		return std::get<std::array<vk::UniqueImageView ,M>>(tuple)[n];
+	}
+
+	template< template<uint,uint> typename Tuple,uint N ,uint M>
+	auto getImageViewTuple(Tuple<N,M> &tuple,uint32_t n=0){
+		return std::get<std::array<vk::UniqueImageView ,M>>(tuple)[n].get();
+	}
 
 	using LocalBufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory>;
 

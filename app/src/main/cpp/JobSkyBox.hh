@@ -33,6 +33,9 @@ namespace tt {
 
 		template <typename tupleType>
 		JobSkyBox(tupleType args):JobSkyBox(std::get<android_app*>(args),*std::get<tt::Device*>(args)){}
+
+		vk::UniqueSampler sampler;
+		BufferImageMemoryWithParts<3> memoryWithParts;
 	};
 }
 

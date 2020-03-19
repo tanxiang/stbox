@@ -51,17 +51,48 @@ namespace tt {
 		auto fileContent = loadDataFromAssets("textures/cubemap_yokohama_astc_8x8_unorm.ktx", app);
 		auto textCube = gli::texture_cube{gli::load_ktx(fileContent.data(), fileContent.size())};
 		//MY_LOG(INFO)<<"textures/cubemap_yokohama_astc_8x8_unorm.ktx\n\t="<<vk::to_string(e2dImageCreateInfoByTextuer(textCube,vk::ImageCreateFlagBits::eCubeCompatible).format);
-		BufferImageMemoryWithParts<3> bufferMemoryPart = device.createImageBufferPartsOnObjs(
+		memoryWithParts = device.createImageBufferPartsOnObjs(
 				vk::BufferUsageFlagBits::eUniformBuffer |
 				vk::BufferUsageFlagBits::eVertexBuffer |
 				vk::BufferUsageFlagBits::eIndirectBuffer |
 				vk::BufferUsageFlagBits::eTransferSrc,
 				vk::MemoryPropertyFlagBits::eDeviceLocal,
-				e2dImageCreateInfoByTextuer(textCube,vk::ImageCreateFlagBits::eCubeCompatible),
+				e2dImageCreateInfoByTextuer(textCube, vk::ImageCreateFlagBits::eCubeCompatible),
 				sizeof(Vertex) * 32,
 				sizeof(vk::DrawIndirectCommand),
 				sizeof(glm::mat4));
-		device.writeTextureToImage(textCube,std::get<vk::UniqueImage>(bufferMemoryPart).get());
+		device.writeTextureToImage(textCube, std::get<vk::UniqueImage>(memoryWithParts).get());
+		getUniqueImageViewTuple(memoryWithParts) = device->createImageViewUnique(
+				{
+						{}, std::get<vk::UniqueImage>(memoryWithParts).get(),
+						vk::ImageViewType::eCube, static_cast<vk::Format >(textCube.format()),
+						{
+								vk::ComponentSwizzle::eR,
+								vk::ComponentSwizzle::eG,
+								vk::ComponentSwizzle::eB,
+								vk::ComponentSwizzle::eA
+						},
+						{
+								vk::ImageAspectFlagBits::eColor,
+								0, textCube.levels(), 0, textCube.faces()
+						}
+				}
+		);
+
+		sampler = device->createSamplerUnique(
+				vk::SamplerCreateInfo{
+						{},
+						vk::Filter::eLinear,
+						vk::Filter::eLinear,
+						vk::SamplerMipmapMode::eLinear,
+						vk::SamplerAddressMode::eClampToEdge,
+						vk::SamplerAddressMode::eClampToEdge,
+						vk::SamplerAddressMode::eClampToEdge,
+						0, 0, 0, 0, vk::CompareOp::eNever,
+						0, textCube.levels(),
+						vk::BorderColor::eFloatOpaqueWhite,
+						0});
+		createDescriptorBufferInfoTuple(memoryWithParts, 1);
 	}
 
 	void JobSkyBox::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
