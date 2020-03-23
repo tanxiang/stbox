@@ -43,6 +43,8 @@ target_compile_options(stbox PRIVATE -fno-rtti)
 
 
 target_include_directories(stbox PRIVATE
+        src/external/glm
+        src/external/gli
         src/main/include
         ${ANDROID_NDK}/sources/android/native_app_glue
         )
