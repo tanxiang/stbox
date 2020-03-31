@@ -20,7 +20,7 @@
 #include "Device.hh"
 #include "JobFont.hh"
 #include "JobDraw.hh"
-#include "onnx.hh"
+//#include "onnx.hh"
 #include <functional>
 
 
@@ -34,7 +34,7 @@ vk::Extent2D AndroidGetWindowSize(android_app *Android_application) {
 namespace tt {
 
 	void stboxvk::initData(android_app *app, tt::Instance &instance) {
-		Onnx nf{"/storage/0123-4567/nw/mobilenetv2-1.0.onnx"};
+//		Onnx nf{"/storage/0123-4567/nw/mobilenetv2-1.0.onnx"};
 	}
 
 	void stboxvk::initDevice(android_app *app, tt::Instance &instance,

@@ -4,3 +4,6 @@
 [submodule "app/src/external/gli"]
 	path = app/src/external/gli
 	url = https://github.com/g-truc/gli
+[submodule "app/src/external/protobuf"]
+	path = app/src/external/protobuf
+	url = https://github.com/protocolbuffers/protobuf.git
