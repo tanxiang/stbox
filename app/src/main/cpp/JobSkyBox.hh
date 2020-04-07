@@ -11,7 +11,6 @@
 #include "thread.hh"
 #include "JobBase.hh"
 #include "Window.hh"
-#include <android_native_app_glue.h>
 
 namespace tt {
 	struct JobSkyBox: public JobBase {

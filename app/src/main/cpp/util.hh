@@ -4,12 +4,8 @@
 
 #ifndef STBOX_UTIL_H
 #define STBOX_UTIL_H
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+/*
+*/
 #include <unistd.h>
 #include <vulkan.hpp>
 #include <thread>
@@ -20,7 +16,7 @@
 #include <iostream>
 #include <memory>
 #include <map>
-#include <gli/texture2d.hpp>
+//#include <gli/texture2d.hpp>
 #include "main.hh"
 
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);
@@ -229,7 +225,7 @@ namespace tt {
 					vk::CommandBufferAllocateInfo{
 							pool,
 							vk::CommandBufferLevel::ePrimary,
-							framebuffers.size()
+							static_cast<uint32_t >(framebuffers.size())
 					}
 			);
 
@@ -271,7 +267,7 @@ namespace tt {
 					vk::CommandBufferAllocateInfo{
 							pool,
 							vk::CommandBufferLevel::eSecondary,
-							framebuffers.size()
+							static_cast<uint32_t >(framebuffers.size())
 					}
 			);
 
