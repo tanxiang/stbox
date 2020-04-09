@@ -10,7 +10,7 @@
 #include "util.hh"
 
 namespace tt {
-	unsigned int getAssetMemorySize(android_app *app,AAssetHander &assetHander ,int alt);
+	unsigned int AssetBuildDevMemory(android_app *app, AAssetHander &assetHander , int alt);
 }
 
 

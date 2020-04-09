@@ -52,6 +52,7 @@ target_include_directories(stbox PRIVATE
         src/external/glm
         src/external/gli
         src/main/include
+        src/proto
         ${ANDROID_NDK}/sources/android/native_app_glue
         )
 

@@ -5,6 +5,7 @@
 #include "JobSkyBox.hh"
 #include "Device.hh"
 #include <gli/gli.hpp>
+#include "model.hh"
 
 namespace tt {
 
