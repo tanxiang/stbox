@@ -522,7 +522,13 @@ namespace tt {
 			return tuple;
 		}
 
+		auto lunchDir(vk::BufferUsageFlags flags,
+		              vk::MemoryPropertyFlags memoryPropertyFlags,android_app *app,std::string dirName){
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			uint32_t allSize = 0;
 
+
+		}
 
 		void buildMemoryOnBsM(BuffersMemory<> &BsM,
 		                      vk::MemoryPropertyFlags memoryPropertyFlags) {

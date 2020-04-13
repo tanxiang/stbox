@@ -6,16 +6,19 @@
 #include "model.pb.h"
 
 namespace tt{
-	unsigned int AssetBuildDevMemory(android_app *app, AAssetHander &assetHander , int alt){
-		off_t start,length;
-		const int fd = AAsset_openFileDescriptor(assetHander.get(), &start, &length);
+	unsigned int AssetFdBuildDevMemory(int fd, int alt){
+		google::protobuf::SetLogHandler([](google::protobuf::LogLevel level, const char* filename, int line, const std::string& message)
+		                                {
+			                                MY_LOG(ERROR) << "message:::" << message ;
+		                                });
 		if (fd >= 0) {
 			ptfile::Model model;
-			model.ParseFromFileDescriptor(fd);
-			MY_LOG(INFO)<<model.name();
-			for(auto& mesh:model.meshs()){
-				MY_LOG(INFO)<<mesh.name();
+			if(!model.ParseFromFileDescriptor(fd))
+				MY_LOG(ERROR)<<"ParseFromFileDescriptor:::false:"<<fd;
 
+			MY_LOG(INFO)<<"loadmodule:::"<<model.name();
+			for(auto& mesh:model.meshs()){
+				MY_LOG(INFO)<<"mesh:::"<<mesh.name();
 			}
 		}
 		return 0;

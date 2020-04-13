@@ -259,7 +259,7 @@ namespace tt {
 				},
 				imageSubresourceRange
 		);
-		writeTextureToImage(t2d,std::get<vk::UniqueImage>(imageAndMemory).get());
+		writeTextureToImage(t2d, std::get<vk::UniqueImage>(imageAndMemory).get());
 		return imageAndMemory;
 	}
 
@@ -317,10 +317,10 @@ namespace tt {
 		off_t offset = 0;
 		std::vector<std::tuple<AAssetHander, off_t, off_t >> fileHanders;
 		for (auto &name:names) {
-			auto file = AAssetManagerFileOpen(androidAppCtx->activity->assetManager, name);
+			AAssetHander file{androidAppCtx->activity->assetManager, name};
 			if (!file)
 				throw std::runtime_error{"asset not found"};
-			auto length = AAsset_getLength(file.get());
+			auto length = file.getLength();
 			fileHanders.emplace_back(std::move(file), offset, length);
 			length += (alignment - 1) - ((length - 1) % alignment);
 			offset += length;
@@ -330,9 +330,9 @@ namespace tt {
 			{
 				auto bufferPtr = mapBufferMemory(StagingBufferMemory);
 				for (auto &file:fileHanders) {
-					AAsset_read(std::get<0>(file).get(),
-					            (char *) bufferPtr.get() + std::get<1>(file),
-					            std::get<2>(file));
+					std::get<0>(file).read(
+							(char *) bufferPtr.get() + std::get<1>(file),
+							std::get<2>(file));
 					MY_LOG(INFO) << "off " << std::get<1>(file) << " size " << std::get<2>(file)
 					             << " Align" << alignment;
 				}
@@ -361,8 +361,8 @@ namespace tt {
 		auto BAM = createBufferAndMemory(offset, bufferUsageFlags, memoryPropertyFlags);
 		auto bufferPtr = mapBufferMemory(BAM);
 		for (auto &file:fileHanders) {
-			AAsset_read(std::get<0>(file).get(), (char *) bufferPtr.get() + std::get<1>(file),
-			            std::get<2>(file));
+			std::get<0>(file).read((char *) bufferPtr.get() + std::get<1>(file),
+			                       std::get<2>(file));
 			std::get<std::vector<vk::DescriptorBufferInfo>>(BAM).emplace_back(
 					std::get<vk::UniqueBuffer>(BAM).get(), std::get<1>(file), std::get<2>(file));
 			MY_LOG(INFO) << "off " << std::get<1>(file) << " size " << std::get<2>(file) << " Align"
@@ -625,9 +625,10 @@ namespace tt {
 				//             << texture[face].extent().y;
 				bufferCopyRegion.emplace_back(
 						offset, 0, 0,
-						vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, level, face,1},
+						vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, level, face, 1},
 						vk::Offset3D{},
-						vk::Extent3D{texture[face][level].extent().x, texture[face][level].extent().y, 1});
+						vk::Extent3D{texture[face][level].extent().x,
+						             texture[face][level].extent().y, 1});
 				offset += texture[face][level].size();
 			}
 		}
@@ -686,7 +687,8 @@ namespace tt {
 
 		std::vector<vk::BufferImageCopy> bufferCopyRegion;
 		for (int i = 0, offset = 0; i < texture.levels(); ++i) {
-			MY_LOG(INFO) << "BufferImageCopy" << texture[i].extent().x << 'X' << texture[i].extent().y;
+			MY_LOG(INFO) << "BufferImageCopy" << texture[i].extent().x << 'X'
+			             << texture[i].extent().y;
 			bufferCopyRegion.emplace_back(
 					offset, 0, 0,
 					vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, i, 0, 1},

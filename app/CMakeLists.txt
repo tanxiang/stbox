@@ -11,12 +11,12 @@ cmake_minimum_required(VERSION 3.6)
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
 
-add_subdirectory(src/proto)
+#add_subdirectory(src/proto)
 
-set(protobuf_BUILD_TESTS OFF CACHE BOOL "Build tests" FORCE)
-set(protobuf_BUILD_PROTOC_BINARIES OFF CACHE BOOL "Build libprotoc and protoc compiler" FORCE)
-set(BUILD_SHARED_LIBS OFF FORCE)
-add_subdirectory(src/external/protobuf/cmake)
+#set(protobuf_BUILD_TESTS OFF CACHE BOOL "Build tests" FORCE)
+#set(protobuf_BUILD_PROTOC_BINARIES OFF CACHE BOOL "Build libprotoc and protoc compiler" FORCE)
+#set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "Build Shared Libraries" FORCE)
+#add_subdirectory(src/external/protobuf/cmake)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 
 add_library(app-glue
@@ -122,6 +122,5 @@ target_link_libraries( # Specifies the target library.
         ${android-lib}
         #onnxpb
         app-glue
-        pt
         )
 

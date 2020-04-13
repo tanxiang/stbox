@@ -6,7 +6,7 @@
 #define STBOX_STBOXVK_HH
 
 #include "util.hh"
-#include "onnx.hh"
+//#include "onnx.hh"
 #include "Window.hh"
 #include "JobDrawLine.hh"
 

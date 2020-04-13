@@ -14,8 +14,6 @@ FOREACH(proto_file ${proto_files})
 ENDFOREACH(proto_file)
 message(STATUS ${PROTO_SRCS})
 
-message(STATUS ${CMAKE_CURRENT_SOURCE_DIR}/../external/protobuf/src/)
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 
 

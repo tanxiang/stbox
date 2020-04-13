@@ -1,5 +1,5 @@
 syntax = "proto3";
-
+option optimize_for = LITE_RUNTIME;
 package ptfile;
 message Model {
     string name = 1;

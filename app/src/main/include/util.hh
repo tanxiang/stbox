@@ -49,14 +49,58 @@ namespace tt {
 		throw std::logic_error{"queueFamilyPropertiesFindFlags Error"};
 	}
 
-	using AAssetHander = std::unique_ptr<AAsset, std::function<void(AAsset *)>>;
+	struct AAssetHander : public std::unique_ptr<AAsset, std::function<void(AAsset *)>> {
+		using std::unique_ptr<AAsset, std::function<void(AAsset *)>>::unique_ptr;
 
-	inline auto AAssetManagerFileOpen(AAssetManager *assetManager, const std::string &filePath) {
+		auto getLength() {
+			return AAsset_getLength(get());
+		}
+
+		auto read(void *buf, size_t count) {
+			return AAsset_read(get(), buf, count);
+		}
+
+		auto seek(off_t offset, int whence) {
+			return AAsset_seek(get(), offset, whence);
+		}
+
+		AAssetHander(AAssetManager *assetManager, const std::string &filePath):
+		std::unique_ptr<AAsset, std::function<void(AAsset *)>>{
+				AAssetManager_open(assetManager, filePath.c_str(),
+				                   AASSET_MODE_STREAMING),
+				[](AAsset *AAsset) {
+					AAsset_close(AAsset);
+				}
+		} {}
+	};
+
+/*	inline auto AAssetManagerFileOpen(AAssetManager *assetManager, const std::string &filePath) {
 		return AAssetHander{
 				AAssetManager_open(assetManager, filePath.c_str(),
 				                   AASSET_MODE_STREAMING),
 				[](AAsset *AAsset) {
 					AAsset_close(AAsset);
+				}
+		};
+	}*/
+
+	struct AAssetDirHander : public std::unique_ptr<AAssetDir, std::function<void(AAssetDir *)>> {
+		using std::unique_ptr<AAssetDir, std::function<void(AAssetDir *)>>::unique_ptr;
+
+		auto getNextFileName() {
+			return AAssetDir_getNextFileName(get());
+		}
+
+		auto rewind() {
+			return AAssetDir_rewind(get());
+		}
+	};
+
+	inline auto AAssetManagerDirOpen(AAssetManager *assetManager, const std::string &dirPath) {
+		return AAssetDirHander{
+				AAssetManager_openDir(assetManager, dirPath.c_str()),
+				[](AAssetDir *AAsset) {
+					AAssetDir_close(AAsset);
 				}
 		};
 	}
@@ -106,38 +150,42 @@ namespace tt {
 
 	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t, std::vector<vk::DescriptorBufferInfo> >;
 
-	template <uint N>
-	struct BufferMemoryWithParts :public std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory,std::array<uint32_t ,N>>{
-		using std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory,std::array<uint32_t ,N>>::tuple;
+	template<uint N>
+	struct BufferMemoryWithParts
+			: public std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, std::array<uint32_t, N>> {
+		using std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, std::array<uint32_t, N>>::tuple;
 	};
 
-	template <uint N,uint M=1>
+	template<uint N, uint M = 1>
 	struct BufferImageMemoryWithParts :
-			public std::tuple<vk::UniqueBuffer,vk::UniqueImage, vk::UniqueDeviceMemory,std::array<uint32_t ,N>,std::array<vk::UniqueImageView ,M>>{
-		using std::tuple<vk::UniqueBuffer,vk::UniqueImage,vk::UniqueDeviceMemory,std::array<uint32_t,N>,std::array<vk::UniqueImageView ,M>>::tuple;
+			public std::tuple<vk::UniqueBuffer, vk::UniqueImage, vk::UniqueDeviceMemory, std::array<uint32_t, N>, std::array<vk::UniqueImageView, M>> {
+		using std::tuple<vk::UniqueBuffer, vk::UniqueImage, vk::UniqueDeviceMemory, std::array<uint32_t, N>, std::array<vk::UniqueImageView, M>>::tuple;
 	};
 
-	template< template<uint> typename Tuple,uint N >
-	auto createDescriptorBufferInfoTuple(const Tuple<N> &tuple,uint32_t n){
-		auto &parts =std::get<std::array<uint32_t ,N>>(tuple);
-		uint32_t offset =  n ? parts[n -1] : 0;
-		return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(tuple).get(),offset,parts[n] - offset};
-	}
-	template< template<uint,uint> typename Tuple,uint N ,uint M>
-	auto createDescriptorBufferInfoTuple(const Tuple<N,M> &tuple,uint32_t n) {
-		auto &parts =std::get<std::array<uint32_t ,N>>(tuple);
-		uint32_t offset =  n ? parts[n -1] : 0;
-		return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(tuple).get(),offset,parts[n] - offset};
+	template<template<uint> typename Tuple, uint N>
+	auto createDescriptorBufferInfoTuple(const Tuple<N> &tuple, uint32_t n) {
+		auto &parts = std::get<std::array<uint32_t, N>>(tuple);
+		uint32_t offset = n ? parts[n - 1] : 0;
+		return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(tuple).get(), offset,
+		                                parts[n] - offset};
 	}
 
-	template< template<uint,uint> typename Tuple,uint N ,uint M>
-	auto& getUniqueImageViewTuple(Tuple<N,M> &tuple,uint32_t n=0){
-		return std::get<std::array<vk::UniqueImageView ,M>>(tuple)[n];
+	template<template<uint, uint> typename Tuple, uint N, uint M>
+	auto createDescriptorBufferInfoTuple(const Tuple<N, M> &tuple, uint32_t n) {
+		auto &parts = std::get<std::array<uint32_t, N>>(tuple);
+		uint32_t offset = n ? parts[n - 1] : 0;
+		return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(tuple).get(), offset,
+		                                parts[n] - offset};
 	}
 
-	template< template<uint,uint> typename Tuple,uint N ,uint M>
-	auto getImageViewTuple(Tuple<N,M> &tuple,uint32_t n=0){
-		return std::get<std::array<vk::UniqueImageView ,M>>(tuple)[n].get();
+	template<template<uint, uint> typename Tuple, uint N, uint M>
+	auto &getUniqueImageViewTuple(Tuple<N, M> &tuple, uint32_t n = 0) {
+		return std::get<std::array<vk::UniqueImageView, M>>(tuple)[n];
+	}
+
+	template<template<uint, uint> typename Tuple, uint N, uint M>
+	auto getImageViewTuple(Tuple<N, M> &tuple, uint32_t n = 0) {
+		return std::get<std::array<vk::UniqueImageView, M>>(tuple)[n].get();
 	}
 
 	using LocalBufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory>;
@@ -245,7 +293,8 @@ namespace tt {
 										type.clearValues.size(), type.clearValues.data()
 								}
 						};
-						type.CmdBufferRenderpassBegin(cmdHandleRenderpassBegin, extent2D, frameIndex);
+						type.CmdBufferRenderpassBegin(cmdHandleRenderpassBegin, extent2D,
+						                              frameIndex);
 					}
 
 				}
@@ -278,9 +327,10 @@ namespace tt {
 					vk::CommandBufferInheritanceInfo commandBufferInheritanceInfo{renderPass, 0,
 					                                                              framebuffers[frameIndex].get()};
 					CommandBufferBeginHandle cmdHandleRenderpassContinue{cmdBuffer,
-					                                                  vk::CommandBufferUsageFlagBits::eRenderPassContinue,
-					                                                  &commandBufferInheritanceInfo};
-					job.CmdBufferRenderPassContinueBegin(cmdHandleRenderpassContinue, extent2D,frameIndex);
+					                                                     vk::CommandBufferUsageFlagBits::eRenderPassContinue,
+					                                                     &commandBufferInheritanceInfo};
+					job.CmdBufferRenderPassContinueBegin(cmdHandleRenderpassContinue, extent2D,
+					                                     frameIndex);
 				}
 				++frameIndex;
 			}
@@ -289,14 +339,15 @@ namespace tt {
 
 	}
 
-	template <typename textureType>
-	vk::ImageCreateInfo e2dImageCreateInfoByTextuer(textureType& texture,vk::ImageCreateFlags flags){
-	 return {
-	 	flags,vk::ImageType::e2D, static_cast<vk::Format >(texture.format()),
-	    {texture.extent().x,texture.extent().y,1},texture.levels(),texture.faces(),
-	    vk::SampleCountFlagBits::e1,vk::ImageTiling::eOptimal,
-	    vk::ImageUsageFlagBits::eSampled|vk::ImageUsageFlagBits::eTransferDst
-	 };
+	template<typename textureType>
+	vk::ImageCreateInfo
+	e2dImageCreateInfoByTextuer(textureType &texture, vk::ImageCreateFlags flags) {
+		return {
+				flags, vk::ImageType::e2D, static_cast<vk::Format >(texture.format()),
+				{texture.extent().x, texture.extent().y, 1}, texture.levels(), texture.faces(),
+				vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal,
+				vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst
+		};
 	}
 }
 

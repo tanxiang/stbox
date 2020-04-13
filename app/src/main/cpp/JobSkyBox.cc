@@ -5,7 +5,7 @@
 #include "JobSkyBox.hh"
 #include "Device.hh"
 #include <gli/gli.hpp>
-#include "model.hh"
+//#include "model.hh"
 
 namespace tt {
 
@@ -48,6 +48,15 @@ namespace tt {
 							}
 					}
 			} {
+
+		{
+			AAssetHander modelFile{app->activity->assetManager,
+			                                       "models/cube.obj.PNt.pt"};
+			off_t start,length;
+			//const int fd = AAsset_openFileDescriptor(modelFile.get(), &start, &length);
+			//MY_LOG(INFO)<<"models/cube.obj.PNt.pt\n\t="<<fd;
+//			AssetFdBuildDevMemory(fd,0);
+		}
 
 		auto fileContent = loadDataFromAssets("textures/cubemap_yokohama_astc_8x8_unorm.ktx", app);
 		auto textCube = gli::texture_cube{gli::load_ktx(fileContent.data(), fileContent.size())};
