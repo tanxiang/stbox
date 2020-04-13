@@ -46,6 +46,29 @@ namespace tt {
 	> : public std::true_type {
 	};
 
+
+	template<typename T, typename _ = void>
+	struct is_io_obj : std::false_type {
+	};
+
+	template<typename... Ts>
+	struct is_io_obj_helper {
+	};
+
+	template<typename T>
+	struct is_io_obj<
+			T,
+			std::conditional_t<
+					false,
+					is_io_obj_helper<
+							decltype(std::declval<T>().getLength()),
+							decltype(std::declval<T>().read(nullptr,0))
+							>,
+					void
+			>
+	> : public std::true_type {
+	};
+
 	auto inline alignment(uint32_t alignment, uint32_t length) {
 		return length + (alignment - 1) - ((length - 1) % alignment);
 	}
@@ -60,8 +83,16 @@ namespace tt {
 		return alignment(alig, t.size() * sizeof(typename T::value_type));
 	}
 
+
+	template<typename T, typename std::enable_if<is_io_obj<T>::value, int>::type = 0>
+	auto objSize(uint32_t alig, const T &t) {
+		MY_LOG(ERROR)<<"enable_if<is_io_obj<T>::value, int>";
+
+		return alignment(alig, t.getLength());
+	}
+
 	template<typename T, typename std::enable_if<
-			!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
+			!is_io_obj<T>::value && !is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
 	auto objSize(uint32_t alig, const T &t) {
 		return alignment(alig, sizeof(t));
 	}
@@ -87,8 +118,13 @@ namespace tt {
 		return alignment(alig, t.size() * sizeof(typename T::value_type));
 	}
 
+	template<typename T, typename std::enable_if<is_io_obj<T>::value, int>::type = 0>
+	auto objDataSize(uint32_t alig, const T &t) {
+		return alignment(alig, t.getLength());
+	}
+
 	template<typename T, typename std::enable_if<
-			!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
+			!is_io_obj<T>::value && !is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
 	auto objDataSize(uint32_t alig, const T &t) {
 		return alignment(alig, sizeof(t));
 	}
@@ -126,12 +162,24 @@ namespace tt {
 		memcpy(static_cast<char *>(ptr.get()) + off, t.data(), size);
 		auto m_off = off;
 		//off += get().getBufferMemoryRequirements(buffer).size;
-		off += alignment(alig, objSize(alig, t));
+		off += objSize(alig, t);
 		return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
 	}
 
+	template<typename T, typename std::enable_if<is_io_obj<T>::value, int>::type = 0>
+	vk::DescriptorBufferInfo
+	writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,
+	         uint32_t &off,
+	         const T &t) {
+		t.read(static_cast<char *>(ptr.get()) + off,t.getLength());
+		auto m_off = off;
+		//off += get().getBufferMemoryRequirements(buffer).size;
+		off += objSize(alig, t);
+		return vk::DescriptorBufferInfo{buffer, m_off - boff, t.getLength()};
+	}
+
 	template<typename T, typename std::enable_if<
-			!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
+			!is_io_obj<T>::value&&!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
 	vk::DescriptorBufferInfo
 	writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,
 	         uint32_t &off,
@@ -140,7 +188,7 @@ namespace tt {
 		memcpy(static_cast<char *>(ptr.get()) + off, &t, size);
 		auto m_off = off;
 		//off += get().getBufferMemoryRequirements(buffer).size;
-		off += alignment(alig, objSize(alig, t));
+		off += objSize(alig, t);
 		return vk::DescriptorBufferInfo{buffer, m_off - boff, size};
 	}
 
@@ -291,23 +339,13 @@ namespace tt {
 			};
 		}
 
-/*
-		template<typename Tuple>
-		auto mapMemoryAndSize(Tuple &tupleMemoryAndSize, size_t offset = 0) {
-			auto dev = get();
-			auto devMemory = std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get();
-			return mapMemorySize(std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get(),
-			                     std::get<size_t>(tupleMemoryAndSize), offset);
-		}
-*/
-
 
 		template<typename ... Ts>
 		auto writeObjsToPtr(BufferMemoryPtr &bufferPtr, uint32_t &off,
 		                    const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			auto m_off = off;
-			std::array{
+			return std::array{
 					writeObj(bufferPtr, {}, alig, off, m_off, objs)...};
 		}
 
@@ -523,11 +561,13 @@ namespace tt {
 		}
 
 		auto lunchDir(vk::BufferUsageFlags flags,
-		              vk::MemoryPropertyFlags memoryPropertyFlags,android_app *app,std::string dirName){
+		              vk::MemoryPropertyFlags memoryPropertyFlags,AAssetManager *assetManager,std::string path){
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			uint32_t allSize = 0;
-
-
+			AAssetDirHander aAssetDirHander{assetManager,path.c_str()};
+			while(const char* name = aAssetDirHander.getNextFileName()){
+				AAssetHander aAssetHander{assetManager,name};
+			}
 		}
 
 		void buildMemoryOnBsM(BuffersMemory<> &BsM,

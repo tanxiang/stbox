@@ -52,15 +52,15 @@ namespace tt {
 	struct AAssetHander : public std::unique_ptr<AAsset, std::function<void(AAsset *)>> {
 		using std::unique_ptr<AAsset, std::function<void(AAsset *)>>::unique_ptr;
 
-		auto getLength() {
+		auto getLength() const {
 			return AAsset_getLength(get());
 		}
 
-		auto read(void *buf, size_t count) {
+		auto read(void *buf, size_t count) const {
 			return AAsset_read(get(), buf, count);
 		}
 
-		auto seek(off_t offset, int whence) {
+		auto seek(off_t offset, int whence) const {
 			return AAsset_seek(get(), offset, whence);
 		}
 
@@ -77,11 +77,11 @@ namespace tt {
 	struct AAssetDirHander : public std::unique_ptr<AAssetDir, std::function<void(AAssetDir *)>> {
 		using std::unique_ptr<AAssetDir, std::function<void(AAssetDir *)>>::unique_ptr;
 
-		auto getNextFileName() {
+		auto getNextFileName() const {
 			return AAssetDir_getNextFileName(get());
 		}
 
-		auto rewind() {
+		auto rewind() const {
 			return AAssetDir_rewind(get());
 		}
 

@@ -50,9 +50,15 @@ namespace tt {
 			} {
 
 		{
-			AAssetHander modelFile{app->activity->assetManager,
-			                                       "models/cube.obj.PNt.pt"};
-			off_t start,length;
+			//AAssetDirHander modeldir{app->activity->assetManager,"models/cube.obj.ext"};
+			device.lunchDir(
+					vk::BufferUsageFlagBits::eUniformBuffer |
+					vk::BufferUsageFlagBits::eVertexBuffer |
+					vk::BufferUsageFlagBits::eIndirectBuffer |
+					vk::BufferUsageFlagBits::eTransferSrc,
+					vk::MemoryPropertyFlagBits::eDeviceLocal,
+					app->activity->assetManager,
+					"models/cube.obj.ext");
 			//const int fd = AAsset_openFileDescriptor(modelFile.get(), &start, &length);
 			//MY_LOG(INFO)<<"models/cube.obj.PNt.pt\n\t="<<fd;
 //			AssetFdBuildDevMemory(fd,0);
@@ -68,6 +74,8 @@ namespace tt {
 				vk::BufferUsageFlagBits::eTransferSrc,
 				vk::MemoryPropertyFlagBits::eDeviceLocal,
 				e2dImageCreateInfoByTextuer(textCube, vk::ImageCreateFlagBits::eCubeCompatible),
+				AAssetHander{app->activity->assetManager,"models/cube.obj.ext/mesh_0_PNt.bin"},
+				AAssetHander{app->activity->assetManager,"models/cube.obj.ext/mesh_0_index_0_strip.bin"},
 				sizeof(Vertex) * 32,
 				sizeof(vk::DrawIndirectCommand),
 				sizeof(glm::mat4));
