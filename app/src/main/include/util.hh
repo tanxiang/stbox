@@ -74,16 +74,6 @@ namespace tt {
 		} {}
 	};
 
-/*	inline auto AAssetManagerFileOpen(AAssetManager *assetManager, const std::string &filePath) {
-		return AAssetHander{
-				AAssetManager_open(assetManager, filePath.c_str(),
-				                   AASSET_MODE_STREAMING),
-				[](AAsset *AAsset) {
-					AAsset_close(AAsset);
-				}
-		};
-	}*/
-
 	struct AAssetDirHander : public std::unique_ptr<AAssetDir, std::function<void(AAssetDir *)>> {
 		using std::unique_ptr<AAssetDir, std::function<void(AAssetDir *)>>::unique_ptr;
 
@@ -94,16 +84,14 @@ namespace tt {
 		auto rewind() {
 			return AAssetDir_rewind(get());
 		}
-	};
 
-	inline auto AAssetManagerDirOpen(AAssetManager *assetManager, const std::string &dirPath) {
-		return AAssetDirHander{
+		AAssetDirHander(AAssetManager *assetManager, const std::string &dirPath):std::unique_ptr<AAssetDir, std::function<void(AAssetDir *)>>{
 				AAssetManager_openDir(assetManager, dirPath.c_str()),
 				[](AAssetDir *AAsset) {
 					AAssetDir_close(AAsset);
-				}
-		};
-	}
+				}}{}
+	};
+
 
 	struct RenderpassBeginHandle : public vk::CommandBuffer {
 		RenderpassBeginHandle(vk::CommandBuffer commandBuffer,
