@@ -86,8 +86,6 @@ namespace tt {
 
 	template<typename T, typename std::enable_if<is_io_obj<T>::value, int>::type = 0>
 	auto objSize(uint32_t alig, const T &t) {
-		MY_LOG(ERROR)<<"enable_if<is_io_obj<T>::value, int>";
-
 		return alignment(alig, t.getLength());
 	}
 
