@@ -69,7 +69,7 @@ namespace tt {
 					}
 			} {
 
-		std::array vertices{
+		std::array sourceVertices{
 				Vertex{{1.0f, 1.0f, -1.0f, 1.0f},
 				       {1.0f, .0f,  .0f,   1.0f}},
 				Vertex{{-1.0f, 1.0f, -1.0f, 1.0f},
@@ -87,8 +87,7 @@ namespace tt {
 				vk::BufferUsageFlagBits::eTransferDst |
 				vk::BufferUsageFlagBits::eTransferSrc |
 				vk::BufferUsageFlagBits::eIndirectBuffer,
-				vk::MemoryPropertyFlagBits::eDeviceLocal,
-				vertices,
+				sourceVertices,
 				sizeof(Vertex) * 32,
 				sizeof(vk::DrawIndirectCommand),
 				sizeof(glm::mat4));

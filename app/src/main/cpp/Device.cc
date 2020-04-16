@@ -608,8 +608,10 @@ namespace tt {
 
 	void Device::CmdBufferRenderpassBegin(RenderpassBeginHandle &handle, vk::Extent2D,
 	                                      uint32_t frameIndex) {
-		std::apply([&](auto &... jobs) { execSubCmdBufferHelper(handle, frameIndex, jobs...); },
-		           Jobs);
+		std::apply(
+				[&](auto &... jobs) { execSubCmdBufferHelper(handle, frameIndex, jobs...); },
+				Jobs
+		);
 	}
 
 	void Device::writeTextureToImage(gli::texture_cube &texture, vk::Image image) {

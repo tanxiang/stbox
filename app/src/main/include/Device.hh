@@ -62,8 +62,8 @@ namespace tt {
 					false,
 					is_io_obj_helper<
 							decltype(std::declval<T>().getLength()),
-							decltype(std::declval<T>().read(nullptr,0))
-							>,
+							decltype(std::declval<T>().read(nullptr, 0))
+					>,
 					void
 			>
 	> : public std::true_type {
@@ -90,7 +90,8 @@ namespace tt {
 	}
 
 	template<typename T, typename std::enable_if<
-			!is_io_obj<T>::value && !is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
+			!is_io_obj<T>::value && !is_container<T>::value &&
+			!std::is_integral<T>::value, int>::type = 0>
 	auto objSize(uint32_t alig, const T &t) {
 		return alignment(alig, sizeof(t));
 	}
@@ -122,7 +123,8 @@ namespace tt {
 	}
 
 	template<typename T, typename std::enable_if<
-			!is_io_obj<T>::value && !is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
+			!is_io_obj<T>::value && !is_container<T>::value &&
+			!std::is_integral<T>::value, int>::type = 0>
 	auto objDataSize(uint32_t alig, const T &t) {
 		return alignment(alig, sizeof(t));
 	}
@@ -169,7 +171,10 @@ namespace tt {
 	writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,
 	         uint32_t &off,
 	         const T &t) {
-		t.read(static_cast<char *>(ptr.get()) + off,t.getLength());
+		t.read(static_cast<char *>(ptr.get()) + off, t.getLength());
+		uint16_t * pp = reinterpret_cast<uint16_t *> (static_cast<char *>(ptr.get()) + off);
+		MY_LOG(INFO) <<off <<": "<< pp[0] << ' ' << pp[1] << ' ' << pp[2] << ' ' << pp[3] << ' ';
+
 		auto m_off = off;
 		//off += get().getBufferMemoryRequirements(buffer).size;
 		off += objSize(alig, t);
@@ -177,7 +182,8 @@ namespace tt {
 	}
 
 	template<typename T, typename std::enable_if<
-			!is_io_obj<T>::value&&!is_container<T>::value && !std::is_integral<T>::value, int>::type = 0>
+			!is_io_obj<T>::value && !is_container<T>::value &&
+			!std::is_integral<T>::value, int>::type = 0>
 	vk::DescriptorBufferInfo
 	writeObj(BufferMemoryPtr &ptr, vk::Buffer buffer, uint32_t alig, uint32_t boff,
 	         uint32_t &off,
@@ -387,8 +393,9 @@ namespace tt {
 		ImageViewMemory createImageAndMemoryFromMemory(gli::texture2d t2d,
 		                                               vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 
-		void writeTextureToImage(gli::texture_cube &texture,vk::Image image);
-		void writeTextureToImage(gli::texture2d &texture,vk::Image image);
+		void writeTextureToImage(gli::texture_cube &texture, vk::Image image);
+
+		void writeTextureToImage(gli::texture2d &texture, vk::Image image);
 
 
 		ImageViewMemory createImageAndMemoryFromT2d(gli::texture2d t2d,
@@ -433,7 +440,7 @@ namespace tt {
 		void bindBsm(BuffersMemory<> &BsM);
 
 		template<typename Tuple>
-		void bindBufferMemory(const Tuple &tuple) {
+		auto bindBufferMemory(const Tuple &tuple) {
 			return get().bindBufferMemory(
 					std::get<vk::UniqueBuffer>(tuple).get(),
 					std::get<vk::UniqueDeviceMemory>(tuple).get(), 0);
@@ -496,11 +503,10 @@ namespace tt {
 
 		template<typename ... Ts>
 		auto createBufferPartsOnObjs(vk::BufferUsageFlags flags,
-		                             vk::MemoryPropertyFlags memoryPropertyFlags,
 		                             const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			uint32_t allSize = 0;
-			//auto parts = std::array<size_t,sizeof...(objs)>{objSizeOffset(alig, allSize, objs)...};
+			std::array parts{objSizeOffset(alig, allSize, objs)...};
 			auto tuple = BufferMemoryWithParts<sizeof...(objs)>(
 					get().createBufferUnique(
 							vk::BufferCreateInfo{
@@ -508,39 +514,41 @@ namespace tt {
 									allSize,
 									flags}
 					),
-					vk::UniqueDeviceMemory{}, std::array{objSizeOffset(alig, allSize, objs)...});
-			bufferTupleCreateMemory(memoryPropertyFlags, tuple);
-			if (memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
-				auto staging = createStagingBufferMemoryOnObjs2(objs...);
-				flushBufferTuple(staging, tuple);
-			}
+					vk::UniqueDeviceMemory{},parts);
+			bufferTupleCreateMemory(vk::MemoryPropertyFlagBits::eDeviceLocal, tuple);
+			auto staging = createStagingBufferMemoryOnObjs2(objs...);
+			flushBufferTuple(staging, tuple);
 			return tuple;
 		}
 
 		template<typename Tuple>
 		auto bufferImageTupleCreateMemory(vk::MemoryPropertyFlags memoryPropertyFlags,
-		                             Tuple &tuple) {
+		                                  Tuple &tuple) {
 			auto memoryReq = get().getBufferMemoryRequirements(
 					std::get<vk::UniqueBuffer>(tuple).get());
 			auto imageMemoryReq = get().getImageMemoryRequirements(
 					std::get<vk::UniqueImage>(tuple).get());
 			std::get<vk::UniqueDeviceMemory>(tuple) =
-					get().allocateMemoryUnique(vk::MemoryAllocateInfo{
-							memoryReq.size+imageMemoryReq.size,
-							findMemoryTypeIndex(memoryReq.memoryTypeBits|imageMemoryReq.memoryTypeBits, memoryPropertyFlags)
+					get().allocateMemoryUnique({
+							memoryReq.size + imageMemoryReq.size,
+							findMemoryTypeIndex(
+									memoryReq.memoryTypeBits | imageMemoryReq.memoryTypeBits,
+									memoryPropertyFlags)
 					});
 			bindBufferMemory(tuple);
-			get().bindImageMemory(std::get<vk::UniqueImage>(tuple).get(),std::get<vk::UniqueDeviceMemory>(tuple).get(),memoryReq.size);
+			get().bindImageMemory(std::get<vk::UniqueImage>(tuple).get(),
+			                      std::get<vk::UniqueDeviceMemory>(tuple).get(), memoryReq.size);
+			MY_LOG(INFO)<<"bindImageMemory off:"<<memoryReq.size;
 		}
 
 		template<typename ... Ts>
 		auto createImageBufferPartsOnObjs(vk::BufferUsageFlags flags,
-		                             vk::MemoryPropertyFlags memoryPropertyFlags,
-		                             vk::ImageCreateInfo imageCreateInfo,
-		                             const Ts &... objs) {
+				                          vk::ImageCreateInfo imageCreateInfo,
+				                          const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			uint32_t allSize = 0;
-			//auto parts = std::array<size_t,sizeof...(objs)>{objSizeOffset(alig, allSize, objs)...};
+			std::array parts{objSizeOffset(alig, allSize, objs)...};
+			MY_LOG(INFO) << "allSize" <<allSize;
 			auto tuple = BufferImageMemoryWithParts<sizeof...(objs)>(
 					get().createBufferUnique(
 							vk::BufferCreateInfo{
@@ -549,24 +557,13 @@ namespace tt {
 									flags}
 					),
 					get().createImageUnique(imageCreateInfo),
-					vk::UniqueDeviceMemory{}, std::array{objSizeOffset(alig, allSize, objs)...});
-			bufferImageTupleCreateMemory(memoryPropertyFlags, tuple);
-			if (memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
-				auto staging = createStagingBufferMemoryOnObjs2(objs...);
-				flushBufferTuple(staging, tuple);
-			}
+					vk::UniqueDeviceMemory{}, parts);
+			bufferImageTupleCreateMemory(vk::MemoryPropertyFlagBits::eDeviceLocal, tuple);
+			auto staging = createStagingBufferMemoryOnObjs2(objs...);
+			flushBufferTuple(staging, tuple);
 			return tuple;
 		}
 
-		auto lunchDir(vk::BufferUsageFlags flags,
-		              vk::MemoryPropertyFlags memoryPropertyFlags,AAssetManager *assetManager,std::string path){
-			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
-			uint32_t allSize = 0;
-			AAssetDirHander aAssetDirHander{assetManager,path.c_str()};
-			while(const char* name = aAssetDirHander.getNextFileName()){
-				AAssetHander aAssetHander{assetManager,name};
-			}
-		}
 
 		void buildMemoryOnBsM(BuffersMemory<> &BsM,
 		                      vk::MemoryPropertyFlags memoryPropertyFlags) {
@@ -672,7 +669,7 @@ namespace tt {
 
 		//std::vector<JobDraw> drawJobs;
 	private:
-		std::tuple<JobSkyBox,JobDrawLine,JobDraw> Jobs;
+		std::tuple<JobSkyBox, JobDrawLine, JobDraw> Jobs;
 	public:
 		std::vector<vk::UniqueCommandBuffer> mainCmdBuffers;
 
