@@ -105,7 +105,7 @@ namespace tt {
 				e2dImageCreateInfoByTextuer(textCube, vk::ImageCreateFlagBits::eCubeCompatible),
 				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_PNt.bin"},
 				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_index_0_strip.bin"},
-				sizeof(vk::DrawIndirectCommand),
+				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_index_0_strip_draw.bin"},
 				sizeof(glm::mat4));
 
 		outputMemory = device.createBufferAndMemory(
@@ -215,15 +215,10 @@ namespace tt {
 				vk::IndexType::eUint16
 		);
 
-		cmdHandleRenderpassBegin.drawIndexed(21, 1, 0, 0, 0);
-
-		cmdHandleRenderpassBegin.copyBuffer(
+		cmdHandleRenderpassBegin.drawIndexedIndirect(
 				std::get<vk::UniqueBuffer>(memoryWithParts).get(),
-				std::get<vk::UniqueBuffer>(outputMemory).get(),
-				{vk::BufferCopy{
-						createDescriptorBufferInfoTuple(memoryWithParts, 1).offset, 0,
-						32}});
-
+				createDescriptorBufferInfoTuple(memoryWithParts, 2).offset,
+				1,0);
 	}
 
 	void
@@ -234,8 +229,8 @@ namespace tt {
 				device->getBufferMemoryRequirements(buffer).size,
 				0,
 				createDescriptorBufferInfoTuple(memoryWithParts, 3).offset);
-		auto outputMemoryPtr = device.mapTypeBufferMemory<uint16_t>(outputMemory);
-		MY_LOG(INFO) <<createDescriptorBufferInfoTuple(memoryWithParts, 1).offset <<": "<< outputMemoryPtr[0] << ' ' << outputMemoryPtr[1] << ' ' << outputMemoryPtr[2] << ' ' << outputMemoryPtr[3] << ' ';
+		//auto outputMemoryPtr = device.mapTypeBufferMemory<uint16_t>(outputMemory);
+		//MY_LOG(INFO) <<createDescriptorBufferInfoTuple(memoryWithParts, 1).offset <<": "<< outputMemoryPtr[0] << ' ' << outputMemoryPtr[1] << ' ' << outputMemoryPtr[2] << ' ' << outputMemoryPtr[3] << ' ';
 
 	}
 }
