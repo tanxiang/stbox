@@ -9,7 +9,7 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-
+#define GLM_FORCE_LEFT_HANDED
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -18,6 +18,12 @@ namespace tt {
 
 	struct JobBase {
 	protected:
+		static glm::mat4 perspective;
+		static glm::vec3 camPos;
+		static glm::vec3 camTo;
+		static glm::vec3 camUp;
+		static glm::mat4 lookat;
+
 		vk::UniqueDescriptorPool descriptorPool;
 		auto ownerDevice() {
 			return descriptorPool.getOwner();

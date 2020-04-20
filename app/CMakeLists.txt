@@ -38,6 +38,7 @@ add_library( # Sets the name of the library.
         src/main/cpp/JobSkyBox.cc
         src/main/cpp/Instance.cc
         src/main/cpp/stboxvk.cc
+        src/main/cpp/JobBase.cc
         #src/main/cpp/Blob.cc
         #src/main/cpp/Connecter.cc
         #src/main/cpp/Net.cc

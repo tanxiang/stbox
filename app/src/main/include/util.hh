@@ -16,7 +16,6 @@
 #include <iostream>
 #include <memory>
 #include <map>
-//#include <gli/texture2d.hpp>
 #include "main.hh"
 
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);

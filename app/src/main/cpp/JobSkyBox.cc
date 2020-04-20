@@ -32,16 +32,13 @@ namespace tt {
 
 		std::array vertexInputBindingDescriptions{
 				vk::VertexInputBindingDescription{
-						0, sizeof(float) * 8,
+						0, sizeof(float) * 3,
 						vk::VertexInputRate::eVertex
 				}
 		};
 		std::array vertexInputAttributeDescriptions{
 				vk::VertexInputAttributeDescription{
 						0, 0, vk::Format::eR32G32B32Sfloat, 0
-				},
-				vk::VertexInputAttributeDescription{
-						1, 0, vk::Format::eR32G32B32Sfloat, sizeof(float) * 3
 				}
 		};
 
@@ -103,7 +100,7 @@ namespace tt {
 				vk::BufferUsageFlagBits::eTransferSrc |
 				vk::BufferUsageFlagBits::eTransferDst,
 				e2dImageCreateInfoByTextuer(textCube, vk::ImageCreateFlagBits::eCubeCompatible),
-				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_PNt.bin"},
+				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_P.bin"},
 				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_index_0_strip.bin"},
 				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_index_0_strip_draw.bin"},
 				sizeof(glm::mat4));

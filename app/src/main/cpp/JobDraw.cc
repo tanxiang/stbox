@@ -95,15 +95,38 @@ namespace tt {
 		);
 	}
 
+	namespace glmx {
+		using namespace glm;
+
+		template<typename T, qualifier Q>
+		GLM_FUNC_QUALIFIER mat<4, 4, T, Q>
+		lookcc(vec<2, T, Q> const& xy) {
+			vec<3, T, Q> const up{0,1,0};
+			vec<3, T, Q> const eye{xy.x,xy.y,1};
+			vec<3, T, Q> const f(normalize(vec<3, T, Q>{} - eye));
+			vec<3, T, Q> const s(normalize(cross(f, up)));
+			vec<3, T, Q> const u(cross(s, f));
+			mat<4, 4, T, Q> Result(0);
+			Result[0][0] = s.x;
+			Result[1][0] = s.y;
+			Result[2][0] = s.z;
+			Result[0][1] = u.x;
+			Result[1][1] = u.y;
+			Result[2][1] = u.z;
+			Result[0][2] = -f.x;
+			Result[1][2] = -f.y;
+			Result[2][2] = -f.z;
+			Result[3][3] =1;
+			return Result;
+		}
+
+	}
+
 	void JobDraw::setPv(float dx, float dy) {
-		camPos[0] -= dx * 0.1;
-		camPos[1] -= dy * 0.1;
+		auto nlookat = lookat*glmx::lookcc(glm::vec2(dx*0.01,dy*0.01));
+		lookat = nlookat;
 		helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAMs[0])[0] =
-				perspective * glm::lookAt(
-						camPos,  // Camera is at (-5,3,-10), in World Space
-						camTo,     // and looks at the origin
-						camUp     // Head is up (set to 0,-1,0 to look upside-down)
-				);
+				perspective * lookat;
 	}
 
 	JobDraw::JobDraw(JobBase &&j, android_app *app, tt::Device &device) :
