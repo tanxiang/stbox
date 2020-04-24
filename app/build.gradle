@@ -13,7 +13,7 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                cppFlags "-std=c++14 -std=c++1z -fexceptions"
+                cppFlags "-std=c++1z -fexceptions"
                 arguments "-DANDROID_STL=c++_shared"
             }
         }
@@ -22,7 +22,7 @@ android {
             //abiFilter "x86"
         }
         shaders {
-            glslcArgs.addAll(['-c','-g'])
+            glslcArgs.addAll(['-c'])
         }
     }
 
@@ -38,7 +38,7 @@ android {
         }
     }
     aaptOptions {
-        noCompress 'pt' // or whatever extension you use
+        noCompress 'ktx' // or whatever extension you use
     }
 
 }
