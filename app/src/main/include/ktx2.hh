@@ -22,7 +22,7 @@ namespace tt {
 		unsigned char* bufferPtr();
 		vk::Format format();
 		size_t numLevels();
-
+		size_t numLayers();
 		bool isCubemap();
 	};
 }
