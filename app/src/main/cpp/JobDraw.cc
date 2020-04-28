@@ -183,7 +183,7 @@ namespace tt {
 		{
 			auto fileContent = loadDataFromAssets("textures/ic_launcher-web.ktx", app);
 			//gli::texture2d tex2d;
-			auto tex2d = gli::texture2d{gli::load_ktx(fileContent.data(), fileContent.size())};
+			auto tex2d = gli::texture2d{gli::load_ktx((char*)fileContent.data(), fileContent.size())};
 			sampler = device.createSampler(tex2d.levels());
 			IVMs.emplace_back(device.createImageAndMemoryFromT2d(tex2d));
 		}

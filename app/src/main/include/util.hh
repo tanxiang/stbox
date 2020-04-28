@@ -28,7 +28,7 @@ namespace tt {
 
 	class Instance;
 
-	std::vector<char> loadDataFromAssets(const std::string &filePath, android_app *androidAppCtx);
+	std::vector<unsigned char> loadDataFromAssets(const std::string &filePath, android_app *androidAppCtx);
 
 	inline uint32_t
 	queueFamilyPropertiesFindFlags(vk::PhysicalDevice phyDevice, vk::QueueFlags flags,

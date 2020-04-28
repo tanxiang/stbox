@@ -6,6 +6,8 @@
 #include "Device.hh"
 #include <gli/gli.hpp>
 //#include "model.hh"
+#include "ktx2.hh"
+//#include "aopen.h"
 
 namespace tt {
 
@@ -91,7 +93,11 @@ namespace tt {
 			} {
 
 		auto fileContent = loadDataFromAssets("textures/cubemap_yokohama_astc_8x8_unorm.ktx", app);
-		auto textCube = gli::texture_cube{gli::load_ktx(fileContent.data(), fileContent.size())};
+		auto textCube = gli::texture_cube{gli::load_ktx((char*)fileContent.data(), fileContent.size())};
+		//AAssetHander ktx2{app->activity->assetManager, "textures/cube_bcmp.ktx"};
+		auto ktx2fileContent = loadDataFromAssets("textures/cube_bcmp.ktx", app);
+		ktx2 ktx2texture{ktx2fileContent.data(), ktx2fileContent.size()};
+
 		memoryWithParts = device.createImageBufferPartsOnObjs(
 				vk::BufferUsageFlagBits::eUniformBuffer |
 				vk::BufferUsageFlagBits::eVertexBuffer |

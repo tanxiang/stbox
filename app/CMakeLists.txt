@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.6)
 #set(protobuf_BUILD_TESTS OFF CACHE BOOL "Build tests" FORCE)
 #set(protobuf_BUILD_PROTOC_BINARIES OFF CACHE BOOL "Build libprotoc and protoc compiler" FORCE)
 #set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "Build Shared Libraries" FORCE)
-#add_subdirectory(src/external/protobuf/cmake)
+add_subdirectory(src/external/ktx/build/cmake/linux/Release)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 
 add_library(app-glue
@@ -39,6 +39,7 @@ add_library( # Sets the name of the library.
         src/main/cpp/Instance.cc
         src/main/cpp/stboxvk.cc
         src/main/cpp/JobBase.cc
+        src/main/cpp/ktx2.cc
         #src/main/cpp/Blob.cc
         #src/main/cpp/Connecter.cc
         #src/main/cpp/Net.cc
@@ -52,6 +53,7 @@ target_compile_options(stbox PRIVATE -fno-rtti)
 target_include_directories(stbox PRIVATE
         src/external/glm
         src/external/gli
+        src/external/ktx/include
         src/main/include
         src/proto
         ${ANDROID_NDK}/sources/android/native_app_glue
@@ -111,6 +113,11 @@ find_library( # Sets the name of the path variable.
 #set_target_properties(shaderc_lib PROPERTIES IMPORTED_LOCATION
 #                      ${SHADERC_SRC}/libs/${ANDROID_STL}/${ANDROID_ABI}/libshaderc.a)
 
+
+
+#set_property(TARGET libktx PROPERTY FOLDER "external")
+
+
 set(CMAKE_SHARED_LINKER_FLAGS
         "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 
@@ -123,5 +130,6 @@ target_link_libraries( # Specifies the target library.
         ${android-lib}
         #onnxpb
         app-glue
+        libktx_gl
         )
 
