@@ -6,14 +6,14 @@
 
 #include <ktxvulkan.h>
 
-
+extern "C"{
 typedef struct user_cbdata_optimal {
-	VkBufferImageCopy* region; // Specify destination region in final image.
+	VkBufferImageCopy *region; // Specify destination region in final image.
 	VkDeviceSize offset;       // Offset of current level in staging buffer
 	ktx_uint32_t numFaces;
 	ktx_uint32_t numLayers;
 	// The following are used only by optimalTilingPadCallback
-	ktx_uint8_t* dest;         // Pointer to mapped staging buffer.
+	ktx_uint8_t *dest;         // Pointer to mapped staging buffer.
 	ktx_uint32_t elementSize;
 	ktx_uint32_t numDimensions;
 #if defined(_DEBUG)
@@ -51,7 +51,7 @@ optimalTilingCallback(int miplevel, int face,
 
 	return KTX_SUCCESS;
 }
-
+};
 namespace tt{
 	ktx2::ktx2(const unsigned char* bytes, int size) {
 		auto ret =ktxTexture2_CreateFromMemory(bytes,size,KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT,(ktxTexture2**)&textureKtx);
@@ -161,7 +161,7 @@ namespace tt{
 		//cbData.dest = pMappedStagingBuffer;
 		ktxTexture_IterateLevels((ktxTexture*)textureKtx,
 		                         optimalTilingCallback,
-		                         BufferImageCopys.data());
+		                         &cbData);
 		return BufferImageCopys;
 	}
 
