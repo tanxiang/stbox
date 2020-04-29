@@ -17,12 +17,15 @@ namespace tt {
 		ktx2(const unsigned char* bytes, int size);
 		~ktx2();
 		vk::ImageCreateInfo vkImageCI();
+		vk::ImageViewCreateInfo vkImageViewCI(vk::Image);
 		std::vector<vk::BufferImageCopy> copyRegions();
+		vk::ImageSubresourceRange imageSubresourceRange();
 		size_t bufferSize();
 		unsigned char* bufferPtr();
 		vk::Format format();
 		size_t numLevels();
 		size_t numLayers();
+		size_t numLayersAll();
 		bool isCubemap();
 	};
 }

@@ -11,6 +11,7 @@
 #include "JobDrawLine.hh"
 #include "JobDraw.hh"
 #include "JobSkyBox.hh"
+#include "ktx2.hh"
 #include <type_traits>
 #include <gli/texture_cube.hpp>
 
@@ -394,6 +395,8 @@ namespace tt {
 		                                               vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 
 		void writeTextureToImage(gli::texture_cube &texture, vk::Image image);
+
+		void writeTextureToImage(ktx2 &texture, vk::Image image);
 
 		void writeTextureToImage(gli::texture2d &texture, vk::Image image);
 

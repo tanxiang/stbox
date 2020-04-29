@@ -104,9 +104,50 @@ namespace tt{
 		return vk::ImageCreateInfo{
 				isCubemap() ? vk::ImageCreateFlagBits::eCubeCompatible : vk::ImageCreateFlagBits{},imageType,format(),
 				{This->baseWidth,This->baseHeight,This->baseDepth},numLevels(),
-				isCubemap() ? numLayers()*6 : numLayers(),vk::SampleCountFlagBits::e1,
+				numLayersAll(),vk::SampleCountFlagBits::e1,
 				vk::ImageTiling::eOptimal,vk::ImageUsageFlagBits::eSampled|vk::ImageUsageFlagBits::eTransferDst,
 				vk::SharingMode::eExclusive
+		};
+	}
+
+
+	vk::ImageViewCreateInfo ktx2::vkImageViewCI(vk::Image image) {
+		auto This = (ktxTexture2*)textureKtx;
+		vk::ImageType imageType;
+		vk::ImageViewType viewType;
+		switch (This->numDimensions) {
+			case 1:
+				imageType = vk::ImageType::e1D;
+				viewType = This->isArray ?
+				           vk::ImageViewType::e1DArray : vk::ImageViewType::e1D;
+				break;
+			case 2:
+			default: // To keep compilers happy.
+				imageType = vk::ImageType::e2D;
+				if (This->isCubemap)
+					viewType = This->isArray ?
+					           vk::ImageViewType::eCubeArray : vk::ImageViewType::eCube;
+				else
+					viewType = This->isArray ?
+					           vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
+				break;
+			case 3:
+				imageType = vk::ImageType::e3D;
+				/* 3D array textures not supported in Vulkan. Attempts to create or
+				 * load them should have been trapped long before this.
+				 */
+				assert(!This->isArray);
+				viewType = vk::ImageViewType::e3D;
+				break;
+		}
+		return vk::ImageViewCreateInfo{
+				{},image,viewType,format(),
+				{
+						vk::ComponentSwizzle::eR,
+						vk::ComponentSwizzle::eG,
+						vk::ComponentSwizzle::eB,
+						vk::ComponentSwizzle::eA
+				},imageSubresourceRange()
 		};
 	}
 
@@ -116,12 +157,19 @@ namespace tt{
 		cbData.region = reinterpret_cast<VkBufferImageCopy*>(BufferImageCopys.data());
 		cbData.offset = 0;
 		cbData.numFaces = ((ktxTexture2*)textureKtx)->numFaces;
-		cbData.numLayers = numLayers();
+		cbData.numLayers = numLayersAll();
 		//cbData.dest = pMappedStagingBuffer;
 		ktxTexture_IterateLevels((ktxTexture*)textureKtx,
 		                         optimalTilingCallback,
 		                         BufferImageCopys.data());
 		return BufferImageCopys;
+	}
+
+	vk::ImageSubresourceRange ktx2::imageSubresourceRange() {
+		return vk::ImageSubresourceRange{
+				vk::ImageAspectFlagBits::eColor,
+				0, numLevels(), 0, numLayersAll()
+		};
 	}
 
 	size_t ktx2::bufferSize() {
@@ -147,6 +195,11 @@ namespace tt{
 	size_t ktx2::numLayers() {
 		return ((ktxTexture2*)textureKtx)->numLayers;
 	}
+
+	size_t ktx2::numLayersAll() {
+		return  isCubemap()?numLayers()*6:numLayers();
+	}
+
 }
 
 

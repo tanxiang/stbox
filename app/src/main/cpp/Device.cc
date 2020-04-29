@@ -746,4 +746,58 @@ namespace tt {
 		auto copyFence = submitCmdBuffer(copyCmd[0].get());
 		waitFence(copyFence.get());
 	}
+
+	void Device::writeTextureToImage(ktx2 &texture, vk::Image image) {
+		auto transferSrcBuffer = createStagingBufferMemoryOnObjs(texture.bufferSize());
+		{
+			auto sampleBufferPtr = mapBufferMemory(transferSrcBuffer);
+			memcpy(sampleBufferPtr.get(), texture.bufferPtr(), texture.bufferSize());
+		}
+
+		auto bufferCopyRegion = texture.copyRegions();
+		auto subResourceRange = texture.imageSubresourceRange();
+
+		vk::ImageMemoryBarrier imageMemoryBarrierToDest{
+				vk::AccessFlags{}, vk::AccessFlagBits::eTransferWrite,
+				vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 0, 0,
+				image, subResourceRange
+		};
+
+		vk::ImageMemoryBarrier imageMemoryBarrierToGeneral{
+				vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eShaderRead,
+				vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal, 0, 0,
+				image, subResourceRange
+		};
+
+		auto copyCmd = createCmdBuffers(
+				1, gPoolUnique.get(),
+				[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
+					commandBufferBeginHandle.pipelineBarrier(
+							vk::PipelineStageFlagBits::eHost,
+							vk::PipelineStageFlagBits::eTransfer,
+							vk::DependencyFlags{},
+							0, nullptr,
+							0, nullptr,
+							1, &imageMemoryBarrierToDest);
+
+					commandBufferBeginHandle.copyBufferToImage(
+							std::get<vk::UniqueBuffer>(transferSrcBuffer).get(),
+							image,
+							vk::ImageLayout::eTransferDstOptimal,
+							bufferCopyRegion);
+					commandBufferBeginHandle.pipelineBarrier(
+							vk::PipelineStageFlagBits::eTransfer,
+							vk::PipelineStageFlagBits::eFragmentShader,
+							vk::DependencyFlags{},
+							0, nullptr,
+							0, nullptr,
+							1, &imageMemoryBarrierToGeneral);
+				},
+				vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+		);
+
+		auto copyFence = submitCmdBuffer(copyCmd[0].get());
+		waitFence(copyFence.get());
+
+	}
 }
