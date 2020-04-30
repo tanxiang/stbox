@@ -53,18 +53,27 @@ optimalTilingCallback(int miplevel, int face,
 }
 };
 namespace tt{
+
+
 	ktx2::ktx2(const unsigned char* bytes, int size) {
-		auto ret =ktxTexture2_CreateFromMemory(bytes,size,KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT,(ktxTexture2**)&textureKtx);
+		auto ret = ktxTexture2_CreateFromMemory(bytes,size,KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT,(ktxTexture2**)&textureKtx);
 		if(ret != KTX_SUCCESS){
 			MY_LOG(ERROR)<<"ktx2 load:"<<ktxErrorString(ret);
 			//throw
 		}
-		if(((ktxTexture2*)textureKtx)->isCompressed) {
+		if(((ktxTexture2*)textureKtx)->supercompressionScheme == KTX_SUPERCOMPRESSION_BASIS) {
+			MY_LOG(ERROR)<<"ktx2 isCompressed";
+
 			ret = ktxTexture2_TranscodeBasis((ktxTexture2*)textureKtx, KTX_TTF_ASTC_4x4_RGBA, 0);
 			if(ret != KTX_SUCCESS){
 				MY_LOG(ERROR)<<"ktx2 TranscodeBasis:"<<ktxErrorString(ret);
 				//throw
 			}
+		}
+		auto vkFormat = ktxTexture_GetVkFormat((ktxTexture*)textureKtx);
+		if (vkFormat == VK_FORMAT_UNDEFINED) {
+			MY_LOG(ERROR)<<"ktx2 ktxTexture_GetVkFormat:"<<vkFormat;
+
 		}
 	}
 
@@ -199,6 +208,50 @@ namespace tt{
 	size_t ktx2::numLayersAll() {
 		return  isCubemap()?numLayers()*6:numLayers();
 	}
+
+	ktxVulkanDeviceInfo vdi;
+	ktxVulkanTexture kcktexture;
+	void ktx2::debugLoad(vk::PhysicalDevice physicalDevice,vk::Device device,vk::Queue queue,vk::CommandPool commandPool) {
+
+		auto ret = ktxVulkanDeviceInfo_Construct(&vdi, physicalDevice,device,
+		                              queue, commandPool, nullptr);
+		if(ret != KTX_SUCCESS){
+			MY_LOG(ERROR)<<"ktx2 ktxVulkanDeviceInfo_Construct:"<<ktxErrorString(ret);
+			//throw
+		}
+		auto vkFormat = ktxTexture_GetVkFormat((ktxTexture*)textureKtx);
+		if (vkFormat == VK_FORMAT_UNDEFINED) {
+			MY_LOG(ERROR)<<"ktx2 ktxTexture_GetVkFormat:"<<vkFormat;
+
+		}
+		ret = ktxTexture_VkUpload((ktxTexture*)textureKtx,&vdi,&kcktexture);
+
+		if(ret != KTX_SUCCESS){
+			MY_LOG(ERROR)<<"ktx2 ktxTexture_VkUpload:"<<ktxErrorString(ret)<<ret;
+			//throw
+		}
+	}
+
+	vk::Image ktx2::debugIMG() {
+		return kcktexture.image;
+	}
+
+	vk::Format ktx2::debugFMT() {
+		return static_cast<vk::Format >(kcktexture.imageFormat);
+	}
+
+	vk::ImageViewType ktx2::debugVT() {
+		return static_cast<vk::ImageViewType >(kcktexture.viewType);
+	}
+
+	size_t ktx2::debugLayerC() {
+		return kcktexture.layerCount;
+	}
+
+	size_t ktx2::debugLevelC() {
+		return kcktexture.levelCount;
+	}
+
 
 }
 

@@ -752,9 +752,13 @@ namespace tt {
 		{
 			auto sampleBufferPtr = mapBufferMemory(transferSrcBuffer);
 			memcpy(sampleBufferPtr.get(), texture.bufferPtr(), texture.bufferSize());
+			MY_LOG(ERROR)<<"texture.bufferSize():"<<texture.bufferSize();
 		}
 
 		auto bufferCopyRegion = texture.copyRegions();
+		for(auto& bufferCR:bufferCopyRegion){
+			MY_LOG(ERROR)<<"bufferCopyRegion:"<<bufferCR.bufferOffset;
+		}
 		auto subResourceRange = texture.imageSubresourceRange();
 
 		vk::ImageMemoryBarrier imageMemoryBarrierToDest{
@@ -768,7 +772,6 @@ namespace tt {
 				vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal, 0, 0,
 				image, subResourceRange
 		};
-
 		auto copyCmd = createCmdBuffers(
 				1, gPoolUnique.get(),
 				[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
@@ -780,11 +783,12 @@ namespace tt {
 							0, nullptr,
 							1, &imageMemoryBarrierToDest);
 
-					commandBufferBeginHandle.copyBufferToImage(
+					/*commandBufferBeginHandle.copyBufferToImage(
 							std::get<vk::UniqueBuffer>(transferSrcBuffer).get(),
 							image,
 							vk::ImageLayout::eTransferDstOptimal,
 							bufferCopyRegion);
+*/
 					commandBufferBeginHandle.pipelineBarrier(
 							vk::PipelineStageFlagBits::eTransfer,
 							vk::PipelineStageFlagBits::eFragmentShader,

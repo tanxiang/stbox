@@ -98,6 +98,8 @@ namespace tt {
 		auto ktx2fileContent = loadDataFromAssets("textures/cube_bcmp.ktx", app);
 		ktx2 ktx2texture{ktx2fileContent.data(), ktx2fileContent.size()};
 
+		ktx2texture.debugLoad(device.phyDevice(),device.get(),device.graphsQueue(),commandPool.get());
+
 		memoryWithParts = device.createImageBufferPartsOnObjs(
 				vk::BufferUsageFlagBits::eUniformBuffer |
 				vk::BufferUsageFlagBits::eVertexBuffer |
@@ -105,7 +107,8 @@ namespace tt {
 				vk::BufferUsageFlagBits::eIndirectBuffer |
 				vk::BufferUsageFlagBits::eTransferSrc |
 				vk::BufferUsageFlagBits::eTransferDst,
-				e2dImageCreateInfoByTextuer(textCube, vk::ImageCreateFlagBits::eCubeCompatible),
+				//e2dImageCreateInfoByTextuer(textCube, vk::ImageCreateFlagBits::eCubeCompatible),
+				ktx2texture.vkImageCI(),
 				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_P.bin"},
 				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_index_0_strip.bin"},
 				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_index_0_strip_draw.bin"},
@@ -116,11 +119,12 @@ namespace tt {
 				vk::BufferUsageFlagBits::eTransferDst,
 				vk::MemoryPropertyFlagBits::eHostVisible |
 				vk::MemoryPropertyFlagBits::eHostCoherent);
-		device.writeTextureToImage(textCube, std::get<vk::UniqueImage>(memoryWithParts).get());
+		//device.writeTextureToImage(textCube, std::get<vk::UniqueImage>(memoryWithParts).get());
+		device.writeTextureToImage(ktx2texture, std::get<vk::UniqueImage>(memoryWithParts).get());
 		getUniqueImageViewTuple(memoryWithParts) = device->createImageViewUnique(
 				{
-						{}, std::get<vk::UniqueImage>(memoryWithParts).get(),
-						vk::ImageViewType::eCube, static_cast<vk::Format >(textCube.format()),
+						{}, ktx2texture.debugIMG(),
+						vk::ImageViewType::eCube, ktx2texture.debugFMT(),
 						{
 								vk::ComponentSwizzle::eR,
 								vk::ComponentSwizzle::eG,
@@ -129,9 +133,10 @@ namespace tt {
 						},
 						{
 								vk::ImageAspectFlagBits::eColor,
-								0, textCube.levels(), 0, textCube.faces()
+								0, ktx2texture.debugLevelC(), 0, ktx2texture.debugLayerC()
 						}
 				}
+				//ktx2texture.vkImageViewCI(std::get<vk::UniqueImage>(memoryWithParts).get())
 		);
 
 		sampler = device->createSamplerUnique(
@@ -144,7 +149,9 @@ namespace tt {
 						vk::SamplerAddressMode::eClampToEdge,
 						vk::SamplerAddressMode::eClampToEdge,
 						0, 0, 0, 0, vk::CompareOp::eNever,
-						0, textCube.levels(),
+						0,
+						//textCube.levels(),
+						ktx2texture.debugLevelC(),
 						vk::BorderColor::eFloatOpaqueWhite,
 						0});
 		createDescriptorBufferInfoTuple(memoryWithParts, 1);

@@ -174,8 +174,7 @@ namespace tt {
 	         const T &t) {
 		t.read(static_cast<char *>(ptr.get()) + off, t.getLength());
 		uint16_t * pp = reinterpret_cast<uint16_t *> (static_cast<char *>(ptr.get()) + off);
-		MY_LOG(INFO) <<off <<": "<< pp[0] << ' ' << pp[1] << ' ' << pp[2] << ' ' << pp[3] << ' ';
-
+		//MY_LOG(INFO) <<off <<": "<< pp[0] << ' ' << pp[1] << ' ' << pp[2] << ' ' << pp[3] << ' ';
 		auto m_off = off;
 		//off += get().getBufferMemoryRequirements(buffer).size;
 		off += objSize(alig, t);
@@ -541,7 +540,7 @@ namespace tt {
 			bindBufferMemory(tuple);
 			get().bindImageMemory(std::get<vk::UniqueImage>(tuple).get(),
 			                      std::get<vk::UniqueDeviceMemory>(tuple).get(), memoryReq.size);
-			MY_LOG(INFO)<<"bindImageMemory off:"<<memoryReq.size;
+			//MY_LOG(INFO)<<"bindImageMemory off:"<<memoryReq.size;
 		}
 
 		template<typename ... Ts>
@@ -551,7 +550,7 @@ namespace tt {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			uint32_t allSize = 0;
 			std::array parts{objSizeOffset(alig, allSize, objs)...};
-			MY_LOG(INFO) << "allSize" <<allSize;
+			//MY_LOG(INFO) << "allSize" <<allSize;
 			auto tuple = BufferImageMemoryWithParts<sizeof...(objs)>(
 					get().createBufferUnique(
 							vk::BufferCreateInfo{
