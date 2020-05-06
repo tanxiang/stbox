@@ -62,8 +62,6 @@ namespace tt{
 			//throw
 		}
 		if(((ktxTexture2*)textureKtx)->supercompressionScheme == KTX_SUPERCOMPRESSION_BASIS) {
-			MY_LOG(ERROR)<<"ktx2 isCompressed";
-
 			ret = ktxTexture2_TranscodeBasis((ktxTexture2*)textureKtx, KTX_TTF_ASTC_4x4_RGBA, 0);
 			if(ret != KTX_SUCCESS){
 				MY_LOG(ERROR)<<"ktx2 TranscodeBasis:"<<ktxErrorString(ret);
@@ -166,7 +164,7 @@ namespace tt{
 		cbData.region = reinterpret_cast<VkBufferImageCopy*>(BufferImageCopys.data());
 		cbData.offset = 0;
 		cbData.numFaces = ((ktxTexture2*)textureKtx)->numFaces;
-		cbData.numLayers = numLayersAll();
+		cbData.numLayers = numLayers();
 		//cbData.dest = pMappedStagingBuffer;
 		ktxTexture_IterateLevels((ktxTexture*)textureKtx,
 		                         optimalTilingCallback,
@@ -190,6 +188,8 @@ namespace tt{
 	}
 
 	vk::Format ktx2::format() {
+		MY_LOG(ERROR)<<__func__<<vk::to_string(static_cast<vk::Format >(ktxTexture2_GetVkFormat((ktxTexture2*)textureKtx)));
+
 		return static_cast<vk::Format>(ktxTexture2_GetVkFormat((ktxTexture2*)textureKtx));
 	}
 
@@ -230,6 +230,8 @@ namespace tt{
 			MY_LOG(ERROR)<<"ktx2 ktxTexture_VkUpload:"<<ktxErrorString(ret)<<ret;
 			//throw
 		}
+		auto memReq = device.getImageMemoryRequirements(kcktexture.image);
+		MY_LOG(ERROR)<<__func__<<" memReq:"<<memReq.size;
 	}
 
 	vk::Image ktx2::debugIMG() {
@@ -237,18 +239,24 @@ namespace tt{
 	}
 
 	vk::Format ktx2::debugFMT() {
+		MY_LOG(ERROR)<<__func__<<vk::to_string(static_cast<vk::Format >(kcktexture.imageFormat));
+
 		return static_cast<vk::Format >(kcktexture.imageFormat);
 	}
 
 	vk::ImageViewType ktx2::debugVT() {
+		MY_LOG(ERROR)<<__func__<<vk::to_string(static_cast<vk::ImageViewType >(kcktexture.viewType));
+
 		return static_cast<vk::ImageViewType >(kcktexture.viewType);
 	}
 
 	size_t ktx2::debugLayerC() {
+		MY_LOG(ERROR)<<__func__<<kcktexture.layerCount;
 		return kcktexture.layerCount;
 	}
 
 	size_t ktx2::debugLevelC() {
+		MY_LOG(ERROR)<<__func__<<kcktexture.levelCount;
 		return kcktexture.levelCount;
 	}
 

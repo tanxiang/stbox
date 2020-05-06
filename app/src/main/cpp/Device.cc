@@ -752,17 +752,23 @@ namespace tt {
 		{
 			auto sampleBufferPtr = mapBufferMemory(transferSrcBuffer);
 			memcpy(sampleBufferPtr.get(), texture.bufferPtr(), texture.bufferSize());
-			MY_LOG(ERROR)<<"texture.bufferSize():"<<texture.bufferSize();
+			MY_LOG(ERROR)<<__func__<<"texture.bufferSize():"<<texture.bufferSize();
 		}
 
 		auto bufferCopyRegion = texture.copyRegions();
 		for(auto& bufferCR:bufferCopyRegion){
 			MY_LOG(ERROR)<<"bufferCopyRegion:"<<bufferCR.bufferOffset;
+			MY_LOG(ERROR)<<"bufferCopyRegion:"<<bufferCR.imageExtent.width;
+			MY_LOG(ERROR)<<"bufferCopyRegion:"<<bufferCR.imageExtent.height;
+			MY_LOG(ERROR)<<"bufferCopyRegion:"<<bufferCR.imageExtent.depth;
+			MY_LOG(ERROR)<<"bufferCopyRegion:"<<bufferCR.imageSubresource.layerCount;
 		}
 		auto subResourceRange = texture.imageSubresourceRange();
+		MY_LOG(ERROR)<<"subResourceRange levelCount:"<<subResourceRange.levelCount;
+		MY_LOG(ERROR)<<"subResourceRange layerCount:"<<subResourceRange.layerCount;
 
 		vk::ImageMemoryBarrier imageMemoryBarrierToDest{
-				vk::AccessFlags{}, vk::AccessFlagBits::eTransferWrite,
+				{}, vk::AccessFlagBits::eTransferWrite,
 				vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 0, 0,
 				image, subResourceRange
 		};
@@ -783,12 +789,12 @@ namespace tt {
 							0, nullptr,
 							1, &imageMemoryBarrierToDest);
 
-					/*commandBufferBeginHandle.copyBufferToImage(
+					commandBufferBeginHandle.copyBufferToImage(
 							std::get<vk::UniqueBuffer>(transferSrcBuffer).get(),
 							image,
 							vk::ImageLayout::eTransferDstOptimal,
 							bufferCopyRegion);
-*/
+
 					commandBufferBeginHandle.pipelineBarrier(
 							vk::PipelineStageFlagBits::eTransfer,
 							vk::PipelineStageFlagBits::eFragmentShader,
