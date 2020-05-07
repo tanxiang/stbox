@@ -27,13 +27,14 @@ namespace tt {
 		size_t numLayers();
 		size_t numLayersAll();
 		bool isCubemap();
+#ifdef KTX_VK_LOAD
 		void debugLoad(vk::PhysicalDevice physicalDevice,vk::Device device,vk::Queue queue,vk::CommandPool commandPool);
 		vk::Image debugIMG();
 		vk::Format debugFMT();
 		vk::ImageViewType debugVT();
 		size_t debugLevelC();
 		size_t debugLayerC();
-
+#endif
 	};
 }
 

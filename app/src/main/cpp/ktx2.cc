@@ -188,8 +188,7 @@ namespace tt{
 	}
 
 	vk::Format ktx2::format() {
-		MY_LOG(ERROR)<<__func__<<vk::to_string(static_cast<vk::Format >(ktxTexture2_GetVkFormat((ktxTexture2*)textureKtx)));
-
+		//MY_LOG(ERROR)<<__func__<<vk::to_string(static_cast<vk::Format >(ktxTexture2_GetVkFormat((ktxTexture2*)textureKtx)));
 		return static_cast<vk::Format>(ktxTexture2_GetVkFormat((ktxTexture2*)textureKtx));
 	}
 
@@ -208,6 +207,7 @@ namespace tt{
 	size_t ktx2::numLayersAll() {
 		return  isCubemap()?numLayers()*6:numLayers();
 	}
+#ifdef KTX_VK_LOAD
 
 	ktxVulkanDeviceInfo vdi;
 	ktxVulkanTexture kcktexture;
@@ -233,7 +233,6 @@ namespace tt{
 		auto memReq = device.getImageMemoryRequirements(kcktexture.image);
 		MY_LOG(ERROR)<<__func__<<" memReq:"<<memReq.size;
 	}
-
 	vk::Image ktx2::debugIMG() {
 		return kcktexture.image;
 	}
@@ -259,7 +258,7 @@ namespace tt{
 		MY_LOG(ERROR)<<__func__<<kcktexture.levelCount;
 		return kcktexture.levelCount;
 	}
-
+#endif
 
 }
 
