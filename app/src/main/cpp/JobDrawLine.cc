@@ -13,31 +13,21 @@ struct Vertex {
 
 namespace tt {
 
-	JobDrawLine JobDrawLine::create(android_app *app, tt::Device &device) {
-		return JobDrawLine(
-				createBase(device),
-				app,
-				device
-		);
-	}
-
-	JobBase JobDrawLine::createBase(tt::Device &device) {
-		return device.createJobBase(
-				{
-						vk::DescriptorPoolSize{
-								vk::DescriptorType::eUniformBuffer, 1
-						},
-						vk::DescriptorPoolSize{
-								vk::DescriptorType::eStorageBuffer, 3
-						}
-				},
-				2
-		);
-	}
-
-	JobDrawLine::JobDrawLine(JobBase &&j, android_app *app, tt::Device &device) :
-			JobBase{std::move(j)},
-			renderPass{createRenderpass(device)},
+	JobDrawLine::JobDrawLine(android_app *app, tt::Device &device) :
+			JobBase{
+					device.createJobBase(
+							{
+									vk::DescriptorPoolSize{
+											vk::DescriptorType::eUniformBuffer, 1
+									},
+									vk::DescriptorPoolSize{
+											vk::DescriptorType::eStorageBuffer, 3
+									}
+							},
+							2
+					)
+			},
+			//renderPass{createRenderpass(device)},
 			compPipeline{
 					device.get(),
 					descriptorPool.get(),
@@ -55,6 +45,10 @@ namespace tt {
 							vk::DescriptorSetLayoutBinding{
 									1, vk::DescriptorType::eStorageBuffer,
 									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									2, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
 							}
 					}
 			},
@@ -71,53 +65,32 @@ namespace tt {
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eUniformBuffer,
 									1, vk::ShaderStageFlagBits::eVertex
-							},
-							vk::DescriptorSetLayoutBinding{
-									1, vk::DescriptorType::eStorageBuffer,
-									1, vk::ShaderStageFlagBits::eVertex
 							}
 					}
 			} {
 
-		std::array vertices{
-				Vertex{{1.0f, 1.0f, 0.0f, 1.0f},
-				       {1.0f, 1.0f, 1.0f, 1.0f}},
-				Vertex{{-1.0f, 1.0f, 0.0f, 1.0f},
-				       {1.0f,  1.0f, 1.0f, 1.0f}},
+		std::array sourceVertices{
+				Vertex{{1.0f, 1.0f, -1.0f, 1.0f},
+				       {1.0f, .0f,  .0f,   1.0f}},
+				Vertex{{-1.0f, 1.0f, -1.0f, 1.0f},
+				       {.0f,   1.0f, .0f,   1.0f}},
 				Vertex{{-1.0f, -1.0f, 1.0f, 1.0f},
-				       {1.0f,  1.0f,  1.0f, 1.0f}},
+				       {.0f,   .0f,   1.0f, 1.0f}},
 				Vertex{{1.0f, 1.0f, 1.0f, 1.0f},
-				       {1.0f, 1.0f, 1.0f, 1.0f}}
+				       {1.0f, 1.0f, 1.0f, 0.0f}}
 		};
 
-		//std::vector<Vertex> verticesOut{32};
-
-		device.buildBufferOnBsM(
-				Bsm,
+		bufferMemoryPart = device.createBufferPartsOnObjs(
 				vk::BufferUsageFlagBits::eStorageBuffer |
+				vk::BufferUsageFlagBits::eUniformBuffer |
+				vk::BufferUsageFlagBits::eVertexBuffer |
+				vk::BufferUsageFlagBits::eTransferDst |
+				vk::BufferUsageFlagBits::eTransferSrc |
 				vk::BufferUsageFlagBits::eIndirectBuffer,
-				vertices,
+				sourceVertices,
 				sizeof(Vertex) * 32,
-				sizeof(vk::DrawIndirectCommand) * 32);
-		//MY_LOG(INFO) << " buffer:" << sizeof(Vertex) * 32 << sizeof(Vertex) * 4;
-		{
-			auto localeBufferMemory = device.createLocalBufferMemoryOnBsM(Bsm);
-
-			{
-				uint32_t off = 0;
-				auto memoryPtr = device.mapMemorySize(
-						std::get<vk::UniqueDeviceMemory>(localeBufferMemory).get(),
-						device->getBufferMemoryRequirements(
-								std::get<vk::UniqueBuffer>(localeBufferMemory).get()).size
-				);
-
-				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[0], off,
-				                                            vertices, sizeof(Vertex) * 32);
-			}
-			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
-			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),
-			                           Bsm.memory().get(), Bsm.size());
-		}
+				sizeof(vk::DrawIndirectCommand),
+				sizeof(glm::mat4));
 
 		outputMemory = device.createBufferAndMemory(
 				sizeof(Vertex) * 32,
@@ -125,19 +98,32 @@ namespace tt {
 				vk::MemoryPropertyFlagBits::eHostVisible |
 				vk::MemoryPropertyFlagBits::eHostCoherent);
 
-		//MY_LOG(INFO)<<"descriptorSets"<<descriptorSets.size()<<"Bsm.buffers()"<<Bsm.buffers().size();
-		//MY_LOG(INFO)<<"offset="<<Bsm.buffers()[0].descriptors().size();//<<" range="<<Bsm.buffers()[0].descriptors()[0].range;
-		//vk::DescriptorBufferInfo test{Bsm.buffers()[0].buffer().get(),0,128};
+		std::array descriptors{
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 0),
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 1),
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 2),
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 3)
+		};
 		std::array writeDes{
 				vk::WriteDescriptorSet{
 						compPipeline.getDescriptorSet(), 0, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &Bsm.desAndBuffers()[0].descriptors()[0]
+						nullptr, &descriptors[0]
 				},
 				vk::WriteDescriptorSet{
 						compPipeline.getDescriptorSet(), 1, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &Bsm.desAndBuffers()[0].descriptors()[1]
+						nullptr, &descriptors[1]
+				},
+				vk::WriteDescriptorSet{
+						compPipeline.getDescriptorSet(), 2, 0, 1,
+						vk::DescriptorType::eStorageBuffer,
+						nullptr, &descriptors[2]
+				},
+				vk::WriteDescriptorSet{
+						graphPipeline.getDescriptorSet(), 0, 0, 1,
+						vk::DescriptorType::eUniformBuffer,
+						nullptr, &descriptors[3]
 				}
 		};
 
@@ -151,7 +137,7 @@ namespace tt {
 									vk::AccessFlagBits::eTransferWrite,
 									vk::AccessFlagBits::eShaderRead,
 									VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-									Bsm.desAndBuffers()[0].buffer().get(),
+									std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
 									0, VK_WHOLE_SIZE,
 							}
 					};
@@ -161,7 +147,6 @@ namespace tt {
 							vk::DependencyFlags{},
 							{},
 							BarrierHostWrite, {});
-
 
 					commandBufferBeginHandle.bindPipeline(vk::PipelineBindPoint::eCompute,
 					                                      compPipeline.get());
@@ -181,7 +166,7 @@ namespace tt {
 									vk::AccessFlagBits::eShaderWrite,
 									vk::AccessFlagBits::eTransferRead,
 									VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-									Bsm.desAndBuffers()[0].buffer().get(),
+									std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
 									0, VK_WHOLE_SIZE,
 							}
 					};
@@ -194,10 +179,11 @@ namespace tt {
 							{});
 
 					commandBufferBeginHandle.copyBuffer(
-							Bsm.desAndBuffers()[0].buffer().get(),
+							std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
 							std::get<vk::UniqueBuffer>(outputMemory).get(),
-							{vk::BufferCopy{Bsm.desAndBuffers()[0].descriptors()[1].offset, 0,
-							                sizeof(Vertex) * 32}});
+							{vk::BufferCopy{
+									createDescriptorBufferInfoTuple(bufferMemoryPart, 1).offset, 0,
+									sizeof(Vertex) * 32}});
 
 					std::array BarrierHostRead{
 							vk::BufferMemoryBarrier{
@@ -229,15 +215,15 @@ namespace tt {
 		auto renderFence = device->createFenceUnique(vk::FenceCreateInfo{});
 		device.graphsQueue().submit(submitInfos, renderFence.get());
 		device.waitFence(renderFence.get());
-		auto outputMemoryPtr = helper::mapTypeMemoryAndSize<Vertex>(ownerDevice(), outputMemory);
+		auto outputMemoryPtr = device.mapTypeBufferMemory<Vertex>(outputMemory);
 		for (int i = 0; i < 32; i++)
 			MY_LOG(INFO) << outputMemoryPtr[i].pos[0];
 	}
 
 
-	vk::UniqueRenderPass JobDrawLine::createRenderpass(tt::Device &) {
-		return vk::UniqueRenderPass();
-	}
+	//vk::UniqueRenderPass JobDrawLine::createRenderpass(tt::Device &) {
+	//	return vk::UniqueRenderPass();
+	//}
 
 	vk::UniquePipeline JobDrawLine::createGraphsPipeline(tt::Device &device, android_app *app,
 	                                                     vk::PipelineLayout pipelineLayout) {
@@ -246,13 +232,13 @@ namespace tt {
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/indir.frag.spv", app);
 		std::array pipelineShaderStageCreateInfos{
 				vk::PipelineShaderStageCreateInfo{
-						vk::PipelineShaderStageCreateFlags(),
+						{},
 						vk::ShaderStageFlagBits::eVertex,
 						vertShaderModule.get(),
 						"main"
 				},
 				vk::PipelineShaderStageCreateInfo{
-						vk::PipelineShaderStageCreateFlags(),
+						{},
 						vk::ShaderStageFlagBits::eFragment,
 						fargShaderModule.get(),
 						"main"
@@ -263,11 +249,7 @@ namespace tt {
 				vk::VertexInputBindingDescription{
 						0, sizeof(float) * 8,
 						vk::VertexInputRate::eVertex
-				},
-				vk::VertexInputBindingDescription{
-						1, sizeof(glm::mat4),
-						vk::VertexInputRate::eInstance
-				},
+				}
 		};
 		std::array vertexInputAttributeDescriptions{
 				vk::VertexInputAttributeDescription{
@@ -275,17 +257,12 @@ namespace tt {
 				},
 				vk::VertexInputAttributeDescription{
 						1, 0, vk::Format::eR32G32B32A32Sfloat, 16
-				},
-				vk::VertexInputAttributeDescription{
-						2, 1, vk::Format::eR32G32B32A32Sfloat, 0
-				},//VK_FORMAT_R32G32_SFLOAT
+				}
 		};
 
 		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
-				vk::PipelineVertexInputStateCreateFlags(),
-				vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
+				{}, vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
 				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
-
 		};
 		//return vk::UniquePipeline{};
 
@@ -294,7 +271,7 @@ namespace tt {
 		                                   pipelineLayout,
 		                                   pipelineCache.get(),
 		                                   device.renderPass.get(),
-		                                   vk::PrimitiveTopology::eLineStrip);
+		                                   vk::PrimitiveTopology::eTriangleFan);
 	}
 
 	vk::UniquePipeline JobDrawLine::createComputePipeline(tt::Device &device, android_app *app,
@@ -328,7 +305,7 @@ namespace tt {
 		};
 
 		vk::PipelineShaderStageCreateInfo shaderStageCreateInfo{
-				vk::PipelineShaderStageCreateFlags(),
+				{},
 				vk::ShaderStageFlagBits::eCompute,
 				compShaderModule.get(),
 				"main",
@@ -336,7 +313,7 @@ namespace tt {
 		};
 
 		vk::ComputePipelineCreateInfo computePipelineCreateInfo{
-				vk::PipelineCreateFlags(),
+				{},
 				shaderStageCreateInfo,
 				pipelineLayout
 		};
@@ -345,7 +322,6 @@ namespace tt {
 	}
 
 	void JobDrawLine::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
-
 
 		gcmdBuffers = helper::createCmdBuffersSub(ownerDevice(), renderPass,
 		                                          *this,
@@ -356,7 +332,8 @@ namespace tt {
 	}
 
 	void JobDrawLine::CmdBufferRenderPassContinueBegin(
-			CommandBufferBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win) {
+			CommandBufferBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win,
+			uint32_t frameIndex) {
 
 		cmdHandleRenderpassBegin.setViewport(
 				0,
@@ -369,23 +346,36 @@ namespace tt {
 						}
 				}
 		);
-
-		cmdHandleRenderpassBegin.setScissor(0, std::array{vk::Rect2D{vk::Offset2D{}, win}});
-
+		cmdHandleRenderpassBegin.setScissor(0, std::array{vk::Rect2D{{}, win}});
 		cmdHandleRenderpassBegin.bindPipeline(
 				vk::PipelineBindPoint::eGraphics,
 				graphPipeline.get());
 
-
 		cmdHandleRenderpassBegin.bindDescriptorSets(
 				vk::PipelineBindPoint::eGraphics,
-				graphPipeline.layout(),
-				0,
-				std::array{graphPipeline.getDescriptorSet()},
-				std::array{0u}
+				graphPipeline.layout(), 0,
+				graphPipeline.getDescriptorSets(),
+				{}
 		);
 
-		//cmdHandleRenderpassBegin.drawIndirect();
+		cmdHandleRenderpassBegin.bindVertexBuffers(
+				0, {std::get<vk::UniqueBuffer>(bufferMemoryPart).get()},
+				{createDescriptorBufferInfoTuple(bufferMemoryPart, 1).offset}
+		);
+
+		cmdHandleRenderpassBegin.drawIndirect(std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
+		                                      createDescriptorBufferInfoTuple(bufferMemoryPart,
+		                                                                      2).offset, 1, 0);
+		//cmdHandleRenderpassBegin.draw(32, 1, 0, 0);
+	}
+
+	void JobDrawLine::setMVP(tt::Device &device, vk::Buffer buffer) {
+		device.flushBufferToBuffer(
+				buffer,
+				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
+				device->getBufferMemoryRequirements(buffer).size,
+				0,
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 3).offset);
 	}
 
 

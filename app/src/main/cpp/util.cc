@@ -85,14 +85,14 @@ namespace tt {
 		exit(-1);//todo throw
 	}
 
-	std::vector<char> loadDataFromAssets(const std::string &filePath,
+	std::vector<unsigned char> loadDataFromAssets(const std::string &filePath,
 	                                     android_app *androidAppCtx) {
 		// Read the file
 		assert(androidAppCtx);
-		auto file = AAssetManagerFileOpen(androidAppCtx->activity->assetManager,filePath);
-		std::vector<char> fileContent;
-		fileContent.resize(AAsset_getLength(file.get()));
-		AAsset_read(file.get(), reinterpret_cast<void *>(fileContent.data()), fileContent.size());
+		AAssetHander file{androidAppCtx->activity->assetManager,filePath};
+		std::vector<unsigned char> fileContent;
+		fileContent.resize(file.getLength());
+		file.read(reinterpret_cast<void *>(fileContent.data()), fileContent.size());
 		return fileContent;
 	}
 

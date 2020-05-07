@@ -36,13 +36,13 @@ namespace tt {
 		std::array pipelineShaderStageCreateInfos
 				{
 						vk::PipelineShaderStageCreateInfo{
-								vk::PipelineShaderStageCreateFlags(),
+								{},
 								vk::ShaderStageFlagBits::eVertex,
 								vertShaderModule.get(),
 								"main"
 						},
 						vk::PipelineShaderStageCreateInfo{
-								vk::PipelineShaderStageCreateFlags(),
+								{},
 								vk::ShaderStageFlagBits::eFragment,
 								fargShaderModule.get(),
 								"main"
@@ -65,29 +65,25 @@ namespace tt {
 				}//VK_FORMAT_R32G32_SFLOAT
 		};
 		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
-				vk::PipelineVertexInputStateCreateFlags(),
-				vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
+				{}, vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
 				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
 
 		};
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
 		                                   pipelineVertexInputStateCreateInfo,
 		                                   pipelineLayout,
-		                                   pipelineCache.get(), device.renderPass.get());
+		                                   pipelineCache.get(), device.renderPass.get(),
+		                                   vk::PrimitiveTopology::eTriangleFan);
 
 	}
 
 	void JobDraw::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
-//		MY_LOG(INFO)<<"jobaddr:"<<(void const *)this<<std::endl;
-
-		cmdBuffers = helper::createCmdBuffers(descriptorPool.getOwner(), renderPass,
-		                                      *this,
-		                                      swapchain.getFrameBuffer(),
-		                                      swapchain.getSwapchainExtent(),
-		                                      commandPool.get());
+		cmdBuffers = helper::createCmdBuffersSub(descriptorPool.getOwner(), renderPass,
+		                                         *this,
+		                                         swapchain.getFrameBuffer(),
+		                                         swapchain.getSwapchainExtent(),
+		                                         commandPool.get());
 		setPerspective(swapchain);
-		//cmdBuffers = device.createCmdBuffers(swapchain, *commandPool, cmdbufferRenderpassBeginHandle,
-		//                                     cmdbufferCommandBufferBeginHandle);
 	}
 
 	void JobDraw::setPerspective(tt::Window &swapchain) {
@@ -99,53 +95,38 @@ namespace tt {
 		);
 	}
 
-	void JobDraw::setPv(float dx, float dy) {
-		camPos[0] -= dx * 0.1;
-		camPos[1] -= dy * 0.1;
-		helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAMs[0])[0] =
-				perspective * glm::lookAt(
-						camPos,  // Camera is at (-5,3,-10), in World Space
-						camTo,     // and looks at the origin
-						camUp     // Head is up (set to 0,-1,0 to look upside-down)
-				);
+	namespace glmx {
+		using namespace glm;
+
+		template<typename T, qualifier Q>
+		GLM_FUNC_QUALIFIER mat<4, 4, T, Q>
+		lookcc(vec<2, T, Q> const& xy) {
+			vec<3, T, Q> const up{0,1,0};
+			vec<3, T, Q> const eye{xy.x,xy.y,1};
+			vec<3, T, Q> const f(normalize(vec<3, T, Q>{} - eye));
+			vec<3, T, Q> const s(normalize(cross(f, up)));
+			vec<3, T, Q> const u(cross(s, f));
+			mat<4, 4, T, Q> Result(0);
+			Result[0][0] = s.x;
+			Result[1][0] = s.y;
+			Result[2][0] = s.z;
+			Result[0][1] = u.x;
+			Result[1][1] = u.y;
+			Result[2][1] = u.z;
+			Result[0][2] = -f.x;
+			Result[1][2] = -f.y;
+			Result[2][2] = -f.z;
+			Result[3][3] =1;
+			return Result;
+		}
+
 	}
 
-	void JobDraw::CmdBufferRenderpassBegin(RenderpassBeginHandle &cmdHandleRenderpassBegin,
-	                                       vk::Extent2D win) {
-
-		cmdHandleRenderpassBegin.setViewport(
-				0,
-				std::array{
-						vk::Viewport{
-								0, 0,
-								win.width,
-								win.height,
-								0.0f, 1.0f
-						}
-				}
-		);
-
-		cmdHandleRenderpassBegin.setScissor(0, std::array{vk::Rect2D{vk::Offset2D{}, win}});
-		cmdHandleRenderpassBegin.bindPipeline(
-				vk::PipelineBindPoint::eGraphics,
-				graphPipeline.get());
-		//std::array tmpDescriptorSets{descriptorSets[0].get()};
-		cmdHandleRenderpassBegin.bindDescriptorSets(
-				vk::PipelineBindPoint::eGraphics,
-				graphPipeline.layout(), 0,
-				graphPipeline.getDescriptorSets(),
-				{});
-		std::array offsets{vk::DeviceSize{0}};
-		//vk::DeviceSize offsets[1] = {0};
-		cmdHandleRenderpassBegin.bindVertexBuffers(
-				0,
-				//std::get<vk::UniqueBuffer>(BAMs[1]).get(),
-				Bsm.desAndBuffers()[0].buffer().get(),
-				offsets);
-		cmdHandleRenderpassBegin.bindIndexBuffer(
-				Bsm.desAndBuffers()[0].buffer().get(),
-				Bsm.desAndBuffers()[0].descriptors()[1].offset, vk::IndexType::eUint32);
-		cmdHandleRenderpassBegin.drawIndexed(6, 1, 0, 0, 0);
+	void JobDraw::setPv(float dx, float dy) {
+		auto nlookat = lookat*glmx::lookcc(glm::vec2(dx*0.01,dy*0.01));
+		lookat = nlookat;
+		helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAMs[0])[0] =
+				perspective * lookat;
 	}
 
 	JobDraw::JobDraw(JobBase &&j, android_app *app, tt::Device &device) :
@@ -170,34 +151,29 @@ namespace tt {
 		BAMs.emplace_back(
 				device.createBufferAndMemory(
 						sizeof(glm::mat4),
-						vk::BufferUsageFlagBits::eUniformBuffer,
+						vk::BufferUsageFlagBits::eUniformBuffer |
+						vk::BufferUsageFlagBits::eTransferSrc,
 						vk::MemoryPropertyFlagBits::eHostVisible |
 						vk::MemoryPropertyFlagBits::eHostCoherent));
 
 		std::vector<VertexUV> vertices{
-				{{1.0f,  1.0f,  0.0f, 1.0f}, {1.0f, 1.0f}},
-				{{-1.0f, 1.0f,  0.0f, 1.0f}, {0.0f, 1.0f}},
-				{{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-				{{1.0f,  -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}
+				{{0.5f, 0.5f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+				{{-.5f, .5f,  0.0f, 1.0f}, {0.0f, 1.0f}},
+				{{-.5f, -.5f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+				{{.5f,  -.5f, 0.0f, 1.0f}, {1.0f, 0.0f}}
 		};
-		std::array indexes{0u, 1u, 2u, 2u, 3u, 0u};
+		std::array indexes{0u, 1u, 2u, 3u};
 		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eVertexBuffer |
-		                             vk::BufferUsageFlagBits::eIndexBuffer, vertices,indexes);
+		                             vk::BufferUsageFlagBits::eIndexBuffer, vertices, indexes);
 		//device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eIndexBuffer, indexes);
 		{
-			auto localeBufferMemory = device.createLocalBufferMemoryOnBsM(Bsm);
-
+			auto localeBufferMemory = device.createStagingBufferMemoryOnObjs(vertices, indexes);
 			{
 				uint32_t off = 0;
-				auto memoryPtr = device.mapMemorySize(
-						std::get<vk::UniqueDeviceMemory>(localeBufferMemory).get(),
-						device->getBufferMemoryRequirements(
-								std::get<vk::UniqueBuffer>(localeBufferMemory).get()).size
-				);
-				off += device.writeObjsDescriptorBufferInfo(memoryPtr, Bsm.desAndBuffers()[0], off,
-				                                            vertices,indexes);
-
-
+				auto memoryPtr = device.mapBufferMemory(localeBufferMemory);
+				off += device.writeObjsDescriptorBufferInfo(
+						memoryPtr, Bsm.desAndBuffers()[0], off,
+						vertices, indexes);
 			}
 			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
 			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),
@@ -207,7 +183,7 @@ namespace tt {
 		{
 			auto fileContent = loadDataFromAssets("textures/ic_launcher-web.ktx", app);
 			//gli::texture2d tex2d;
-			auto tex2d = gli::texture2d{gli::load_ktx(fileContent.data(), fileContent.size())};
+			auto tex2d = gli::texture2d{gli::load_ktx((char*)fileContent.data(), fileContent.size())};
 			sampler = device.createSampler(tex2d.levels());
 			IVMs.emplace_back(device.createImageAndMemoryFromT2d(tex2d));
 		}
@@ -215,7 +191,8 @@ namespace tt {
 
 		//uniquePipeline = createPipeline(device, app);
 
-		auto descriptorBufferInfo = device.getDescriptorBufferInfo(BAMs[0]);
+		auto descriptorBufferInfo = //createDescriptorBufferInfoTuple(device.Job<JobDrawLine>().memoryWithParts, 3);
+				device.getDescriptorBufferInfo(BAMs[0]);
 		auto descriptorImageInfo = device.getDescriptorImageInfo(IVMs[0], sampler.get());
 
 		std::array writeDes{
@@ -232,5 +209,40 @@ namespace tt {
 		};
 		device->updateDescriptorSets(writeDes, nullptr);
 		//MY_LOG(INFO)<<__FUNCTION__<<" run out";
+	}
+
+	void
+	JobDraw::CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleRenderpassContinue,
+	                                          vk::Extent2D win, uint32_t frameIndex) {
+		cmdHandleRenderpassContinue.setViewport(
+				0,
+				std::array{
+						vk::Viewport{
+								0, 0,
+								win.width,
+								win.height,
+								0.0f, 1.0f
+						}
+				}
+		);
+
+		cmdHandleRenderpassContinue.setScissor(0, std::array{vk::Rect2D{{}, win}});
+		cmdHandleRenderpassContinue.bindPipeline(
+				vk::PipelineBindPoint::eGraphics,
+				graphPipeline.get());
+		cmdHandleRenderpassContinue.bindDescriptorSets(
+				vk::PipelineBindPoint::eGraphics,
+				graphPipeline.layout(), 0,
+				graphPipeline.getDescriptorSets(),
+				{});
+		std::array offsets{vk::DeviceSize{0}};
+		cmdHandleRenderpassContinue.bindVertexBuffers(
+				0,
+				Bsm.desAndBuffers()[0].buffer().get(),
+				offsets);
+		cmdHandleRenderpassContinue.bindIndexBuffer(
+				Bsm.desAndBuffers()[0].buffer().get(),
+				Bsm.desAndBuffers()[0].descriptors()[1].offset, vk::IndexType::eUint32);
+		cmdHandleRenderpassContinue.drawIndexed(4, 1, 0, 0, 0);
 	}
 };
