@@ -36,7 +36,7 @@ namespace tt {
 								device,
 								app,
 								pipelineLayout);
-					},
+					},{},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eStorageBuffer,
@@ -60,7 +60,7 @@ namespace tt {
 								device,
 								app,
 								pipelineLayout);
-					},
+					},{},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eUniformBuffer,

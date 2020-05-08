@@ -235,7 +235,7 @@ namespace tt {
 					descriptorPool.get(),
 					[&](vk::PipelineLayout pipelineLayout) {
 						return createPipeline(device, app, pipelineLayout);
-					},
+					},{},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eUniformBuffer,
