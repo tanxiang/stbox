@@ -128,8 +128,19 @@ namespace tt {
 		static float datx=0.0,daty=0.0;
 		datx+=dx*0.01;
 		daty+=dy*0.01;
-		glm::qua<float> fRotate{ glm::vec3{-daty, datx, 0.0}};
-		//lookat = nlookat;
+		glm::vec3 eulerAngle{-daty, datx, 0.0};
+
+
+		auto c = glm::cos(eulerAngle * 0.5f);
+		auto s = glm::sin(eulerAngle * 0.5f);
+
+		glm::qua<float> fRotate{
+			c.x * c.y * c.z - s.x * s.y * s.z,
+			s.x * c.y * c.z - c.x * s.y * s.z,
+			c.x * s.y * c.z + s.x * c.y * s.z,
+			c.x * c.y * s.z + s.x * s.y * c.z
+		};
+				//lookat = nlookat;
 		helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAMs[0])[0] =
 				perspective * lookat * glm::mat4_cast(fRotate) ;
 	}
