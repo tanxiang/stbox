@@ -576,6 +576,13 @@ namespace tt {
 	}
 
 	void Device::buildCmdBuffer(tt::Window &window) {
+		JobBase::getPerspective() = glm::perspective(
+				glm::radians(60.0f),
+				static_cast<float>(window.getSwapchainExtent().width) /
+				static_cast<float>(window.getSwapchainExtent().height),
+				0.1f, 256.0f
+		);
+
 		std::apply([&](auto &... jobs) { buildCmdBufferHelper(window, renderPass.get(), jobs...); },
 		           Jobs);
 

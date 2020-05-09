@@ -19,9 +19,9 @@ namespace tt {
 	struct JobBase {
 	protected:
 		static glm::mat4 perspective;
-		static glm::vec3 camPos;
-		static glm::vec3 camTo;
-		static glm::vec3 camUp;
+		//static glm::vec3 camPos;
+		//static glm::vec3 camTo;
+		//static glm::vec3 camUp;
 		static glm::mat4 lookat;
 
 		vk::UniqueDescriptorPool descriptorPool;
@@ -49,7 +49,11 @@ namespace tt {
 						ownerDevice().createCommandPoolUnique(vk::CommandPoolCreateInfo{
 								vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueIndex}
 						)
-				} {}
+				}{}
+
+		static auto& getPerspective(){
+			return perspective;
+		}
 
 	};
 }

@@ -4,15 +4,11 @@
 
 #include "JobBase.hh"
 
-namespace tt{
+namespace tt {
 	glm::mat4 JobBase::perspective;
-	glm::vec3 JobBase::camPos{0, 0, -4};
-	glm::vec3 JobBase::camTo{0, 0, 0};
-	glm::vec3 JobBase::camUp{0,-1,0};
 	glm::mat4 JobBase::lookat = glm::lookAt(
-			camPos,  // Camera is at (-5,3,-10), in World Space
-			camTo,     // and looks at the origin
-			camUp     // Head is up (set to 0,-1,0 to look upside-down)
-	);
+			glm::vec3{0, 0, -4},// Camera is at (-5,3,-10), in World Space
+			glm::vec3{0, 0, 0},     // and looks at the origin
+			glm::vec3{0, -1, 0}     /* Head is up (set to 0,-1,0 to look upside-down)*/ );
 
 }

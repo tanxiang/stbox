@@ -83,9 +83,10 @@ namespace tt {
 		                                         swapchain.getFrameBuffer(),
 		                                         swapchain.getSwapchainExtent(),
 		                                         commandPool.get());
-		setPerspective(swapchain);
+		//setPerspective(swapchain);
 	}
 
+	/*
 	void JobDraw::setPerspective(tt::Window &swapchain) {
 		perspective = glm::perspective(
 				glm::radians(60.0f),
@@ -94,7 +95,7 @@ namespace tt {
 				0.1f, 256.0f
 		);
 	}
-
+	*/
 	namespace glmx {
 		using namespace glm;
 
@@ -124,9 +125,13 @@ namespace tt {
 
 	void JobDraw::setPv(float dx, float dy) {
 		auto nlookat = lookat*glmx::lookcc(glm::vec2(dx*0.01,dy*0.01));
-		lookat = nlookat;
+		static float datx=0.0,daty=0.0;
+		datx+=dx*0.01;
+		daty+=dy*0.01;
+		glm::qua<float> fRotate{ glm::vec3{-daty, datx, 0.0}};
+		//lookat = nlookat;
 		helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAMs[0])[0] =
-				perspective * lookat;
+				perspective * lookat * glm::mat4_cast(fRotate) ;
 	}
 
 	JobDraw::JobDraw(JobBase &&j, android_app *app, tt::Device &device) :

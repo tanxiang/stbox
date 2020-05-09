@@ -27,8 +27,6 @@ namespace tt {
 
 		void buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass);
 
-		void setPerspective(tt::Window &swapchain);
-
 		void setPv(float dx = 0.0, float dy = 0.0);
 
 		//memory using
