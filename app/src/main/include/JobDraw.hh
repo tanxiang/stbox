@@ -27,7 +27,7 @@ namespace tt {
 
 		void buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass);
 
-		void setPv(float dx = 0.0, float dy = 0.0);
+		void setPv();
 
 		//memory using
 		std::vector<BufferMemory> BAMs;

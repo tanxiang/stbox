@@ -232,6 +232,21 @@ namespace tt {
 
 	namespace helper {
 
+		template<typename PodType>
+		auto mapTypeMemory(vk::Device device,vk::DeviceMemory deviceMemory, size_t offset = 0,size_t num = 1){
+			return BufferTypePtr<PodType>{
+					static_cast<PodType *>(device.mapMemory(
+							deviceMemory,
+							offset,
+							sizeof(deviceMemory)*num,
+							vk::MemoryMapFlagBits())),
+					[device, deviceMemory](PodType *pVoid) {
+						//FIXME call ~PodType in array
+						device.unmapMemory(deviceMemory);
+					}
+			};
+		}
+
 		template<typename PodType, typename Tuple>
 		auto mapTypeMemoryAndSize(vk::Device device, Tuple &tupleMemoryAndSize, size_t offset = 0) {
 			auto devMemory = std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get();

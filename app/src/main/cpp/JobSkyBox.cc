@@ -232,7 +232,11 @@ namespace tt {
 	}
 
 	void
-	JobSkyBox::setMVP(tt::Device &device, vk::Buffer buffer) {
+	JobSkyBox::setMVP(tt::Device &device, vk::Buffer buffer,vk::DeviceMemory deviceMemory) {
+		{
+			tt::helper::mapTypeMemory<glm::mat4>(device.get(),deviceMemory)[0]=
+					perspective * lookat * glm::translate(glm::mat4{1.0},glm::vec3(0,0,-4))* glm::mat4_cast(fRotate);
+		}
 		device.flushBufferToBuffer(
 				buffer,
 				std::get<vk::UniqueBuffer>(memoryWithParts).get(),

@@ -19,11 +19,8 @@ namespace tt {
 	struct JobBase {
 	protected:
 		static glm::mat4 perspective;
-		//static glm::vec3 camPos;
-		//static glm::vec3 camTo;
-		//static glm::vec3 camUp;
 		static glm::mat4 lookat;
-
+		static glm::qua<float> fRotate;
 		vk::UniqueDescriptorPool descriptorPool;
 		auto ownerDevice() {
 			return descriptorPool.getOwner();
@@ -54,6 +51,8 @@ namespace tt {
 		static auto& getPerspective(){
 			return perspective;
 		}
+
+		static void setRotate(float dx = 0.0, float dy = 0.0);
 
 	};
 }

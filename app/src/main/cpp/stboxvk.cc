@@ -53,7 +53,12 @@ namespace tt {
 		devices->buildCmdBuffer(window);
 		devices->Job<JobDraw>().setPv();
 		devices->Job<JobDrawLine>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
-		devices->Job<JobSkyBox>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
+
+		devices->Job<JobSkyBox>().setMVP(
+				*devices,
+				std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get(),
+				std::get<vk::UniqueDeviceMemory>(devices->Job<JobDraw>().BAMs[0]).get()
+		);
 	}
 
 	void stboxvk::draw() {
@@ -61,9 +66,14 @@ namespace tt {
 	}
 
 	void stboxvk::draw(float dx, float dy) {
-		devices->Job<JobDraw>().setPv(dx, dy);
+		JobBase::setRotate(dx, dy);
+		devices->Job<JobDraw>().setPv();
 		devices->Job<JobDrawLine>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
-		devices->Job<JobSkyBox>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
+		devices->Job<JobSkyBox>().setMVP(
+				*devices,
+				std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get(),
+				std::get<vk::UniqueDeviceMemory>(devices->Job<JobDraw>().BAMs[0]).get()
+				);
 		draw();
 	}
 

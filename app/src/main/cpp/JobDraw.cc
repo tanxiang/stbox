@@ -123,23 +123,8 @@ namespace tt {
 
 	}
 
-	void JobDraw::setPv(float dx, float dy) {
-		auto nlookat = lookat*glmx::lookcc(glm::vec2(dx*0.01,dy*0.01));
-		static float datx=0.0,daty=0.0;
-		datx+=dx*0.01;
-		daty+=dy*0.01;
-		glm::vec3 eulerAngle{-daty, datx, 0.0};
-
-
-		auto c = glm::cos(eulerAngle * 0.5f);
-		auto s = glm::sin(eulerAngle * 0.5f);
-
-		glm::qua<float> fRotate{
-			c.x * c.y * c.z - s.x * s.y * s.z,
-			s.x * c.y * c.z - c.x * s.y * s.z,
-			c.x * s.y * c.z + s.x * c.y * s.z,
-			c.x * c.y * s.z + s.x * s.y * c.z
-		};
+	void JobDraw::setPv() {
+		//auto nlookat = lookat*glmx::lookcc(glm::vec2(dx*0.01,dy*0.01));
 				//lookat = nlookat;
 		helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAMs[0])[0] =
 				perspective * lookat * glm::mat4_cast(fRotate) ;
