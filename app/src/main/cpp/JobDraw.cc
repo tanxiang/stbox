@@ -86,42 +86,8 @@ namespace tt {
 		//setPerspective(swapchain);
 	}
 
-	/*
-	void JobDraw::setPerspective(tt::Window &swapchain) {
-		perspective = glm::perspective(
-				glm::radians(60.0f),
-				static_cast<float>(swapchain.getSwapchainExtent().width) /
-				static_cast<float>(swapchain.getSwapchainExtent().height),
-				0.1f, 256.0f
-		);
-	}
-	*/
-	namespace glmx {
-		using namespace glm;
 
-		template<typename T, qualifier Q>
-		GLM_FUNC_QUALIFIER mat<4, 4, T, Q>
-		lookcc(vec<2, T, Q> const& xy) {
-			vec<3, T, Q> const up{0,1,0};
-			vec<3, T, Q> const eye{xy.x,xy.y,1};
-			vec<3, T, Q> const f(normalize(vec<3, T, Q>{} - eye));
-			vec<3, T, Q> const s(normalize(cross(f, up)));
-			vec<3, T, Q> const u(cross(s, f));
-			mat<4, 4, T, Q> Result(0);
-			Result[0][0] = s.x;
-			Result[1][0] = s.y;
-			Result[2][0] = s.z;
-			Result[0][1] = u.x;
-			Result[1][1] = u.y;
-			Result[2][1] = u.z;
-			Result[0][2] = -f.x;
-			Result[1][2] = -f.y;
-			Result[2][2] = -f.z;
-			Result[3][3] =1;
-			return Result;
-		}
 
-	}
 
 	void JobDraw::setPv() {
 		//auto nlookat = lookat*glmx::lookcc(glm::vec2(dx*0.01,dy*0.01));

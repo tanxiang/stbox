@@ -36,6 +36,7 @@ add_library( # Sets the name of the library.
         src/main/cpp/JobFont.cc
         src/main/cpp/JobDrawLine.cc
         src/main/cpp/JobSkyBox.cc
+        src/main/cpp/JobIsland.cc
         src/main/cpp/Instance.cc
         src/main/cpp/stboxvk.cc
         src/main/cpp/JobBase.cc

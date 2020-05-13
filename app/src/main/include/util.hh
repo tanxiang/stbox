@@ -143,6 +143,11 @@ namespace tt {
 		using std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, std::array<uint32_t, N>>::tuple;
 	};
 
+	struct BufferMemoryWithPartsd
+			: public std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, std::vector<uint32_t>> {
+		using std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, std::vector<uint32_t>>::tuple;
+	};
+
 	template<uint N, uint M = 1>
 	struct BufferImageMemoryWithParts :
 			public std::tuple<vk::UniqueBuffer, vk::UniqueImage, vk::UniqueDeviceMemory, std::array<uint32_t, N>, std::array<vk::UniqueImageView, M>> {
@@ -157,7 +162,14 @@ namespace tt {
 		                                parts[n] - offset};
 	}
 
-	template<template<uint, uint> typename Tuple, uint N, uint M>
+	template<typename Tuple>
+	auto createDescriptorBufferInfoTuple(const Tuple& tuple, uint32_t n) {
+		auto &parts = std::get<std::vector<uint32_t>>(tuple);
+		uint32_t offset = n ? parts[n - 1] : 0;
+		return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(tuple).get(), offset,
+		                                parts[n] - offset};
+	}
+		template<template<uint, uint> typename Tuple, uint N, uint M>
 	auto createDescriptorBufferInfoTuple(const Tuple<N, M> &tuple, uint32_t n) {
 		auto &parts = std::get<std::array<uint32_t, N>>(tuple);
 		uint32_t offset = n ? parts[n - 1] : 0;

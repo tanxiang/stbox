@@ -523,6 +523,17 @@ namespace tt {
 			return tuple;
 		}
 
+		template<typename ... Ts>
+		auto createBufferPartsdOnAssertDir(vk::BufferUsageFlags flags,
+		                                   const AAssetDirHander& dir,
+		                                   const Ts &... objs){
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			uint32_t allSize = 0;
+			auto tuple = BufferMemoryWithPartsd{};
+			return tuple;
+
+		}
+
 		template<typename Tuple>
 		auto bufferImageTupleCreateMemory(vk::MemoryPropertyFlags memoryPropertyFlags,
 		                                  Tuple &tuple) {
