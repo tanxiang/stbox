@@ -6,8 +6,7 @@
 #include "Device.hh"
 //#include <gli/gli.hpp>
 //#include "model.hh"
-#include "ktx2.hh"
-//#include "aopen.h"
+//#include "ktx2.hh"
 
 namespace tt {
 
@@ -85,8 +84,6 @@ namespace tt {
 					}
 			} {
 
-		//ktx2texture.debugLoad(device.phyDevice(),device.get(),device.graphsQueue(),commandPool.get());
-
 		memoryWithParts = device.createBufferPartsdOnAssertDir(
 				vk::BufferUsageFlagBits::eUniformBuffer |
 				vk::BufferUsageFlagBits::eVertexBuffer |
@@ -94,9 +91,9 @@ namespace tt {
 				vk::BufferUsageFlagBits::eIndirectBuffer |
 				vk::BufferUsageFlagBits::eTransferSrc |
 				vk::BufferUsageFlagBits::eTransferDst,
-				AAssetDirHander{app->activity->assetManager,"models/IslaDEf.fbx.ext"},
+				app->activity->assetManager,"models/IslaDEf.fbx.ext",
 				sizeof(glm::mat4));
-
+		return ;
 		createDescriptorBufferInfoTuple(memoryWithParts, 1);
 		std::array descriptors{
 				createDescriptorBufferInfoTuple(memoryWithParts, 2),
@@ -124,6 +121,7 @@ namespace tt {
 	void
 	JobIsland::CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleRenderpassBegin,
 	                                            vk::Extent2D win, uint32_t frameIndex) {
+		return;
 		cmdHandleRenderpassBegin.setViewport(
 				0,
 				std::array{

@@ -207,7 +207,7 @@ namespace tt {
 		return IVM;
 	}
 
-
+/*
 	ImageViewMemory
 	Device::createImageAndMemoryFromMemory(gli::texture2d t2d,
 	                                       vk::ImageUsageFlags imageUsageFlags) {
@@ -262,7 +262,7 @@ namespace tt {
 		writeTextureToImage(t2d, std::get<vk::UniqueImage>(imageAndMemory).get());
 		return imageAndMemory;
 	}
-
+*/
 	BufferMemory
 	Device::createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
 	                              vk::MemoryPropertyFlags memoryPropertyFlags) {
@@ -486,7 +486,7 @@ namespace tt {
 		waitFence(copyFence.get());
 	}
 
-	void Device::flushBufferToMemory(vk::Buffer buffer, vk::DeviceMemory memory, size_t size,
+	/*void Device::flushBufferToMemory(vk::Buffer buffer, vk::DeviceMemory memory, size_t size,
 	                                 size_t srcoff, size_t decoff) {
 		auto bufferDst = get().createBufferUnique(
 				vk::BufferCreateInfo{
@@ -496,7 +496,7 @@ namespace tt {
 		);
 		get().bindBufferMemory(bufferDst.get(), memory, 0);
 		return flushBufferToBuffer(buffer, bufferDst.get(), size, srcoff, decoff);
-	}
+	}*/
 
 	void Device::bindBsm(BuffersMemory<> &BsM) {
 		for (auto &buffer:BsM.desAndBuffers()) {
@@ -620,7 +620,7 @@ namespace tt {
 				Jobs
 		);
 	}
-
+/*
 	void Device::writeTextureToImage(gli::texture_cube &texture, vk::Image image) {
 		auto transferSrcBuffer = createStagingBufferMemoryOnObjs(texture.size());
 		{
@@ -753,7 +753,7 @@ namespace tt {
 		auto copyFence = submitCmdBuffer(copyCmd[0].get());
 		waitFence(copyFence.get());
 	}
-
+*/
 	void Device::writeTextureToImage(ktx2 &texture, vk::Image image) {
 		auto transferSrcBuffer = createStagingBufferMemoryOnObjs(texture.bufferSize());
 		{

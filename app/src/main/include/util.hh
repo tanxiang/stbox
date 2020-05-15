@@ -84,6 +84,15 @@ namespace tt {
 			return AAssetDir_rewind(get());
 		}
 
+		auto getFileNum() const {
+			rewind();
+			int num = 0;
+			while(getNextFileName()){
+				++num;
+			}
+			return num;
+		}
+
 		AAssetDirHander(AAssetManager *assetManager, const std::string &dirPath):std::unique_ptr<AAssetDir, std::function<void(AAssetDir *)>>{
 				AAssetManager_openDir(assetManager, dirPath.c_str()),
 				[](AAssetDir *AAsset) {

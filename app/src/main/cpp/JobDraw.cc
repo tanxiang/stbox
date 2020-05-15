@@ -7,7 +7,7 @@
 #include "Device.hh"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <gli/gli.hpp>
+//#include <gli/gli.hpp>
 
 namespace tt {
 
@@ -83,6 +83,7 @@ namespace tt {
 		                                         swapchain.getFrameBuffer(),
 		                                         swapchain.getSwapchainExtent(),
 		                                         commandPool.get());
+
 		//setPerspective(swapchain);
 	}
 
@@ -90,8 +91,6 @@ namespace tt {
 
 
 	void JobDraw::setPv() {
-		//auto nlookat = lookat*glmx::lookcc(glm::vec2(dx*0.01,dy*0.01));
-				//lookat = nlookat;
 		helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAMs[0])[0] =
 				perspective * lookat * glm::mat4_cast(fRotate) ;
 	}
@@ -122,94 +121,13 @@ namespace tt {
 						vk::BufferUsageFlagBits::eTransferSrc,
 						vk::MemoryPropertyFlagBits::eHostVisible |
 						vk::MemoryPropertyFlagBits::eHostCoherent));
-
-		std::vector<VertexUV> vertices{
-				{{0.5f, 0.5f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-				{{-.5f, .5f,  0.0f, 1.0f}, {0.0f, 1.0f}},
-				{{-.5f, -.5f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-				{{.5f,  -.5f, 0.0f, 1.0f}, {1.0f, 0.0f}}
-		};
-		std::array indexes{0u, 1u, 2u, 3u};
-		device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eVertexBuffer |
-		                             vk::BufferUsageFlagBits::eIndexBuffer, vertices, indexes);
-		//device.buildBufferOnBsM(Bsm, vk::BufferUsageFlagBits::eIndexBuffer, indexes);
-		{
-			auto localeBufferMemory = device.createStagingBufferMemoryOnObjs(vertices, indexes);
-			{
-				uint32_t off = 0;
-				auto memoryPtr = device.mapBufferMemory(localeBufferMemory);
-				off += device.writeObjsDescriptorBufferInfo(
-						memoryPtr, Bsm.desAndBuffers()[0], off,
-						vertices, indexes);
-			}
-			device.buildMemoryOnBsM(Bsm, vk::MemoryPropertyFlagBits::eDeviceLocal);
-			device.flushBufferToMemory(std::get<vk::UniqueBuffer>(localeBufferMemory).get(),
-			                           Bsm.memory().get(), Bsm.size());
-		}
-
-		{
-			auto fileContent = loadDataFromAssets("textures/ic_launcher-web.ktx", app);
-			//gli::texture2d tex2d;
-			auto tex2d = gli::texture2d{gli::load_ktx((char*)fileContent.data(), fileContent.size())};
-			sampler = device.createSampler(tex2d.levels());
-			IVMs.emplace_back(device.createImageAndMemoryFromT2d(tex2d));
-		}
-
-
-		//uniquePipeline = createPipeline(device, app);
-
-		auto descriptorBufferInfo = //createDescriptorBufferInfoTuple(device.Job<JobDrawLine>().memoryWithParts, 3);
-				device.getDescriptorBufferInfo(BAMs[0]);
-		auto descriptorImageInfo = device.getDescriptorImageInfo(IVMs[0], sampler.get());
-
-		std::array writeDes{
-				vk::WriteDescriptorSet{
-						graphPipeline.getDescriptorSet(), 0, 0, 1,
-						vk::DescriptorType::eUniformBuffer,
-						nullptr, &descriptorBufferInfo
-				},
-				vk::WriteDescriptorSet{
-						graphPipeline.getDescriptorSet(), 1, 0, 1,
-						vk::DescriptorType::eCombinedImageSampler,
-						&descriptorImageInfo
-				}
-		};
-		device->updateDescriptorSets(writeDes, nullptr);
-		//MY_LOG(INFO)<<__FUNCTION__<<" run out";
+		return;
 	}
 
 	void
 	JobDraw::CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleRenderpassContinue,
 	                                          vk::Extent2D win, uint32_t frameIndex) {
-		cmdHandleRenderpassContinue.setViewport(
-				0,
-				std::array{
-						vk::Viewport{
-								0, 0,
-								win.width,
-								win.height,
-								0.0f, 1.0f
-						}
-				}
-		);
+		return;
 
-		cmdHandleRenderpassContinue.setScissor(0, std::array{vk::Rect2D{{}, win}});
-		cmdHandleRenderpassContinue.bindPipeline(
-				vk::PipelineBindPoint::eGraphics,
-				graphPipeline.get());
-		cmdHandleRenderpassContinue.bindDescriptorSets(
-				vk::PipelineBindPoint::eGraphics,
-				graphPipeline.layout(), 0,
-				graphPipeline.getDescriptorSets(),
-				{});
-		std::array offsets{vk::DeviceSize{0}};
-		cmdHandleRenderpassContinue.bindVertexBuffers(
-				0,
-				Bsm.desAndBuffers()[0].buffer().get(),
-				offsets);
-		cmdHandleRenderpassContinue.bindIndexBuffer(
-				Bsm.desAndBuffers()[0].buffer().get(),
-				Bsm.desAndBuffers()[0].descriptors()[1].offset, vk::IndexType::eUint32);
-		cmdHandleRenderpassContinue.drawIndexed(4, 1, 0, 0, 0);
 	}
 };

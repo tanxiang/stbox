@@ -11,9 +11,11 @@
 #include "JobDrawLine.hh"
 #include "JobDraw.hh"
 #include "JobSkyBox.hh"
+#include "JobIsland.hh"
+
 #include "ktx2.hh"
 #include <type_traits>
-#include <gli/texture_cube.hpp>
+//#include <gli/texture_cube.hpp>
 
 
 namespace tt {
@@ -256,6 +258,10 @@ namespace tt {
 								this
 						),
 						JobDraw::create(app, *this),
+						std::make_tuple(
+								app,
+								this
+						),
 				} {
 
 		}
@@ -390,18 +396,18 @@ namespace tt {
 			};
 		}
 
-		ImageViewMemory createImageAndMemoryFromMemory(gli::texture2d t2d,
-		                                               vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
+		//ImageViewMemory createImageAndMemoryFromMemory(gli::texture2d t2d,
+		//                                               vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 
-		void writeTextureToImage(gli::texture_cube &texture, vk::Image image);
+		//void writeTextureToImage(gli::texture_cube &texture, vk::Image image);
 
 		void writeTextureToImage(ktx2 &texture, vk::Image image);
 
-		void writeTextureToImage(gli::texture2d &texture, vk::Image image);
+		//void writeTextureToImage(gli::texture2d &texture, vk::Image image);
 
 
-		ImageViewMemory createImageAndMemoryFromT2d(gli::texture2d t2d,
-		                                            vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
+		//ImageViewMemory createImageAndMemoryFromT2d(gli::texture2d t2d,
+		//                                            vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
 
 
 		BufferMemory
@@ -426,14 +432,14 @@ namespace tt {
 		void flushBufferToBuffer(vk::Buffer srcbuffer, vk::Buffer decbuffer, size_t size,
 		                         size_t srcoff = 0, size_t decoff = 0);
 
-		void flushBufferToMemory(vk::Buffer buffer, vk::DeviceMemory memory, size_t size,
-		                         size_t srcoff = 0, size_t decoff = 0);
+		//void flushBufferToMemory(vk::Buffer buffer, vk::DeviceMemory memory, size_t size,
+		//                         size_t srcoff = 0, size_t decoff = 0);
 
 		template<typename TupleFrom, typename TupleTo>
 		auto flushBufferTuple(const TupleFrom &from, const TupleTo &to, size_t srcoff = 0,
 		                      size_t decoff = 0) {
-			flushBufferToMemory(std::get<vk::UniqueBuffer>(from).get(),
-			                    std::get<vk::UniqueDeviceMemory>(to).get(),
+			flushBufferToBuffer(std::get<vk::UniqueBuffer>(from).get(),
+			                    std::get<vk::UniqueBuffer>(to).get(),
 			                    get().getBufferMemoryRequirements(
 					                    std::get<vk::UniqueBuffer>(from).get()).size, srcoff,
 			                    decoff);
@@ -525,11 +531,48 @@ namespace tt {
 
 		template<typename ... Ts>
 		auto createBufferPartsdOnAssertDir(vk::BufferUsageFlags flags,
-		                                   const AAssetDirHander& dir,
-		                                   const Ts &... objs){
+		                                   AAssetManager* aAssetManager,
+		                                   const std::string dirName,
+		                                   const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			uint32_t allSize = 0;
-			auto tuple = BufferMemoryWithPartsd{};
+			auto dir = AAssetDirHander{aAssetManager, dirName};
+			std::vector<uint32_t> parts;
+			while (auto name = dir.getNextFileName()) {
+				AAssetHander file{aAssetManager, dirName + '/' + name};
+				allSize += alignment(alig, file.getLength());
+				parts.emplace_back(allSize);
+				MY_LOG(INFO) << name << file.getLength();
+			}
+			//std::array aParts{objSizeOffset(alig, allSize, objs)...};
+			MY_LOG(INFO) << "filesNum:" << parts.size();
+			parts.emplace_back(objSizeOffset(alig, allSize, objs)...);
+			MY_LOG(INFO) << "objNum:" << parts.size();
+			auto tuple = BufferMemoryWithPartsd(
+					get().createBufferUnique(
+							vk::BufferCreateInfo{
+									vk::BufferCreateFlags(),
+									allSize,
+									flags}
+					),
+					vk::UniqueDeviceMemory{}, parts);
+			auto staging = createLocalBufferMemory(*(parts.rbegin() + sizeof...(objs)),
+			                                       vk::BufferUsageFlagBits::eTransferSrc);
+			//createStagingBufferMemoryOnObjs2(*(parts.rbegin()+sizeof...(objs)),objs...);
+			{
+				auto memoryPtr = mapTypeBufferMemory<uint8_t>(staging);
+
+				dir.rewind();
+				uint32_t fIndex=0;
+				while (auto name = dir.getNextFileName()) {
+					AAssetHander file{aAssetManager, dirName + '/' + name};
+					file.read(&memoryPtr[ fIndex ? parts[fIndex-1] : 0],
+							fIndex ? parts[fIndex]-parts[fIndex-1] : parts[fIndex]);
+					++fIndex;
+				}
+			}
+				//std::vector parts{objSizeOffset(alig, allSize, objs)...};
+			flushBufferTuple(staging, tuple);
 			return tuple;
 
 		}
@@ -682,7 +725,7 @@ namespace tt {
 
 		//std::vector<JobDraw> drawJobs;
 	private:
-		std::tuple<JobSkyBox, JobDrawLine, JobDraw> Jobs;
+		std::tuple<JobSkyBox, JobDrawLine, JobDraw ,JobIsland> Jobs;
 	public:
 		std::vector<vk::UniqueCommandBuffer> mainCmdBuffers;
 
