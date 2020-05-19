@@ -149,7 +149,7 @@ namespace tt {
 						ktx2texture.numLevels(),
 						vk::BorderColor::eFloatOpaqueWhite,
 						0});
-		createDescriptorBufferInfoTuple(memoryWithParts, 1);
+
 		std::array descriptors{
 				createDescriptorBufferInfoTuple(memoryWithParts, 2),
 				createDescriptorBufferInfoTuple(memoryWithParts, 3)

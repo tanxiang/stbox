@@ -440,8 +440,8 @@ namespace tt {
 		                      size_t decoff = 0) {
 			flushBufferToBuffer(std::get<vk::UniqueBuffer>(from).get(),
 			                    std::get<vk::UniqueBuffer>(to).get(),
-			                    get().getBufferMemoryRequirements(
-					                    std::get<vk::UniqueBuffer>(from).get()).size, srcoff,
+			                    get().getBufferMemoryRequirements(std::get<vk::UniqueBuffer>(from).get()).size,
+			                    srcoff,
 			                    decoff);
 		}
 
@@ -530,6 +530,29 @@ namespace tt {
 		}
 
 		template<typename ... Ts>
+		auto createImageBufferPartsOnObjs(vk::BufferUsageFlags flags,
+		                                  vk::ImageCreateInfo imageCreateInfo,
+		                                  const Ts &... objs) {
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			uint32_t allSize = 0;
+			std::array parts{objSizeOffset(alig, allSize, objs)...};
+			//MY_LOG(INFO) << "allSize" <<allSize;
+			auto tuple = BufferImageMemoryWithParts<sizeof...(objs)>(
+					get().createBufferUnique(
+							vk::BufferCreateInfo{
+									vk::BufferCreateFlags(),
+									allSize,
+									flags}
+					),
+					get().createImageUnique(imageCreateInfo),
+					vk::UniqueDeviceMemory{}, parts);
+			bufferImageTupleCreateMemory(vk::MemoryPropertyFlagBits::eDeviceLocal, tuple);
+			auto staging = createStagingBufferMemoryOnObjs2(objs...);
+			flushBufferTuple(staging, tuple);
+			return tuple;
+		}
+
+		template<typename ... Ts>
 		auto createBufferPartsdOnAssertDir(vk::BufferUsageFlags flags,
 		                                   AAssetManager* aAssetManager,
 		                                   const std::string dirName,
@@ -542,9 +565,7 @@ namespace tt {
 				AAssetHander file{aAssetManager, dirName + '/' + name};
 				allSize += alignment(alig, file.getLength());
 				parts.emplace_back(allSize);
-				MY_LOG(INFO) << name << file.getLength();
 			}
-			//std::array aParts{objSizeOffset(alig, allSize, objs)...};
 			MY_LOG(INFO) << "filesNum:" << parts.size();
 			parts.emplace_back(objSizeOffset(alig, allSize, objs)...);
 			MY_LOG(INFO) << "objNum:" << parts.size();
@@ -558,7 +579,7 @@ namespace tt {
 					vk::UniqueDeviceMemory{}, parts);
 			auto staging = createLocalBufferMemory(*(parts.rbegin() + sizeof...(objs)),
 			                                       vk::BufferUsageFlagBits::eTransferSrc);
-			//createStagingBufferMemoryOnObjs2(*(parts.rbegin()+sizeof...(objs)),objs...);
+
 			{
 				auto memoryPtr = mapTypeBufferMemory<uint8_t>(staging);
 
@@ -566,15 +587,20 @@ namespace tt {
 				uint32_t fIndex=0;
 				while (auto name = dir.getNextFileName()) {
 					AAssetHander file{aAssetManager, dirName + '/' + name};
-					file.read(&memoryPtr[ fIndex ? parts[fIndex-1] : 0],
+					auto readRet = file.read(&memoryPtr[ fIndex ? parts[fIndex-1] : 0],
 							fIndex ? parts[fIndex]-parts[fIndex-1] : parts[fIndex]);
+					MY_LOG(INFO) << fIndex << dirName + '/' + name << readRet << " offset:" <<  (fIndex ? parts[fIndex-1] : 0);
+					if(std::string{"mesh_0_P.bin"} == name){
+						float* vetc =(float*) &memoryPtr[fIndex ? parts[fIndex-1] : 0];
+						for(int pci = 0;pci<=24;pci++)
+							MY_LOG(INFO) << vetc[pci];
+
+					}
 					++fIndex;
 				}
 			}
-				//std::vector parts{objSizeOffset(alig, allSize, objs)...};
 			flushBufferTuple(staging, tuple);
 			return tuple;
-
 		}
 
 		template<typename Tuple>
@@ -597,28 +623,6 @@ namespace tt {
 			//MY_LOG(INFO)<<"bindImageMemory off:"<<memoryReq.size;
 		}
 
-		template<typename ... Ts>
-		auto createImageBufferPartsOnObjs(vk::BufferUsageFlags flags,
-				                          vk::ImageCreateInfo imageCreateInfo,
-				                          const Ts &... objs) {
-			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
-			uint32_t allSize = 0;
-			std::array parts{objSizeOffset(alig, allSize, objs)...};
-			//MY_LOG(INFO) << "allSize" <<allSize;
-			auto tuple = BufferImageMemoryWithParts<sizeof...(objs)>(
-					get().createBufferUnique(
-							vk::BufferCreateInfo{
-									vk::BufferCreateFlags(),
-									allSize,
-									flags}
-					),
-					get().createImageUnique(imageCreateInfo),
-					vk::UniqueDeviceMemory{}, parts);
-			bufferImageTupleCreateMemory(vk::MemoryPropertyFlagBits::eDeviceLocal, tuple);
-			auto staging = createStagingBufferMemoryOnObjs2(objs...);
-			flushBufferTuple(staging, tuple);
-			return tuple;
-		}
 
 
 		void buildMemoryOnBsM(BuffersMemory<> &BsM,

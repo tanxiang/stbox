@@ -26,13 +26,14 @@ namespace tt {
 		void CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleBegin,
 		                                      vk::Extent2D win,uint32_t frameIndex);
 
-		void setMVP(tt::Device &device, vk::Buffer buffer,vk::DeviceMemory deviceMemory);
+		void setMVP(tt::Device &device, vk::Buffer buffer);
 
 		JobIsland(android_app *app,tt::Device &device);
 
 		template <typename tupleType>
 		JobIsland(tupleType args):JobIsland(std::get<android_app*>(args),*std::get<tt::Device*>(args)){}
 		vk::UniqueSampler sampler;
-		BufferMemoryWithPartsd memoryWithParts;
+		BufferMemoryWithPartsd memoryWithPartsd;
+		BufferMemoryWithParts<4> memoryWithParts;
 	};
 }
