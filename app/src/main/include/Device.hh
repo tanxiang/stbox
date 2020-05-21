@@ -396,19 +396,7 @@ namespace tt {
 			};
 		}
 
-		//ImageViewMemory createImageAndMemoryFromMemory(gli::texture2d t2d,
-		//                                               vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
-
-		//void writeTextureToImage(gli::texture_cube &texture, vk::Image image);
-
 		void writeTextureToImage(ktx2 &texture, vk::Image image);
-
-		//void writeTextureToImage(gli::texture2d &texture, vk::Image image);
-
-
-		//ImageViewMemory createImageAndMemoryFromT2d(gli::texture2d t2d,
-		//                                            vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
-
 
 		BufferMemory
 		createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
@@ -438,7 +426,9 @@ namespace tt {
 		template<typename TupleFrom, typename TupleTo>
 		auto flushBufferTuple(const TupleFrom &from, const TupleTo &to, size_t srcoff = 0,
 		                      size_t decoff = 0) {
-			flushBufferToBuffer(std::get<vk::UniqueBuffer>(from).get(),
+			//MY_LOG(INFO) <<get().getBufferMemoryRequirements(std::get<vk::UniqueBuffer>(from).get()).size;
+
+			return flushBufferToBuffer(std::get<vk::UniqueBuffer>(from).get(),
 			                    std::get<vk::UniqueBuffer>(to).get(),
 			                    get().getBufferMemoryRequirements(std::get<vk::UniqueBuffer>(from).get()).size,
 			                    srcoff,
@@ -566,9 +556,7 @@ namespace tt {
 				allSize += alignment(alig, file.getLength());
 				parts.emplace_back(allSize);
 			}
-			MY_LOG(INFO) << "filesNum:" << parts.size();
 			parts.emplace_back(objSizeOffset(alig, allSize, objs)...);
-			MY_LOG(INFO) << "objNum:" << parts.size();
 			auto tuple = BufferMemoryWithPartsd(
 					get().createBufferUnique(
 							vk::BufferCreateInfo{
@@ -577,12 +565,12 @@ namespace tt {
 									flags}
 					),
 					vk::UniqueDeviceMemory{}, parts);
+			bufferTupleCreateMemory(vk::MemoryPropertyFlagBits::eDeviceLocal, tuple);
 			auto staging = createLocalBufferMemory(*(parts.rbegin() + sizeof...(objs)),
 			                                       vk::BufferUsageFlagBits::eTransferSrc);
 
 			{
 				auto memoryPtr = mapTypeBufferMemory<uint8_t>(staging);
-
 				dir.rewind();
 				uint32_t fIndex=0;
 				while (auto name = dir.getNextFileName()) {
@@ -590,12 +578,6 @@ namespace tt {
 					auto readRet = file.read(&memoryPtr[ fIndex ? parts[fIndex-1] : 0],
 							fIndex ? parts[fIndex]-parts[fIndex-1] : parts[fIndex]);
 					MY_LOG(INFO) << fIndex << dirName + '/' + name << readRet << " offset:" <<  (fIndex ? parts[fIndex-1] : 0);
-					if(std::string{"mesh_0_P.bin"} == name){
-						float* vetc =(float*) &memoryPtr[fIndex ? parts[fIndex-1] : 0];
-						for(int pci = 0;pci<=24;pci++)
-							MY_LOG(INFO) << vetc[pci];
-
-					}
 					++fIndex;
 				}
 			}

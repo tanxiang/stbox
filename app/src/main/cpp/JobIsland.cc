@@ -87,18 +87,6 @@ namespace tt {
 					}
 			} {
 
-		memoryWithParts = device.createBufferPartsOnObjs(
-				vk::BufferUsageFlagBits::eUniformBuffer |
-				vk::BufferUsageFlagBits::eVertexBuffer |
-				vk::BufferUsageFlagBits::eIndexBuffer |
-				vk::BufferUsageFlagBits::eIndirectBuffer |
-				vk::BufferUsageFlagBits::eTransferSrc |
-				vk::BufferUsageFlagBits::eTransferDst,
-				//app->activity->assetManager, "models/cubex.obj.ext",
-				AAssetHander{app->activity->assetManager, "models/untitled.obj.ext/mesh_1_P.bin"},
-				AAssetHander{app->activity->assetManager, "models/untitled.obj.ext/mesh_1_index_0_strip.bin"},
-				AAssetHander{app->activity->assetManager, "models/untitled.obj.ext/mesh_1_index_0_strip_draw.bin"},
-				sizeof(glm::mat4));
 		///home/ttand/work/stbox/app/src/main/assets/models/torusknot.obj.ext
 		///home/ttand/work/stbox/app/src/main/assets/models/untitled.obj.ext
 		memoryWithPartsd = device.createBufferPartsdOnAssertDir(
@@ -108,11 +96,11 @@ namespace tt {
 				vk::BufferUsageFlagBits::eIndirectBuffer |
 				vk::BufferUsageFlagBits::eTransferSrc |
 				vk::BufferUsageFlagBits::eTransferDst,
-				app->activity->assetManager, "models/cubex.obj.ext",
+				app->activity->assetManager, "models/untitled.obj.ext",
 				sizeof(glm::mat4));
 
 		std::array descriptors{
-				createDescriptorBufferInfoTuple(memoryWithParts, 3),
+				createDescriptorBufferInfoTuple(memoryWithPartsd,std::get<std::vector<uint32_t>>(memoryWithPartsd).size()-1),
 		};
 		std::array writeDes{
 				vk::WriteDescriptorSet{
@@ -159,35 +147,34 @@ namespace tt {
 				graphPipeline.getDescriptorSets(),
 				{}
 		);
-		//for (uint32_t partIndex = 0;partIndex<99;partIndex+=3) {
+		for (uint32_t partIndex = 0;partIndex<99;partIndex+=3) {
 			cmdHandleRenderpassBegin.bindVertexBuffers(
-					0, std::get<vk::UniqueBuffer>(memoryWithParts).get(),
-					createDescriptorBufferInfoTuple(memoryWithParts, 0).offset
+					0, std::get<vk::UniqueBuffer>(memoryWithPartsd).get(),
+					createDescriptorBufferInfoTuple(memoryWithPartsd, partIndex).offset
 			);
 
 			cmdHandleRenderpassBegin.bindIndexBuffer(
-					std::get<vk::UniqueBuffer>(memoryWithParts).get(),
-					createDescriptorBufferInfoTuple(memoryWithParts, 1).offset,
+					std::get<vk::UniqueBuffer>(memoryWithPartsd).get(),
+					createDescriptorBufferInfoTuple(memoryWithPartsd, partIndex+1).offset,
 					vk::IndexType::eUint16
 			);
 
 			cmdHandleRenderpassBegin.drawIndexedIndirect(
-					std::get<vk::UniqueBuffer>(memoryWithParts).get(),
-					createDescriptorBufferInfoTuple(memoryWithParts, 2).offset,
+					std::get<vk::UniqueBuffer>(memoryWithPartsd).get(),
+					createDescriptorBufferInfoTuple(memoryWithPartsd, partIndex+2).offset,
 					1, 0);
-		//}
+		}
 		return;
 
 	}
 
 	void
 	JobIsland::setMVP(tt::Device &device, vk::Buffer buffer) {
-		MY_LOG(INFO) << "draw indirect" <<createDescriptorBufferInfoTuple(memoryWithParts, 3).offset;
 		device.flushBufferToBuffer(
 				buffer,
-				std::get<vk::UniqueBuffer>(memoryWithParts).get(),
+				std::get<vk::UniqueBuffer>(memoryWithPartsd).get(),
 				device->getBufferMemoryRequirements(buffer).size,
 				0,
-				createDescriptorBufferInfoTuple(memoryWithParts, 3).offset);
+				createDescriptorBufferInfoTuple(memoryWithPartsd, std::get<std::vector<uint32_t>>(memoryWithPartsd).size()-1).offset);
 	}
 }
