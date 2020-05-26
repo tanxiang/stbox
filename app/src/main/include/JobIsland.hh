@@ -34,5 +34,6 @@ namespace tt {
 		JobIsland(tupleType args):JobIsland(std::get<android_app*>(args),*std::get<tt::Device*>(args)){}
 		vk::UniqueSampler sampler;
 		BufferMemoryWithPartsd memoryWithPartsd;
+		std::vector<float> materials;
 	};
 }
