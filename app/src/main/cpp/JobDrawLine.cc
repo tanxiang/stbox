@@ -335,6 +335,7 @@ namespace tt {
 			CommandBufferBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win,
 			uint32_t frameIndex) {
 
+		return;
 		cmdHandleRenderpassBegin.setViewport(
 				0,
 				std::array{

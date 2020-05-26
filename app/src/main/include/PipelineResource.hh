@@ -65,6 +65,9 @@ namespace tt {
 			return descriptorSets[index];
 		}
 
+		auto getLayout(){
+			return pipelineLayout.get();
+		}
 
 		auto layout(){
 			return pipelineLayout.get();

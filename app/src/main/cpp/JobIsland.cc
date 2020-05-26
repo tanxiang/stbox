@@ -78,7 +78,11 @@ namespace tt {
 								device,
 								app,
 								pipelineLayout);
-					}, {},
+					},
+					std::array{
+							vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0,
+							                      sizeof(float) * 6},
+					},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eUniformBuffer,
@@ -100,7 +104,8 @@ namespace tt {
 				sizeof(glm::mat4));
 
 		std::array descriptors{
-				createDescriptorBufferInfoTuple(memoryWithPartsd,std::get<std::vector<uint32_t>>(memoryWithPartsd).size()-1),
+				createDescriptorBufferInfoTuple(memoryWithPartsd,
+						std::get<std::vector<uint32_t>>(memoryWithPartsd).size() - 1),
 		};
 		std::array writeDes{
 				vk::WriteDescriptorSet{
@@ -110,6 +115,9 @@ namespace tt {
 				}
 		};
 		device->updateDescriptorSets(writeDes, nullptr);
+		AAssetHander file{app->activity->assetManager, "models/untitled.obj.material.bin"};
+		materials.resize(file.getLength() / 2);
+		file.read(materials.data(), file.getLength());
 	}
 
 	void JobIsland::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
@@ -147,7 +155,7 @@ namespace tt {
 				graphPipeline.getDescriptorSets(),
 				{}
 		);
-		for (uint32_t partIndex = 0;partIndex<99;partIndex+=3) {
+		for (uint32_t partIndex = 0,matIndex=0; partIndex < 99; partIndex += 3,++matIndex) {
 			cmdHandleRenderpassBegin.bindVertexBuffers(
 					0, std::get<vk::UniqueBuffer>(memoryWithPartsd).get(),
 					createDescriptorBufferInfoTuple(memoryWithPartsd, partIndex).offset
@@ -155,13 +163,16 @@ namespace tt {
 
 			cmdHandleRenderpassBegin.bindIndexBuffer(
 					std::get<vk::UniqueBuffer>(memoryWithPartsd).get(),
-					createDescriptorBufferInfoTuple(memoryWithPartsd, partIndex+1).offset,
+					createDescriptorBufferInfoTuple(memoryWithPartsd, partIndex + 1).offset,
 					vk::IndexType::eUint16
 			);
-
+			cmdHandleRenderpassBegin.pushConstants(graphPipeline.getLayout(),
+					vk::ShaderStageFlagBits::eFragment,0, sizeof(float)*6,
+					&materials[matIndex*6]
+					);
 			cmdHandleRenderpassBegin.drawIndexedIndirect(
 					std::get<vk::UniqueBuffer>(memoryWithPartsd).get(),
-					createDescriptorBufferInfoTuple(memoryWithPartsd, partIndex+2).offset,
+					createDescriptorBufferInfoTuple(memoryWithPartsd, partIndex + 2).offset,
 					1, 0);
 		}
 		return;
@@ -175,6 +186,7 @@ namespace tt {
 				std::get<vk::UniqueBuffer>(memoryWithPartsd).get(),
 				device->getBufferMemoryRequirements(buffer).size,
 				0,
-				createDescriptorBufferInfoTuple(memoryWithPartsd, std::get<std::vector<uint32_t>>(memoryWithPartsd).size()-1).offset);
+				createDescriptorBufferInfoTuple(memoryWithPartsd,
+						std::get<std::vector<uint32_t>>(memoryWithPartsd).size() - 1).offset);
 	}
 }
