@@ -35,5 +35,6 @@ namespace tt {
 		vk::UniqueSampler sampler;
 		BufferMemoryWithPartsd memoryWithPartsd;
 		std::vector<float> materials;
+		BufferMemory BAM;
 	};
 }

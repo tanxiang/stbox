@@ -33,7 +33,7 @@ namespace tt {
 
 		std::array vertexInputBindingDescriptions{
 				vk::VertexInputBindingDescription{
-						0, sizeof(float) * 3,
+						0, sizeof(float) * 6,
 						vk::VertexInputRate::eVertex
 				}
 		};
@@ -41,9 +41,9 @@ namespace tt {
 				vk::VertexInputAttributeDescription{
 						0, 0, vk::Format::eR32G32B32Sfloat, 0
 				},
-				//vk::VertexInputAttributeDescription{
-				//		0, 0, vk::Format::eR32G32B32Sfloat, 0
-				//}
+				vk::VertexInputAttributeDescription{
+						1, 0, vk::Format::eR32G32B32Sfloat, 12
+				}
 		};
 
 		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
@@ -81,7 +81,7 @@ namespace tt {
 					},
 					std::array{
 							vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0,
-							                      sizeof(float) * 6},
+							                      sizeof(float) * 16},
 					},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
@@ -89,7 +89,13 @@ namespace tt {
 									1, vk::ShaderStageFlagBits::eVertex
 							}
 					}
-			} {
+			},
+			BAM{device.createBufferAndMemory(
+					sizeof(glm::mat4)*2,
+					vk::BufferUsageFlagBits::eTransferSrc,
+					vk::MemoryPropertyFlagBits::eHostVisible |
+					vk::MemoryPropertyFlagBits::eHostCoherent)}
+			{
 
 		///home/ttand/work/stbox/app/src/main/assets/models/torusknot.obj.ext
 		///home/ttand/work/stbox/app/src/main/assets/models/untitled.obj.ext
@@ -100,8 +106,8 @@ namespace tt {
 				vk::BufferUsageFlagBits::eIndirectBuffer |
 				vk::BufferUsageFlagBits::eTransferSrc |
 				vk::BufferUsageFlagBits::eTransferDst,
-				app->activity->assetManager, "models/untitled.obj.ext",
-				sizeof(glm::mat4));
+				app->activity->assetManager, "models/untitled.obj.ext2",
+				sizeof(glm::mat4)*2);
 
 		std::array descriptors{
 				createDescriptorBufferInfoTuple(memoryWithPartsd,
@@ -118,6 +124,7 @@ namespace tt {
 		AAssetHander file{app->activity->assetManager, "models/untitled.obj.material.bin"};
 		materials.resize(file.getLength() / 2);
 		file.read(materials.data(), file.getLength());
+
 	}
 
 	void JobIsland::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
@@ -166,9 +173,13 @@ namespace tt {
 					createDescriptorBufferInfoTuple(memoryWithPartsd, partIndex + 1).offset,
 					vk::IndexType::eUint16
 			);
+			std::array<float,16> pushdata;
+			std::copy_n(materials.begin()+matIndex*10,10,pushdata.begin());
+			std::copy_n(std::array{0.0f,0.0f,-5.0f,1.0f,1.0f,1.0f}.begin(),6,pushdata.begin()+10);
+
 			cmdHandleRenderpassBegin.pushConstants(graphPipeline.getLayout(),
-					vk::ShaderStageFlagBits::eFragment,0, sizeof(float)*6,
-					&materials[matIndex*6]
+					vk::ShaderStageFlagBits::eFragment,0, sizeof(float)*16,
+					                               pushdata.data()
 					);
 			cmdHandleRenderpassBegin.drawIndexedIndirect(
 					std::get<vk::UniqueBuffer>(memoryWithPartsd).get(),
@@ -181,6 +192,12 @@ namespace tt {
 
 	void
 	JobIsland::setMVP(tt::Device &device, vk::Buffer buffer) {
+		{
+			auto memory_ptr = helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAM);
+			memory_ptr[1] = glm::mat4_cast(fRotate);
+			memory_ptr[0] = perspective * lookat * memory_ptr[1];
+		}
+		buffer = std::get<vk::UniqueBuffer>(BAM).get();
 		device.flushBufferToBuffer(
 				buffer,
 				std::get<vk::UniqueBuffer>(memoryWithPartsd).get(),
