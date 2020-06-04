@@ -26,7 +26,7 @@ namespace tt {
 		void CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleBegin,
 		                                      vk::Extent2D win,uint32_t frameIndex);
 
-		void setMVP(tt::Device &device, vk::Buffer buffer);
+		void setMVP(tt::Device &device);
 
 		JobIsland(android_app *app,tt::Device &device);
 

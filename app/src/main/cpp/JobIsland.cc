@@ -106,7 +106,7 @@ namespace tt {
 				vk::BufferUsageFlagBits::eIndirectBuffer |
 				vk::BufferUsageFlagBits::eTransferSrc |
 				vk::BufferUsageFlagBits::eTransferDst,
-				app->activity->assetManager, "models/untitled.obj.ext2",
+				app->activity->assetManager, "models/untitled.obj.ext",
 				sizeof(glm::mat4)*2);
 
 		std::array descriptors{
@@ -174,11 +174,15 @@ namespace tt {
 					vk::IndexType::eUint16
 			);
 			std::array<float,16> pushdata;
-			std::copy_n(materials.begin()+matIndex*10,10,pushdata.begin());
-			std::copy_n(std::array{0.0f,0.0f,-5.0f,1.0f,1.0f,1.0f}.begin(),6,pushdata.begin()+10);
+			auto material = materials.begin()+matIndex*10;
+			std::copy_n(material,3,pushdata.begin());
+			std::copy_n(material+3,3,pushdata.begin()+4);
+			std::copy_n(material+6,3,pushdata.begin()+8);
+
+			std::copy_n(std::array{0.5f,0.5f,0.5f,}.begin(),3,pushdata.begin()+12);
 
 			cmdHandleRenderpassBegin.pushConstants(graphPipeline.getLayout(),
-					vk::ShaderStageFlagBits::eFragment,0, sizeof(float)*16,
+					vk::ShaderStageFlagBits::eFragment,0, sizeof(float)*pushdata.size(),
 					                               pushdata.data()
 					);
 			cmdHandleRenderpassBegin.drawIndexedIndirect(
@@ -191,13 +195,13 @@ namespace tt {
 	}
 
 	void
-	JobIsland::setMVP(tt::Device &device, vk::Buffer buffer) {
+	JobIsland::setMVP(tt::Device &device) {
 		{
 			auto memory_ptr = helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAM);
 			memory_ptr[1] = glm::mat4_cast(fRotate);
 			memory_ptr[0] = perspective * lookat * memory_ptr[1];
 		}
-		buffer = std::get<vk::UniqueBuffer>(BAM).get();
+		auto buffer = std::get<vk::UniqueBuffer>(BAM).get();
 		device.flushBufferToBuffer(
 				buffer,
 				std::get<vk::UniqueBuffer>(memoryWithPartsd).get(),
