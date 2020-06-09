@@ -18,5 +18,5 @@ void main() {
 	//outColor = vec4(inPos,1.0);
 	gl_Position = myBufferVals.mvp * vec4(inPos,1.0);
 	outWorldPos = vec3(gl_Position);
-	outNormal = vec3(myBufferVals.mvp * vec4(inNor,0.0));
+	outNormal = vec3(myBufferVals.model * vec4(inNor,0.0));
 }
