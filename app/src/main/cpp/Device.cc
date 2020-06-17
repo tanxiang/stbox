@@ -322,7 +322,8 @@ namespace tt {
 			vk::PipelineCache pipelineCache,
 			vk::RenderPass jobRenderPass,
 			vk::PrimitiveTopology primitiveTopology,
-			vk::PolygonMode polygonMode) {
+			vk::PolygonMode polygonMode,
+			vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo) {
 
 		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo{
 				{}, primitiveTopology
@@ -376,7 +377,7 @@ namespace tt {
 				{}, pipelineShaderStageCreateInfos.size(), pipelineShaderStageCreateInfos.data(),
 				&pipelineVertexInputStateCreateInfo,
 				&pipelineInputAssemblyStateCreateInfo,
-				nullptr,
+				&pipelineTessellationStateCreateInfo,
 				nullptr,
 				&pipelineRasterizationStateCreateInfo,
 				&pipelineMultisampleStateCreateInfo,

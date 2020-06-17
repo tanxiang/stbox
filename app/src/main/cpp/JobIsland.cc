@@ -13,14 +13,28 @@ namespace tt {
 	vk::UniquePipeline JobIsland::createGraphsPipeline(tt::Device &device, android_app *app,
 	                                                   vk::PipelineLayout pipelineLayout) {
 
-		auto vertShaderModule = device.loadShaderFromAssets("shaders/mesh.vert.spv", app);
+		auto vertShaderModule = device.loadShaderFromAssets("shaders/copy.vert.spv", app);
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/mesh.frag.spv", app);
+		auto tescShaderModule = device.loadShaderFromAssets("shaders/passthrough.tesc.spv", app);
+		auto teseShaderModule = device.loadShaderFromAssets("shaders/passthrough.tese.spv", app);
 
 		std::array pipelineShaderStageCreateInfos{
 				vk::PipelineShaderStageCreateInfo{
 						{},
 						vk::ShaderStageFlagBits::eVertex,
 						vertShaderModule.get(),
+						"main"
+				},
+				vk::PipelineShaderStageCreateInfo{
+						{},
+						vk::ShaderStageFlagBits::eTessellationControl,
+						tescShaderModule.get(),
+						"main"
+				},
+				vk::PipelineShaderStageCreateInfo{
+						{},
+						vk::ShaderStageFlagBits::eTessellationEvaluation,
+						teseShaderModule.get(),
 						"main"
 				},
 				vk::PipelineShaderStageCreateInfo{
@@ -51,12 +65,16 @@ namespace tt {
 				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
 		};
 
+
+		vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{{},3};
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
 		                                   pipelineVertexInputStateCreateInfo,
 		                                   pipelineLayout,
 		                                   pipelineCache.get(),
 		                                   device.renderPass.get(),
-		                                   vk::PrimitiveTopology::eTriangleStrip);
+		                                   vk::PrimitiveTopology::ePatchList,
+		                                   vk::PolygonMode::eLine,
+		                                   pipelineTessellationStateCreateInfo);
 	}
 
 	JobIsland::JobIsland(android_app *app, tt::Device &device) :
@@ -86,16 +104,15 @@ namespace tt {
 					std::array{
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eUniformBuffer,
-									1, vk::ShaderStageFlagBits::eVertex
+									1, vk::ShaderStageFlagBits::eTessellationEvaluation
 							}
 					}
 			},
 			BAM{device.createBufferAndMemory(
-					sizeof(glm::mat4)*2,
+					sizeof(glm::mat4) * 2,
 					vk::BufferUsageFlagBits::eTransferSrc,
 					vk::MemoryPropertyFlagBits::eHostVisible |
-					vk::MemoryPropertyFlagBits::eHostCoherent)}
-			{
+					vk::MemoryPropertyFlagBits::eHostCoherent)} {
 
 		///home/ttand/work/stbox/app/src/main/assets/models/torusknot.obj.ext
 		///home/ttand/work/stbox/app/src/main/assets/models/untitled.obj.ext
@@ -107,11 +124,12 @@ namespace tt {
 				vk::BufferUsageFlagBits::eTransferSrc |
 				vk::BufferUsageFlagBits::eTransferDst,
 				app->activity->assetManager, "models/untitled.obj.ext",
-				sizeof(glm::mat4)*2);
+				sizeof(glm::mat4) * 2);
 
 		std::array descriptors{
 				createDescriptorBufferInfoTuple(memoryWithPartsd,
-						std::get<std::vector<uint32_t>>(memoryWithPartsd).size() - 1),
+				                                std::get<std::vector<uint32_t>>(
+						                                memoryWithPartsd).size() - 1),
 		};
 		std::array writeDes{
 				vk::WriteDescriptorSet{
@@ -162,7 +180,7 @@ namespace tt {
 				graphPipeline.getDescriptorSets(),
 				{}
 		);
-		for (uint32_t partIndex = 0,matIndex=0; partIndex < 99; partIndex += 3,++matIndex) {
+		for (uint32_t partIndex = 0, matIndex = 0; partIndex < 99; partIndex += 3, ++matIndex) {
 			cmdHandleRenderpassBegin.bindVertexBuffers(
 					0, std::get<vk::UniqueBuffer>(memoryWithPartsd).get(),
 					createDescriptorBufferInfoTuple(memoryWithPartsd, partIndex).offset
@@ -173,18 +191,19 @@ namespace tt {
 					createDescriptorBufferInfoTuple(memoryWithPartsd, partIndex + 1).offset,
 					vk::IndexType::eUint16
 			);
-			std::array<float,16> pushdata;
-			auto material = materials.begin()+matIndex*10;
-			std::copy_n(material,3,pushdata.begin());
-			std::copy_n(material+3,3,pushdata.begin()+4);
-			std::copy_n(material+6,3,pushdata.begin()+8);
+			std::array<float, 16> pushdata;
+			auto material = materials.begin() + matIndex * 10;
+			std::copy_n(material, 3, pushdata.begin());
+			std::copy_n(material + 3, 3, pushdata.begin() + 4);
+			std::copy_n(material + 6, 3, pushdata.begin() + 8);
 
-			std::copy_n(std::array{0.5f,0.5f,0.5f,}.begin(),3,pushdata.begin()+12);
+			std::copy_n(std::array{0.5f, 0.5f, 0.5f,}.begin(), 3, pushdata.begin() + 12);
 
 			cmdHandleRenderpassBegin.pushConstants(graphPipeline.getLayout(),
-					vk::ShaderStageFlagBits::eFragment,0, sizeof(float)*pushdata.size(),
-					                               pushdata.data()
-					);
+			                                       vk::ShaderStageFlagBits::eFragment, 0,
+			                                       sizeof(float) * pushdata.size(),
+			                                       pushdata.data()
+			);
 			cmdHandleRenderpassBegin.drawIndexedIndirect(
 					std::get<vk::UniqueBuffer>(memoryWithPartsd).get(),
 					createDescriptorBufferInfoTuple(memoryWithPartsd, partIndex + 2).offset,
@@ -208,6 +227,7 @@ namespace tt {
 				device->getBufferMemoryRequirements(buffer).size,
 				0,
 				createDescriptorBufferInfoTuple(memoryWithPartsd,
-						std::get<std::vector<uint32_t>>(memoryWithPartsd).size() - 1).offset);
+				                                std::get<std::vector<uint32_t>>(
+						                                memoryWithPartsd).size() - 1).offset);
 	}
 }

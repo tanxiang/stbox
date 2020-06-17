@@ -671,7 +671,8 @@ namespace tt {
 				vk::PipelineCache pipelineCache,
 				vk::RenderPass jobRenderPass,
 				vk::PrimitiveTopology primitiveTopology = vk::PrimitiveTopology::eTriangleStrip,
-				vk::PolygonMode polygonMode = vk::PolygonMode::eFill
+				vk::PolygonMode polygonMode = vk::PolygonMode::eFill,
+				vk::PipelineTessellationStateCreateInfo = {}
 		);
 
 		std::vector<vk::UniqueCommandBuffer>
