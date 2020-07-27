@@ -1,9 +1,7 @@
 //
 // Created by ttand on 19-11-11.
 //
-
-#ifndef STBOX_JOBDRAWLINE_HH
-#define STBOX_JOBDRAWLINE_HH
+#pragma once
 
 #include "util.hh"
 //#include "Device.hh"
@@ -51,4 +49,3 @@ namespace tt {
 	};
 }
 
-#endif //STBOX_JOBDRAWLINE_HH

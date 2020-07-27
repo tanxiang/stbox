@@ -13,58 +13,70 @@ struct b3RigidBodyData
     float frictionCoeff;
 };
 
-struct uCollidable
-{
-    uvec4 shapeType;
-};
-
-struct fCollidable
-{
-    vec4 shapeType;
-};
-
 struct aabb//_17
 {
     vec4 min;
     vec4 max;
 };
 
-layout(set = 0, binding = 0, std430) buffer b3RigidBodyDatas
+struct aabbArg//_17
+{
+    uvec4 min;
+    uvec4 max;
+};
+
+
+layout(set = 0, binding = 0)readonly buffer b3RigidBodyDatas
 {
     b3RigidBodyData BodyDatas[];
 } RigidBodyDatas;//_37;
 
-layout(set = 0, binding = 1, std430) buffer b3Collidables
+layout(set = 0, binding = 1)readonly buffer b3Collidables
 {
     ivec4 b3Collidable[];
 } Collidables;//_38
 
-layout(set = 0, binding = 1, std430) buffer b3Collidables_f
+layout(set = 0, binding = 1)readonly buffer b3Collidables_f
 {
     vec4 b3Collidable[];
 } Collidables_f;//_381;
 
-layout(set = 0, binding = 2, std430) buffer b3ShapeAabb
+layout(set = 0, binding = 2)readonly buffer b3ShapeAabb
 {
     aabb bb[];
 } localShapeAABB;//_39
 
-layout(set = 0, binding = 3, std430) buffer B3Aabb
+layout(set = 0, binding = 3)writeonly buffer B3Aabb
 {
     aabb bb[];
 } AABB;//_40
 
-layout(set = 0, binding = 0, std430) buffer _26_42
+layout(set = 0, binding = 3)writeonly buffer B3AabbArg
 {
-    uvec4 _m0[];
-} _42;
+    aabbArg bb[];
+} AABBArg;//_40
 
-
-
-layout(push_constant, std430) uniform _22_43
+struct ioInfo
 {
-    uint _m0;
-} _43;
+    vec4 point;
+    vec4 color;
+};
+
+struct cmdInfo{
+    uint vetCont;
+    uint insCont;
+    uint vetOff;
+    uint insOff;
+};
+
+layout(set = 0,binding = 4) writeonly buffer outPos { ioInfo outinfo[]; };
+
+layout(set = 0,binding = 5) writeonly buffer outCmd { cmdInfo cmdinfo[]; };
+
+layout(push_constant, std430) uniform flags_push
+{
+    ivec4 fl4;
+} flags;
 
 vec3 qtransform( vec4 q, vec3 v ){
     return v + 2.0*cross(cross(v, q.xyz ) + q.w*v, q.xyz);
@@ -83,8 +95,8 @@ void b3ComputeWorldAabb(uint compID)
 
 
         AABB.bb[compID].min = center1 - extent1;
-
         AABB.bb[compID].max = center1 + extent1;
+        AABBArg.bb[compID].min[3]=compID;
     }
 }
 

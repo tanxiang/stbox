@@ -39,7 +39,6 @@ target_compile_options(stbox PRIVATE -fno-rtti)
 
 target_include_directories(stbox PRIVATE
         src/external/glm
-        src/external/gli
         src/external/ktx/include
         src/main/include
         src/proto
