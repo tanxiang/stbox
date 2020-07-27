@@ -23,28 +23,14 @@ add_library(app-glue
         STATIC
         ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
+aux_source_directory(src/main/cpp/ SO_MAIN_SRC)
+
 add_library( # Sets the name of the library.
         stbox
         # Sets the library as a shared library.
         SHARED
         # Provides a relative path to your source file(s).
-        src/main/cpp/util.cc
-        src/main/cpp/main.cc
-        src/main/cpp/Device.cc
-        src/main/cpp/Window.cc
-        src/main/cpp/JobDraw.cc
-        src/main/cpp/JobFont.cc
-        src/main/cpp/JobDrawLine.cc
-        src/main/cpp/JobSkyBox.cc
-        src/main/cpp/JobIsland.cc
-        src/main/cpp/Instance.cc
-        src/main/cpp/stboxvk.cc
-        src/main/cpp/JobBase.cc
-        src/main/cpp/ktx2.cc
-        #src/main/cpp/Blob.cc
-        #src/main/cpp/Connecter.cc
-        #src/main/cpp/Net.cc
-        #src/main/cpp/Activation.cc
+        ${SO_MAIN_SRC}
         )
 
 target_compile_definitions(stbox PRIVATE VK_USE_PLATFORM_ANDROID_KHR)

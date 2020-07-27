@@ -1,9 +1,7 @@
 //
 // Created by ttand on 19-11-11.
 //
-
-#ifndef STBOX_JOBDRAWLINE_HH
-#define STBOX_JOBDRAWLINE_HH
+#pragma once
 
 #include "util.hh"
 //#include "Device.hh"
@@ -14,7 +12,12 @@
 
 
 namespace tt {
-	struct JobDrawLine : public JobBase{
+	struct Vertex {
+		float pos[4];  // Position data
+		float color[4];              // Color
+	};
+
+	struct JobAabb: public JobBase{
 		vk::UniqueRenderPass renderPass;
 		//vk::UniqueRenderPass createRenderpass(tt::Device &);
 
@@ -31,14 +34,15 @@ namespace tt {
 		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 
-		//static JobDrawLine create(android_app *app, tt::Device &device);
+		//static JobAabb
+		//create(android_app *app, tt::Device &device);
 
 		//static JobBase createBase(tt::Device &device);
 
-		JobDrawLine(android_app *app,tt::Device &device);
+		JobAabb(android_app *app,tt::Device &device);
 
 		template <typename tupleType>
-		JobDrawLine(tupleType args):JobDrawLine(std::get<android_app*>(args),*std::get<tt::Device*>(args)){}
+		JobAabb(tupleType args):JobAabb(std::get<android_app*>(args),*std::get<tt::Device*>(args)){}
 
 		void buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass);
 
@@ -47,8 +51,7 @@ namespace tt {
 		void CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleBegin,
 		                                       vk::Extent2D win,uint32_t frameIndex);
 
-		//JobDrawLine(JobDrawLine&& j) = default;
+		//JobAabb(JobAabb&& j) = default;
 	};
 }
 
-#endif //STBOX_JOBDRAWLINE_HH

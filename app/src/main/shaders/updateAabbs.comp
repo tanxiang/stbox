@@ -1,0 +1,95 @@
+#version 450
+layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;
+
+struct b3RigidBodyData
+{
+    vec4 pos;//_m0;
+    vec4 quat;//_m1;
+    vec4 linVal;//_m2;
+    vec4 argVal;
+    uint collidableIdx;
+    float invMass;
+    float restituitionCoeff;
+    float frictionCoeff;
+};
+
+struct uCollidable
+{
+    uvec4 shapeType;
+};
+
+struct fCollidable
+{
+    vec4 shapeType;
+};
+
+struct aabb//_17
+{
+    vec4 min;
+    vec4 max;
+};
+
+layout(set = 0, binding = 0, std430) buffer b3RigidBodyDatas
+{
+    b3RigidBodyData BodyDatas[];
+} RigidBodyDatas;//_37;
+
+layout(set = 0, binding = 1, std430) buffer b3Collidables
+{
+    ivec4 b3Collidable[];
+} Collidables;//_38
+
+layout(set = 0, binding = 1, std430) buffer b3Collidables_f
+{
+    vec4 b3Collidable[];
+} Collidables_f;//_381;
+
+layout(set = 0, binding = 2, std430) buffer b3ShapeAabb
+{
+    aabb bb[];
+} localShapeAABB;//_39
+
+layout(set = 0, binding = 3, std430) buffer B3Aabb
+{
+    aabb bb[];
+} AABB;//_40
+
+layout(set = 0, binding = 0, std430) buffer _26_42
+{
+    uvec4 _m0[];
+} _42;
+
+
+
+layout(push_constant, std430) uniform _22_43
+{
+    uint _m0;
+} _43;
+
+vec3 qtransform( vec4 q, vec3 v ){
+    return v + 2.0*cross(cross(v, q.xyz ) + q.w*v, q.xyz);
+}
+
+
+void b3ComputeWorldAabb(uint compID)
+{
+    int shapeIndex = Collidables.b3Collidable[RigidBodyDatas.BodyDatas[compID].collidableIdx][3];
+    if (shapeIndex > -1)//3 = shapeindex
+    {
+        vec4 extent0 = (localShapeAABB.bb[shapeIndex].max - localShapeAABB.bb[shapeIndex].min) * vec4(0.5);
+        vec4 center0 = (localShapeAABB.bb[shapeIndex].max + localShapeAABB.bb[shapeIndex].min) * vec4(0.5);
+        vec4 center1 = vec4(qtransform(RigidBodyDatas.BodyDatas[compID].quat,center0.xyz),0.0)+RigidBodyDatas.BodyDatas[compID].pos;
+        vec4 extent1 = vec4(qtransform(RigidBodyDatas.BodyDatas[compID].quat,extent0.xyz),0.0);
+
+
+        AABB.bb[compID].min = center1 - extent1;
+
+        AABB.bb[compID].max = center1 + extent1;
+    }
+}
+
+void main()
+{
+
+    b3ComputeWorldAabb(gl_GlobalInvocationID.x);
+}
