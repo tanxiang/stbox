@@ -71,7 +71,15 @@ namespace tt {
 		devices->Job<JobDraw>().setPv();
 		devices->Job<JobDrawLine>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
 		devices->Job<JobIsland>().setMVP(*devices);
-
+		devices->Job<JobAabb>().setMVP(*devices);
+		/*
+		devices->flushBufferToBuffer(
+				*std::get<vk::UniqueBuffer>(devices->Job<JobDrawLine>().bufferMemoryPart),
+				*std::get<vk::UniqueBuffer>(devices->Job<JobAabb>().bufferMemoryPart),
+				4*8*32,
+				createDescriptorBufferInfoTuple(devices->Job<JobDrawLine>().bufferMemoryPart, 1).offset,
+				createDescriptorBufferInfoTuple(devices->Job<JobAabb>().bufferMemoryPart, 4).offset );
+				*/
 		devices->Job<JobSkyBox>().setMVP(
 				*devices,
 				std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get(),

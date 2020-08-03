@@ -23,13 +23,17 @@ namespace tt {
 
 		PipelineResource compPipeline;
 		PipelineResource graphPipeline;
-		BufferMemoryWithParts<4> bufferMemoryPart;
+		BufferMemoryWithParts<7> bufferMemoryPart;
 		BufferMemory outputMemory;
 		vk::UniqueCommandBuffer cCommandBuffer;
 		Thread worker;
 		std::vector<vk::UniqueCommandBuffer> gcmdBuffers;
+		std::vector<vk::UniqueCommandBuffer> cCmdbuffers;
 		auto getGraphisCmdBuffer(uint32_t index){
 			return gcmdBuffers[index].get();
+		}
+		auto getComputerCmdBuffer(){
+			return *cCmdbuffers[0];
 		}
 		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
@@ -46,12 +50,14 @@ namespace tt {
 
 		void buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass);
 
-		void setMVP(tt::Device &device,vk::Buffer buffer);
+		void setMVP(tt::Device &device);
 
 		void CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleBegin,
 		                                       vk::Extent2D win,uint32_t frameIndex);
 
 		//JobAabb(JobAabb&& j) = default;
+		BufferMemory BAM;
+
 	};
 }
 

@@ -158,10 +158,11 @@ namespace tt {
 	std::vector<vk::UniqueCommandBuffer>
 	Device::createCmdBuffers(size_t cmdNum, vk::CommandPool pool,
 	                         std::function<void(CommandBufferBeginHandle &)> functionBegin,
-	                         vk::CommandBufferUsageFlags commandBufferUsageFlags) {
+	                         vk::CommandBufferUsageFlags commandBufferUsageFlags,
+	                         vk::CommandBufferLevel level) {
 		//MY_LOG(INFO) << ":allocateCommandBuffersUnique:" << cmdNum;
 		std::vector<vk::UniqueCommandBuffer> commandBuffers = get().allocateCommandBuffersUnique(
-				vk::CommandBufferAllocateInfo{pool, vk::CommandBufferLevel::ePrimary, cmdNum});
+				vk::CommandBufferAllocateInfo{pool, level, cmdNum});
 		for (auto &cmdBuffer : commandBuffers) {
 			CommandBufferBeginHandle cmdBeginHandle{cmdBuffer, commandBufferUsageFlags};
 			functionBegin(cmdBeginHandle);
@@ -527,10 +528,25 @@ namespace tt {
 		                                          commandPool.get());
 	}
 
+	template<class T>
+	using hasComputer =
+	decltype(std::declval<T &>().getComputerCmdBuffer());
+
+
+	template<class T>
+	using hasGraphis =
+	decltype(std::declval<T &>().getGraphisCmdBuffer(std::declval<uint32_t>()));
 
 	template<typename T>
 	void execSubCmdBufferHelper(RenderpassBeginHandle &handle, uint32_t frameIndex, T &job) {
-		handle.executeCommands(job.getGraphisCmdBuffer(frameIndex));
+		if constexpr(std::experimental::is_detected_exact_v<vk::CommandBuffer, hasGraphis,T>)
+			handle.executeCommands(job.getGraphisCmdBuffer(frameIndex));
+	}
+
+	template<typename T>
+	auto getSubCmdBufferHelper(uint32_t frameIndex, T &job){
+		if constexpr(std::experimental::is_detected_exact_v<vk::CommandBuffer, hasGraphis,T>)
+			return job.getGraphisCmdBuffer(frameIndex);
 	}
 
 	template<typename T, typename ... Ts>
@@ -540,14 +556,38 @@ namespace tt {
 		execSubCmdBufferHelper(handle, frameIndex, jobs...);
 	}
 
-	void Device::CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D, uint32_t frameIndex) {
-
+	template<typename T>
+	void execSubCmdBufferHelper(CommandBufferBeginHandle &handle, T &job) {
+		if constexpr(std::experimental::is_detected_exact_v<vk::CommandBuffer, hasComputer ,T>){
+			handle.executeCommands(job.getComputerCmdBuffer());
+			//MY_LOG(INFO)<<"handle.executeCommands(job.getComputerCmdBuffer());";
+		}
 	}
 
-	void Device::CmdBufferRenderpassBegin(RenderpassBeginHandle &handle, vk::Extent2D,
+	template<typename T, typename ... Ts>
+	void execSubCmdBufferHelper(CommandBufferBeginHandle &handle, T &job, Ts &... jobs) {
+		execSubCmdBufferHelper(handle,job);
+		execSubCmdBufferHelper(handle, jobs...);
+	}
+
+
+	void Device::CmdBufferBegin(CommandBufferBeginHandle &handle,uint32_t frameIndex) {
+		std::apply(
+				[&](auto &... jobs) {
+					execSubCmdBufferHelper(handle, jobs...);
+				},
+				Jobs
+		);
+	}
+
+
+	void Device::CmdBufferRenderpassBegin(RenderpassBeginHandle &handle,
 	                                      uint32_t frameIndex) {
 		std::apply(
-				[&](auto &... jobs) { execSubCmdBufferHelper(handle, frameIndex, jobs...); },
+				[&](auto &... jobs) {
+					std::array graphsCmds{getSubCmdBufferHelper(frameIndex,jobs)...};//FIXME graphsCmd exclude job without graphs cmd buffer
+					handle.executeCommands(graphsCmds);
+				},
 				Jobs
 		);
 	}
@@ -557,7 +597,7 @@ namespace tt {
 		{
 			auto sampleBufferPtr = mapBufferMemory(transferSrcBuffer);
 			memcpy(sampleBufferPtr.get(), texture.bufferPtr(), texture.bufferSize());
-			MY_LOG(ERROR)<<__func__<<"texture.bufferSize():"<<texture.bufferSize();
+			MY_LOG(ERROR) << __func__ << "texture.bufferSize():" << texture.bufferSize();
 		}
 
 		auto bufferCopyRegion = texture.copyRegions();

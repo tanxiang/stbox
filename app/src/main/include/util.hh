@@ -1,11 +1,10 @@
 //
 // Created by ttand on 18-2-11.
 //
-
-#ifndef STBOX_UTIL_H
-#define STBOX_UTIL_H
+#pragma once
 /*
 */
+#include <experimental/type_traits>
 #include <unistd.h>
 #include <vulkan.hpp>
 #include <thread>
@@ -306,7 +305,7 @@ namespace tt {
 				//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
 				{
 					CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
-					type.CmdBufferBegin(cmdBeginHandle, extent2D, frameIndex);
+					type.CmdBufferBegin(cmdBeginHandle, frameIndex);
 					{
 						RenderpassBeginHandle cmdHandleRenderpassBegin{
 								cmdBeginHandle,
@@ -317,8 +316,7 @@ namespace tt {
 										type.clearValues.size(), type.clearValues.data()
 								}
 						};
-						type.CmdBufferRenderpassBegin(cmdHandleRenderpassBegin, extent2D,
-						                              frameIndex);
+						type.CmdBufferRenderpassBegin(cmdHandleRenderpassBegin, frameIndex);
 					}
 
 				}
@@ -375,4 +373,3 @@ namespace tt {
 	}
 }
 
-#endif //STBOX_UTIL_H

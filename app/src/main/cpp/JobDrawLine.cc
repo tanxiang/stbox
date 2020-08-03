@@ -36,7 +36,7 @@ namespace tt {
 								device,
 								app,
 								pipelineLayout);
-					},{},
+					}, {},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eStorageBuffer,
@@ -60,14 +60,19 @@ namespace tt {
 								device,
 								app,
 								pipelineLayout);
-					},{},
+					}, {},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eUniformBuffer,
 									1, vk::ShaderStageFlagBits::eVertex
 							}
 					}
-			} {
+			},
+			BAM{device.createBufferAndMemory(
+					sizeof(glm::mat4),
+					vk::BufferUsageFlagBits::eTransferSrc,
+					vk::MemoryPropertyFlagBits::eHostVisible |
+					vk::MemoryPropertyFlagBits::eHostCoherent)} {
 
 		std::array sourceVertices{
 				Vertex{{1.0f, 1.0f, -1.0f, 1.0f},
@@ -334,8 +339,7 @@ namespace tt {
 	void JobDrawLine::CmdBufferRenderPassContinueBegin(
 			CommandBufferBeginHandle &cmdHandleRenderpassBegin, vk::Extent2D win,
 			uint32_t frameIndex) {
-
-		return;
+return;
 		cmdHandleRenderpassBegin.setViewport(
 				0,
 				std::array{
@@ -370,7 +374,14 @@ namespace tt {
 		//cmdHandleRenderpassBegin.draw(32, 1, 0, 0);
 	}
 
-	void JobDrawLine::setMVP(tt::Device &device, vk::Buffer buffer) {
+	void JobDrawLine::setMVP(tt::Device &device, vk::Buffer bufferc) {
+		{
+			auto memory_ptr = helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAM);
+			memory_ptr[0] = perspective * lookat ;
+
+		}
+		auto buffer = std::get<vk::UniqueBuffer>(BAM).get();
+
 		device.flushBufferToBuffer(
 				buffer,
 				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),

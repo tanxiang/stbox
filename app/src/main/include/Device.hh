@@ -2,8 +2,7 @@
 // Created by ttand on 19-8-2.
 //
 
-#ifndef STBOX_DEVICE_HH
-#define STBOX_DEVICE_HH
+#pragma once
 
 #include "util.hh"
 #include "Window.hh"
@@ -12,6 +11,7 @@
 #include "JobDraw.hh"
 #include "JobSkyBox.hh"
 #include "JobIsland.hh"
+#include "JobAabb.hh"
 
 #include "ktx2.hh"
 #include <type_traits>
@@ -258,6 +258,10 @@ namespace tt {
 								this
 						),
 						JobDraw::create(app, *this),
+						std::make_tuple(
+								app,
+								this
+						),
 						std::make_tuple(
 								app,
 								this
@@ -679,7 +683,8 @@ namespace tt {
 		createCmdBuffers(
 				size_t cmdNum, vk::CommandPool pool,
 				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {},
-				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits{}
+				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits{},
+				vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary
 		);
 
 
@@ -712,7 +717,7 @@ namespace tt {
 
 		//std::vector<JobDraw> drawJobs;
 	private:
-		std::tuple<JobSkyBox, JobDrawLine, JobDraw ,JobIsland> Jobs;
+		std::tuple<JobSkyBox, JobDrawLine, JobDraw ,JobIsland,JobAabb> Jobs;
 	public:
 		std::vector<vk::UniqueCommandBuffer> mainCmdBuffers;
 
@@ -726,9 +731,9 @@ namespace tt {
 				vk::ClearDepthStencilValue{1.0f, 0},
 		};
 
-		void CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D, uint32_t frameIndex);
+		void CmdBufferBegin(CommandBufferBeginHandle &,uint32_t frameIndex);
 
-		void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D, uint32_t frameIndex);
+		void CmdBufferRenderpassBegin(RenderpassBeginHandle &,uint32_t frameIndex);
 
 		void buildCmdBuffer(tt::Window &window);
 	};
@@ -736,4 +741,3 @@ namespace tt {
 }
 
 
-#endif //STBOX_DEVICE_HH

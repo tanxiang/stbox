@@ -46,6 +46,8 @@ namespace tt {
 		                                       vk::Extent2D win,uint32_t frameIndex);
 
 		//JobDrawLine(JobDrawLine&& j) = default;
+		BufferMemory BAM;
+
 	};
 }
 

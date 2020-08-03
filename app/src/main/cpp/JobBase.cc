@@ -2,6 +2,7 @@
 // Created by ttand on 20-4-20.
 //
 
+//#include <glm/gtx/euler_angles.hpp>
 #include "JobBase.hh"
 
 namespace tt {
@@ -18,7 +19,6 @@ namespace tt {
 		datx+=dx*0.01;
 		daty+=dy*0.01;
 		glm::vec3 eulerAngle{-daty, datx, 0.0};
-
 
 		auto c = glm::cos(eulerAngle * 0.5f);
 		auto s = glm::sin(eulerAngle * 0.5f);
