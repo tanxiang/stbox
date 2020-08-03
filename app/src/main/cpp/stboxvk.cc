@@ -52,8 +52,10 @@ namespace tt {
 		//devices->Job<JobDrawLine>().buildCmdBuffer(window, devices->renderPass.get());
 		devices->buildCmdBuffer(window);
 		devices->Job<JobDraw>().setPv();
-		devices->Job<JobDrawLine>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
+		//devices->Job<JobDrawLine>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
 		devices->Job<JobIsland>().setMVP(*devices);
+		devices->Job<JobAabb>().setMVP(*devices);
+
 
 		devices->Job<JobSkyBox>().setMVP(
 				*devices,
@@ -69,7 +71,7 @@ namespace tt {
 	void stboxvk::draw(float dx, float dy) {
 		JobBase::setRotate(dx, dy);
 		devices->Job<JobDraw>().setPv();
-		devices->Job<JobDrawLine>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
+		//devices->Job<JobDrawLine>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
 		devices->Job<JobIsland>().setMVP(*devices);
 		devices->Job<JobAabb>().setMVP(*devices);
 		/*

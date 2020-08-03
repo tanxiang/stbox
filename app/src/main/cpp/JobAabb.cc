@@ -141,7 +141,7 @@ namespace tt {
 				aabbs,
 				sizeof(aabb) * 2,
 				sizeof(Vertex) * 32,
-				sizeof(vk::DrawIndirectCommand)*2,
+				sizeof(vk::DrawIndirectCommand)*4,
 				sizeof(glm::mat4));
 
 

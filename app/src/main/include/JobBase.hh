@@ -1,15 +1,13 @@
 //
 // Created by ttand on 19-8-2.
 //
-
-#ifndef STBOX_JOBBASE_HH
-#define STBOX_JOBBASE_HH
-
-#include "util.hh"
+#pragma once
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_
+#define GLM_FORCE_LEFT_HANDED
 #define GLM_HAS_IF_CONSTEXPR
+#include "util.hh"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -57,4 +55,3 @@ namespace tt {
 	};
 }
 
-#endif //STBOX_JOBBASE_HH

@@ -152,36 +152,7 @@ void main()
     vec4 max = localShapeAABB.bb[gl_GlobalInvocationID.x].max;
 
     outCube(min.xyz,max.xyz,quat,vindex);
-    //vec4 min = vec4(0.0,0.0,0.0,1.0);
-    //vec4 max = vec4(1.0,1.0,1.0,1.0);
 
-
-    /*min = AABB.bb[gl_GlobalInvocationID.x].min;
-    max = AABB.bb[gl_GlobalInvocationID.x].max;
-    outinfo[vindex].point=min;
-    outinfo[vindex].color=vec4(0.0,0.0,0.0,0.5);
-
-    outinfo[vindex+1].point=max;
-    outinfo[vindex+1].color=vec4(1.0,1.0,1.0,0.5);
-
-    outinfo[vindex+2].point=vec4(min.x,max.yzw);
-    outinfo[vindex+2].color=vec4(0.0,1.0,1.0,0.5);
-
-
-    outinfo[vindex+3].point=vec4(min.xy,max.zw);
-    outinfo[vindex+3].color=vec4(0.0,0.0,1.0,0.5);
-
-    outinfo[vindex+4].point=vec4(max.x,min.y,max.zw);
-    outinfo[vindex+4].color=vec4(1.0,0.0,1.0,0.5);
-
-    outinfo[vindex+5].point=vec4(max.x,min.yzw);
-    outinfo[vindex+5].color=vec4(1.0,0.0,0.0,0.5);
-
-    outinfo[vindex+6].point=vec4(max.xy,min.zw);
-    outinfo[vindex+6].color=vec4(1.0,1.0,0.0,0.5);
-
-    outinfo[vindex+7].point=vec4(min.x,max.y,min.zw);
-    outinfo[vindex+7].color=vec4(0.0,1.0,0.0,0.5);*/
     if(gl_WorkGroupID.x == 0){
         cmdinfo[0].vetCont=8;
         cmdinfo[0].insCont=1;
@@ -192,6 +163,17 @@ void main()
         cmdinfo[1].insCont=1;
         cmdinfo[1].vetOff=8;
         cmdinfo[1].insOff=0;
+
+
+        cmdinfo[2].vetCont=8;
+        cmdinfo[2].insCont=1;
+        cmdinfo[2].vetOff=16;
+        cmdinfo[2].insOff=0;
+
+        cmdinfo[3].vetCont=8;
+        cmdinfo[3].insCont=1;
+        cmdinfo[3].vetOff=24;
+        cmdinfo[3].insOff=0;
     }
 
 }
