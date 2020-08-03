@@ -79,7 +79,7 @@ namespace tt {
 								device,
 								app,
 								pipelineLayout);
-					},{},
+					}, {},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eUniformBuffer,
@@ -90,7 +90,12 @@ namespace tt {
 									1, vk::ShaderStageFlagBits::eFragment
 							}
 					}
-			} {
+			},
+			BAM{device.createBufferAndMemory(
+					sizeof(glm::mat4),
+					vk::BufferUsageFlagBits::eTransferSrc,
+					vk::MemoryPropertyFlagBits::eHostVisible |
+					vk::MemoryPropertyFlagBits::eHostCoherent)} {
 
 		//auto fileContent = loadDataFromAssets("textures/cubemap_yokohama_astc_8x8_unorm.ktx", app);
 		//auto textCube = gli::texture_cube{gli::load_ktx((char*)fileContent.data(), fileContent.size())};
@@ -110,15 +115,17 @@ namespace tt {
 				//e2dImageCreateInfoByTextuer(textCube, vk::ImageCreateFlagBits::eCubeCompatible),
 				ktx2texture.vkImageCI(),
 				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_P.bin"},
-				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_index_0_strip.bin"},
-				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_index_0_strip_draw.bin"},
+				AAssetHander{app->activity->assetManager,
+				             "models/cube.obj.ext/mesh_0_index_0_strip.bin"},
+				AAssetHander{app->activity->assetManager,
+				             "models/cube.obj.ext/mesh_0_index_0_strip_draw.bin"},
 				sizeof(glm::mat4));
 
 		//device.writeTextureToImage(textCube, std::get<vk::UniqueImage>(memoryWithParts).get());
 		device.writeTextureToImage(ktx2texture, std::get<vk::UniqueImage>(memoryWithParts).get());
 		getUniqueImageViewTuple(memoryWithParts) = device->createImageViewUnique(
 				{
-						{},std::get<vk::UniqueImage>(memoryWithParts).get(),
+						{}, std::get<vk::UniqueImage>(memoryWithParts).get(),
 						vk::ImageViewType::eCube, ktx2texture.format(),
 						{
 								vk::ComponentSwizzle::eR,
@@ -167,7 +174,7 @@ namespace tt {
 				vk::WriteDescriptorSet{
 						graphPipeline.getDescriptorSet(), 1, 0, 1,
 						vk::DescriptorType::eCombinedImageSampler,
-						&descriptorImageInfo,nullptr
+						&descriptorImageInfo, nullptr
 				},
 		};
 		device->updateDescriptorSets(writeDes, nullptr);
@@ -223,16 +230,18 @@ namespace tt {
 		cmdHandleRenderpassBegin.drawIndexedIndirect(
 				std::get<vk::UniqueBuffer>(memoryWithParts).get(),
 				createDescriptorBufferInfoTuple(memoryWithParts, 2).offset,
-				1,0);
+				1, 0);
 	}
 
 	void
-	JobSkyBox::setMVP(tt::Device &device, vk::Buffer buffer,vk::DeviceMemory deviceMemory) {
+	JobSkyBox::setMVP(tt::Device &device) {
 		{
-			static auto trans = glm::translate(glm::mat4{1.0},glm::vec3(0,0,-4));
-			tt::helper::mapTypeMemory<glm::mat4>(device.get(),deviceMemory)[0]=
-					perspective * lookat * trans * glm::mat4_cast(fRotate);
+			auto memory_ptr = helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAM);
+
+			static auto trans = glm::translate(glm::mat4{1.0}, glm::vec3(0, 0, -4));
+			memory_ptr[0] = perspective * lookat * trans * glm::mat4_cast(fRotate);
 		}
+		auto buffer = std::get<vk::UniqueBuffer>(BAM).get();
 		device.flushBufferToBuffer(
 				buffer,
 				std::get<vk::UniqueBuffer>(memoryWithParts).get(),

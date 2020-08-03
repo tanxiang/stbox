@@ -7,7 +7,6 @@
 #include "util.hh"
 #include "Window.hh"
 #include "JobBase.hh"
-#include "JobDrawLine.hh"
 #include "JobDraw.hh"
 #include "JobSkyBox.hh"
 #include "JobIsland.hh"
@@ -253,7 +252,7 @@ namespace tt {
 								app,
 								this
 						),
-						JobDraw::create(app, *this),
+//						JobDraw::create(app, *this),
 						std::make_tuple(
 								app,
 								this
@@ -713,7 +712,7 @@ namespace tt {
 
 		//std::vector<JobDraw> drawJobs;
 	private:
-		std::tuple<JobSkyBox, JobDraw ,JobIsland,JobAabb> Jobs;
+		std::tuple<JobSkyBox,JobIsland,JobAabb> Jobs;
 	public:
 		std::vector<vk::UniqueCommandBuffer> mainCmdBuffers;
 

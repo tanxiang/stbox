@@ -98,11 +98,7 @@ find_library( # Sets the name of the path variable.
 #add_library(shaderc_lib STATIC IMPORTED)
 #set_target_properties(shaderc_lib PROPERTIES IMPORTED_LOCATION
 #                      ${SHADERC_SRC}/libs/${ANDROID_STL}/${ANDROID_ABI}/libshaderc.a)
-
-
-
 #set_property(TARGET libktx PROPERTY FOLDER "external")
-
 
 set(CMAKE_SHARED_LINKER_FLAGS
         "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
