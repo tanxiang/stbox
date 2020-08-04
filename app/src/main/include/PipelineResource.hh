@@ -38,14 +38,14 @@ namespace tt {
 			);
 		}
 
-		vk::UniquePipelineLayout createPipelineLayout() {
+		vk::UniquePipelineLayout createPipelineLayout(vk::ArrayProxy<const vk::PushConstantRange> PushConstantRange={}) {
 			return device.createPipelineLayoutUnique(
 					vk::PipelineLayoutCreateInfo{
-							vk::PipelineLayoutCreateFlags(),
+							{},
 							descriptorSetLayouts.size(),
 							descriptorSetLayouts.data(),
-							0,//FIXME input
-							nullptr
+							PushConstantRange.size(),
+							PushConstantRange.data()
 					}
 			);
 		}
@@ -53,7 +53,7 @@ namespace tt {
 
 		std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
 		std::vector<vk::DescriptorSet> descriptorSets{createDescriptorSets()};
-		vk::UniquePipelineLayout pipelineLayout{createPipelineLayout()};
+		vk::UniquePipelineLayout pipelineLayout;
 		vk::UniquePipeline pipeline;
 	public:
 
@@ -65,6 +65,9 @@ namespace tt {
 			return descriptorSets[index];
 		}
 
+		auto getLayout(){
+			return pipelineLayout.get();
+		}
 
 		auto layout(){
 			return pipelineLayout.get();
@@ -81,9 +84,11 @@ namespace tt {
 		}
 
 		template<typename Func,typename ... Ts>
-		PipelineResource(vk::Device dev, vk::DescriptorPool desPool,Func func,const Ts &... objs)
+		PipelineResource(vk::Device dev, vk::DescriptorPool desPool,Func func,
+				vk::ArrayProxy<const vk::PushConstantRange> PushConstantRange,const Ts &... objs)
 				: device{dev}, pool{desPool},
 				  descriptorSetLayouts{createDescriptorSetLayouts(objs...)},
+				  pipelineLayout{createPipelineLayout(PushConstantRange)},
 				  pipeline{func(pipelineLayout.get())} {}
 
 

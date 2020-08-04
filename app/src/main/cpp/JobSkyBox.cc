@@ -4,7 +4,7 @@
 
 #include "JobSkyBox.hh"
 #include "Device.hh"
-#include <gli/gli.hpp>
+//#include <gli/gli.hpp>
 //#include "model.hh"
 #include "ktx2.hh"
 //#include "aopen.h"
@@ -79,7 +79,7 @@ namespace tt {
 								device,
 								app,
 								pipelineLayout);
-					},
+					}, {},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eUniformBuffer,
@@ -90,10 +90,15 @@ namespace tt {
 									1, vk::ShaderStageFlagBits::eFragment
 							}
 					}
-			} {
+			},
+			BAM{device.createBufferAndMemory(
+					sizeof(glm::mat4),
+					vk::BufferUsageFlagBits::eTransferSrc,
+					vk::MemoryPropertyFlagBits::eHostVisible |
+					vk::MemoryPropertyFlagBits::eHostCoherent)} {
 
-		auto fileContent = loadDataFromAssets("textures/cubemap_yokohama_astc_8x8_unorm.ktx", app);
-		auto textCube = gli::texture_cube{gli::load_ktx((char*)fileContent.data(), fileContent.size())};
+		//auto fileContent = loadDataFromAssets("textures/cubemap_yokohama_astc_8x8_unorm.ktx", app);
+		//auto textCube = gli::texture_cube{gli::load_ktx((char*)fileContent.data(), fileContent.size())};
 		//AAssetHander ktx2{app->activity->assetManager, "textures/cube_bcmp.ktx"};
 		auto ktx2fileContent = loadDataFromAssets("textures/cube_bcmp.ktx", app);
 		ktx2 ktx2texture{ktx2fileContent.data(), ktx2fileContent.size()};
@@ -110,20 +115,17 @@ namespace tt {
 				//e2dImageCreateInfoByTextuer(textCube, vk::ImageCreateFlagBits::eCubeCompatible),
 				ktx2texture.vkImageCI(),
 				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_P.bin"},
-				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_index_0_strip.bin"},
-				AAssetHander{app->activity->assetManager, "models/cube.obj.ext/mesh_0_index_0_strip_draw.bin"},
+				AAssetHander{app->activity->assetManager,
+				             "models/cube.obj.ext/mesh_0_index_0_strip.bin"},
+				AAssetHander{app->activity->assetManager,
+				             "models/cube.obj.ext/mesh_0_index_0_strip_draw.bin"},
 				sizeof(glm::mat4));
 
-		outputMemory = device.createBufferAndMemory(
-				32,
-				vk::BufferUsageFlagBits::eTransferDst,
-				vk::MemoryPropertyFlagBits::eHostVisible |
-				vk::MemoryPropertyFlagBits::eHostCoherent);
 		//device.writeTextureToImage(textCube, std::get<vk::UniqueImage>(memoryWithParts).get());
 		device.writeTextureToImage(ktx2texture, std::get<vk::UniqueImage>(memoryWithParts).get());
 		getUniqueImageViewTuple(memoryWithParts) = device->createImageViewUnique(
 				{
-						{},std::get<vk::UniqueImage>(memoryWithParts).get(),
+						{}, std::get<vk::UniqueImage>(memoryWithParts).get(),
 						vk::ImageViewType::eCube, ktx2texture.format(),
 						{
 								vk::ComponentSwizzle::eR,
@@ -154,7 +156,7 @@ namespace tt {
 						ktx2texture.numLevels(),
 						vk::BorderColor::eFloatOpaqueWhite,
 						0});
-		createDescriptorBufferInfoTuple(memoryWithParts, 1);
+
 		std::array descriptors{
 				createDescriptorBufferInfoTuple(memoryWithParts, 2),
 				createDescriptorBufferInfoTuple(memoryWithParts, 3)
@@ -172,7 +174,7 @@ namespace tt {
 				vk::WriteDescriptorSet{
 						graphPipeline.getDescriptorSet(), 1, 0, 1,
 						vk::DescriptorType::eCombinedImageSampler,
-						&descriptorImageInfo,nullptr
+						&descriptorImageInfo, nullptr
 				},
 		};
 		device->updateDescriptorSets(writeDes, nullptr);
@@ -228,19 +230,23 @@ namespace tt {
 		cmdHandleRenderpassBegin.drawIndexedIndirect(
 				std::get<vk::UniqueBuffer>(memoryWithParts).get(),
 				createDescriptorBufferInfoTuple(memoryWithParts, 2).offset,
-				1,0);
+				1, 0);
 	}
 
 	void
-	JobSkyBox::setMVP(tt::Device &device, vk::Buffer buffer) {
+	JobSkyBox::setMVP(tt::Device &device) {
+		{
+			auto memory_ptr = helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAM);
+
+			static auto trans = glm::translate(glm::mat4{1.0}, glm::vec3(0, 0, -4));
+			memory_ptr[0] = perspective * lookat * trans * glm::mat4_cast(fRotate);
+		}
+		auto buffer = std::get<vk::UniqueBuffer>(BAM).get();
 		device.flushBufferToBuffer(
 				buffer,
 				std::get<vk::UniqueBuffer>(memoryWithParts).get(),
 				device->getBufferMemoryRequirements(buffer).size,
 				0,
 				createDescriptorBufferInfoTuple(memoryWithParts, 3).offset);
-		//auto outputMemoryPtr = device.mapTypeBufferMemory<uint16_t>(outputMemory);
-		//MY_LOG(INFO) <<createDescriptorBufferInfoTuple(memoryWithParts, 1).offset <<": "<< outputMemoryPtr[0] << ' ' << outputMemoryPtr[1] << ' ' << outputMemoryPtr[2] << ' ' << outputMemoryPtr[3] << ' ';
-
 	}
 }

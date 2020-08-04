@@ -1,0 +1,179 @@
+#version 450
+layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;
+
+struct b3RigidBodyData
+{
+    vec4 pos;//_m0;
+    vec4 quat;//_m1;
+    vec4 linVal;//_m2;
+    vec4 argVal;
+    ivec4 collidableIdx_invMass_restituitionCoeff_frictionCoeff;
+};
+
+struct b3RigidBodyDataArg
+{
+    mat4 pos_quat_lin_arg;
+    vec4 collidableIdx_invMass_restituitionCoeff_frictionCoeff;
+};
+
+struct aabb//_17
+{
+    vec4 min;
+    vec4 max;
+};
+
+layout(set = 0, binding = 0)readonly buffer b3RigidBodyDatas
+{
+    b3RigidBodyData BodyDatas[];
+} RigidBodyDatas;//_37;
+
+layout(set = 0, binding = 1)readonly buffer b3Collidables
+{
+    ivec4 b3Collidable[];
+} Collidables;//_38
+
+layout(set = 0, binding = 1)readonly buffer b3Collidables_f
+{
+    vec4 b3Collidable[];
+} Collidables_f;//_381;
+
+layout(set = 0, binding = 2)readonly buffer b3ShapeAabb
+{
+    aabb bb[];
+} localShapeAABB;//_39
+
+layout(set = 0, binding = 3) buffer B3Aabb
+{
+    aabb bb[];
+} AABB;//_40
+
+struct ioInfo
+{
+    vec4 point;
+    vec4 color;
+};
+
+struct cmdInfo{
+    uint vetCont;
+    uint insCont;
+    uint vetOff;
+    uint insOff;
+};
+
+layout(set = 0,binding = 4) writeonly buffer outPos { ioInfo outinfo[]; };
+
+layout(set = 0,binding = 5) writeonly buffer outCmd { cmdInfo cmdinfo[]; };
+
+layout(push_constant, std430) uniform flags_push
+{
+    ivec4 fl4;
+} flags;
+
+vec3 qtransform( vec4 q, vec3 v ){
+    return v + 2.0*cross(cross(v, -q.xyz ) + q.w*v, -q.xyz);
+}
+
+void b3ComputeWorldAabb(uint compID)
+{
+    int shapeIndex = Collidables.b3Collidable[RigidBodyDatas.BodyDatas[compID].collidableIdx_invMass_restituitionCoeff_frictionCoeff[0]][3];
+    if (shapeIndex > -1)
+    {
+        vec4 extent0 = (localShapeAABB.bb[shapeIndex].max - localShapeAABB.bb[shapeIndex].min) * vec4(0.5);
+        vec4 center0 = (localShapeAABB.bb[shapeIndex].max + localShapeAABB.bb[shapeIndex].min) * vec4(0.5);
+        vec3 center1 = qtransform(RigidBodyDatas.BodyDatas[compID].quat,center0.xyz)+RigidBodyDatas.BodyDatas[compID].pos.xyz;
+        vec3 extent1 = qtransform(RigidBodyDatas.BodyDatas[compID].quat,extent0.xyz);
+
+
+        AABB.bb[compID].min = vec4(center1 - extent1,1.0);
+        AABB.bb[compID].max = vec4(center1 + extent1,1.0);
+        //AABBArg.bb[compID].min.w=compID;
+    }
+}
+
+void outCube(vec3 min,vec3 max,vec4 quat,uint vindex){
+    outinfo[vindex].point=vec4(qtransform(quat,min.xyz),1.0);
+    outinfo[vindex].color=vec4(0.0,0.0,0.0,1.0);
+
+    outinfo[vindex+1].point=vec4(qtransform(quat,vec3(min.x,max.y,min.z)),1.0);//vec4(min.x,max.y,min.zw);
+    outinfo[vindex+1].color=vec4(0.0,1.0,0.0,1.0);
+
+    outinfo[vindex+2].point=vec4(qtransform(quat,vec3(min.x,max.yz)),1.0);//vec4(min.x,max.yzw);
+    outinfo[vindex+2].color=vec4(0.0,1.0,1.0,1.0);
+
+
+    outinfo[vindex+3].point=vec4(qtransform(quat,vec3(min.xy,max.z)),1.0);//vec4(min.xy,max.zw);
+    outinfo[vindex+3].color=vec4(0.0,0.0,1.0,1.0);
+
+    outinfo[vindex+4].point=vec4(qtransform(quat,vec3(max.x,min.y,max.z)),1.0);//vec4(max.x,min.y,max.zw);
+    outinfo[vindex+4].color=vec4(1.0,0.0,1.0,1.0);
+
+    outinfo[vindex+5].point=vec4(qtransform(quat,vec3(max.x,min.yz)),1.0);//vec4(max.x,min.yzw);
+    outinfo[vindex+5].color=vec4(1.0,0.0,0.0,1.0);
+
+    outinfo[vindex+6].point=vec4(qtransform(quat,vec3(max.xy,min.z)),1.0);//vec4(max.xy,min.zw);
+    outinfo[vindex+6].color=vec4(1.0,1.0,0.0,1.0);
+
+    outinfo[vindex+7].point=vec4(qtransform(quat,vec3(min.x,max.y,min.z)),1.0);//vec4(min.x,max.y,min.zw);
+    outinfo[vindex+7].color=vec4(0.0,1.0,0.0,1.0);
+
+    vindex+=8;
+    outinfo[vindex].point=vec4(qtransform(quat,max.xyz),1.0);
+    outinfo[vindex].color=vec4(1.0,1.0,1.0,1.0);
+    outinfo[vindex+1].point=vec4(qtransform(quat,vec3(min.x,max.y,min.z)),1.0);//vec4(min.x,max.y,min.zw);
+    outinfo[vindex+1].color=vec4(0.0,1.0,0.0,1.0);
+
+    outinfo[vindex+2].point=vec4(qtransform(quat,vec3(min.x,max.yz)),1.0);//vec4(min.x,max.yzw);
+    outinfo[vindex+2].color=vec4(0.0,1.0,1.0,1.0);
+
+
+    outinfo[vindex+3].point=vec4(qtransform(quat,vec3(min.xy,max.z)),1.0);//vec4(min.xy,max.zw);
+    outinfo[vindex+3].color=vec4(0.0,0.0,1.0,1.0);
+
+    outinfo[vindex+4].point=vec4(qtransform(quat,vec3(max.x,min.y,max.z)),1.0);//vec4(max.x,min.y,max.zw);
+    outinfo[vindex+4].color=vec4(1.0,0.0,1.0,1.0);
+
+    outinfo[vindex+5].point=vec4(qtransform(quat,vec3(max.x,min.yz)),1.0);//vec4(max.x,min.yzw);
+    outinfo[vindex+5].color=vec4(1.0,0.0,0.0,1.0);
+
+    outinfo[vindex+6].point=vec4(qtransform(quat,vec3(max.xy,min.z)),1.0);//vec4(max.xy,min.zw);
+    outinfo[vindex+6].color=vec4(1.0,1.0,0.0,1.0);
+
+    outinfo[vindex+7].point=vec4(qtransform(quat,vec3(min.x,max.y,min.z)),1.0);//vec4(min.x,max.y,min.zw);
+    outinfo[vindex+7].color=vec4(0.0,1.0,0.0,1.0);
+}
+
+void main()
+{
+    b3ComputeWorldAabb(gl_GlobalInvocationID.x);
+    uint vindex = gl_GlobalInvocationID.x*8;
+    vec4 quat = RigidBodyDatas.BodyDatas[gl_GlobalInvocationID.x].quat;
+
+    vec4 min = localShapeAABB.bb[gl_GlobalInvocationID.x].min;
+    vec4 max = localShapeAABB.bb[gl_GlobalInvocationID.x].max;
+
+    outCube(min.xyz,max.xyz,quat,vindex);
+
+    if(gl_WorkGroupID.x == 0){
+        cmdinfo[0].vetCont=8;
+        cmdinfo[0].insCont=1;
+        cmdinfo[0].vetOff=0;
+        cmdinfo[0].insOff=0;
+
+        cmdinfo[1].vetCont=8;
+        cmdinfo[1].insCont=1;
+        cmdinfo[1].vetOff=8;
+        cmdinfo[1].insOff=0;
+
+
+        cmdinfo[2].vetCont=8;
+        cmdinfo[2].insCont=1;
+        cmdinfo[2].vetOff=16;
+        cmdinfo[2].insOff=0;
+
+        cmdinfo[3].vetCont=8;
+        cmdinfo[3].insCont=1;
+        cmdinfo[3].vetOff=24;
+        cmdinfo[3].insOff=0;
+    }
+
+}

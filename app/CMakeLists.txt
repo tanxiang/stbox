@@ -23,27 +23,14 @@ add_library(app-glue
         STATIC
         ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
+aux_source_directory(src/main/cpp/ SO_MAIN_SRC)
+
 add_library( # Sets the name of the library.
         stbox
         # Sets the library as a shared library.
         SHARED
         # Provides a relative path to your source file(s).
-        src/main/cpp/util.cc
-        src/main/cpp/main.cc
-        src/main/cpp/Device.cc
-        src/main/cpp/Window.cc
-        src/main/cpp/JobDraw.cc
-        src/main/cpp/JobFont.cc
-        src/main/cpp/JobDrawLine.cc
-        src/main/cpp/JobSkyBox.cc
-        src/main/cpp/Instance.cc
-        src/main/cpp/stboxvk.cc
-        src/main/cpp/JobBase.cc
-        src/main/cpp/ktx2.cc
-        #src/main/cpp/Blob.cc
-        #src/main/cpp/Connecter.cc
-        #src/main/cpp/Net.cc
-        #src/main/cpp/Activation.cc
+        ${SO_MAIN_SRC}
         )
 
 target_compile_definitions(stbox PRIVATE VK_USE_PLATFORM_ANDROID_KHR)
@@ -52,7 +39,6 @@ target_compile_options(stbox PRIVATE -fno-rtti)
 
 target_include_directories(stbox PRIVATE
         src/external/glm
-        src/external/gli
         src/external/ktx/include
         src/main/include
         src/proto
@@ -112,11 +98,7 @@ find_library( # Sets the name of the path variable.
 #add_library(shaderc_lib STATIC IMPORTED)
 #set_target_properties(shaderc_lib PROPERTIES IMPORTED_LOCATION
 #                      ${SHADERC_SRC}/libs/${ANDROID_STL}/${ANDROID_ABI}/libshaderc.a)
-
-
-
 #set_property(TARGET libktx PROPERTY FOLDER "external")
-
 
 set(CMAKE_SHARED_LINKER_FLAGS
         "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")

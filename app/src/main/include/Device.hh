@@ -2,18 +2,19 @@
 // Created by ttand on 19-8-2.
 //
 
-#ifndef STBOX_DEVICE_HH
-#define STBOX_DEVICE_HH
+#pragma once
 
 #include "util.hh"
 #include "Window.hh"
 #include "JobBase.hh"
-#include "JobDrawLine.hh"
 #include "JobDraw.hh"
 #include "JobSkyBox.hh"
+#include "JobIsland.hh"
+#include "JobAabb.hh"
+
 #include "ktx2.hh"
 #include <type_traits>
-#include <gli/texture_cube.hpp>
+//#include <gli/texture_cube.hpp>
 
 
 namespace tt {
@@ -251,11 +252,15 @@ namespace tt {
 								app,
 								this
 						),
+//						JobDraw::create(app, *this),
 						std::make_tuple(
 								app,
 								this
 						),
-						JobDraw::create(app, *this),
+						std::make_tuple(
+								app,
+								this
+						),
 				} {
 
 		}
@@ -390,19 +395,7 @@ namespace tt {
 			};
 		}
 
-		ImageViewMemory createImageAndMemoryFromMemory(gli::texture2d t2d,
-		                                               vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
-
-		void writeTextureToImage(gli::texture_cube &texture, vk::Image image);
-
 		void writeTextureToImage(ktx2 &texture, vk::Image image);
-
-		void writeTextureToImage(gli::texture2d &texture, vk::Image image);
-
-
-		ImageViewMemory createImageAndMemoryFromT2d(gli::texture2d t2d,
-		                                            vk::ImageUsageFlags imageUsageFlags = vk::ImageUsageFlagBits::eSampled);
-
 
 		BufferMemory
 		createBufferAndMemory(size_t dataSize, vk::BufferUsageFlags bufferUsageFlags,
@@ -426,16 +419,18 @@ namespace tt {
 		void flushBufferToBuffer(vk::Buffer srcbuffer, vk::Buffer decbuffer, size_t size,
 		                         size_t srcoff = 0, size_t decoff = 0);
 
-		void flushBufferToMemory(vk::Buffer buffer, vk::DeviceMemory memory, size_t size,
-		                         size_t srcoff = 0, size_t decoff = 0);
+		//void flushBufferToMemory(vk::Buffer buffer, vk::DeviceMemory memory, size_t size,
+		//                         size_t srcoff = 0, size_t decoff = 0);
 
 		template<typename TupleFrom, typename TupleTo>
 		auto flushBufferTuple(const TupleFrom &from, const TupleTo &to, size_t srcoff = 0,
 		                      size_t decoff = 0) {
-			flushBufferToMemory(std::get<vk::UniqueBuffer>(from).get(),
-			                    std::get<vk::UniqueDeviceMemory>(to).get(),
-			                    get().getBufferMemoryRequirements(
-					                    std::get<vk::UniqueBuffer>(from).get()).size, srcoff,
+			//MY_LOG(INFO) <<get().getBufferMemoryRequirements(std::get<vk::UniqueBuffer>(from).get()).size;
+
+			return flushBufferToBuffer(std::get<vk::UniqueBuffer>(from).get(),
+			                    std::get<vk::UniqueBuffer>(to).get(),
+			                    get().getBufferMemoryRequirements(std::get<vk::UniqueBuffer>(from).get()).size,
+			                    srcoff,
 			                    decoff);
 		}
 
@@ -523,6 +518,72 @@ namespace tt {
 			return tuple;
 		}
 
+		template<typename ... Ts>
+		auto createImageBufferPartsOnObjs(vk::BufferUsageFlags flags,
+		                                  vk::ImageCreateInfo imageCreateInfo,
+		                                  const Ts &... objs) {
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			uint32_t allSize = 0;
+			std::array parts{objSizeOffset(alig, allSize, objs)...};
+			//MY_LOG(INFO) << "allSize" <<allSize;
+			auto tuple = BufferImageMemoryWithParts<sizeof...(objs)>(
+					get().createBufferUnique(
+							vk::BufferCreateInfo{
+									vk::BufferCreateFlags(),
+									allSize,
+									flags}
+					),
+					get().createImageUnique(imageCreateInfo),
+					vk::UniqueDeviceMemory{}, parts);
+			bufferImageTupleCreateMemory(vk::MemoryPropertyFlagBits::eDeviceLocal, tuple);
+			auto staging = createStagingBufferMemoryOnObjs2(objs...);
+			flushBufferTuple(staging, tuple);
+			return tuple;
+		}
+
+		template<typename ... Ts>
+		auto createBufferPartsdOnAssertDir(vk::BufferUsageFlags flags,
+		                                   AAssetManager* aAssetManager,
+		                                   const std::string dirName,
+		                                   const Ts &... objs) {
+			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
+			uint32_t allSize = 0;
+			auto dir = AAssetDirHander{aAssetManager, dirName};
+			std::vector<uint32_t> parts;
+			while (auto name = dir.getNextFileName()) {
+				AAssetHander file{aAssetManager, dirName + '/' + name};
+				allSize += alignment(alig, file.getLength());
+				parts.emplace_back(allSize);
+			}
+			parts.emplace_back(objSizeOffset(alig, allSize, objs)...);
+			auto tuple = BufferMemoryWithPartsd(
+					get().createBufferUnique(
+							vk::BufferCreateInfo{
+									vk::BufferCreateFlags(),
+									allSize,
+									flags}
+					),
+					vk::UniqueDeviceMemory{}, parts);
+			bufferTupleCreateMemory(vk::MemoryPropertyFlagBits::eDeviceLocal, tuple);
+			auto staging = createLocalBufferMemory(*(parts.rbegin() + sizeof...(objs)),
+			                                       vk::BufferUsageFlagBits::eTransferSrc);
+
+			{
+				auto memoryPtr = mapTypeBufferMemory<uint8_t>(staging);
+				dir.rewind();
+				uint32_t fIndex=0;
+				while (auto name = dir.getNextFileName()) {
+					AAssetHander file{aAssetManager, dirName + '/' + name};
+					auto readRet = file.read(&memoryPtr[ fIndex ? parts[fIndex-1] : 0],
+							fIndex ? parts[fIndex]-parts[fIndex-1] : parts[fIndex]);
+					MY_LOG(INFO) << fIndex << dirName + '/' + name << readRet << " offset:" <<  (fIndex ? parts[fIndex-1] : 0);
+					++fIndex;
+				}
+			}
+			flushBufferTuple(staging, tuple);
+			return tuple;
+		}
+
 		template<typename Tuple>
 		auto bufferImageTupleCreateMemory(vk::MemoryPropertyFlags memoryPropertyFlags,
 		                                  Tuple &tuple) {
@@ -543,30 +604,8 @@ namespace tt {
 			//MY_LOG(INFO)<<"bindImageMemory off:"<<memoryReq.size;
 		}
 
-		template<typename ... Ts>
-		auto createImageBufferPartsOnObjs(vk::BufferUsageFlags flags,
-				                          vk::ImageCreateInfo imageCreateInfo,
-				                          const Ts &... objs) {
-			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
-			uint32_t allSize = 0;
-			std::array parts{objSizeOffset(alig, allSize, objs)...};
-			//MY_LOG(INFO) << "allSize" <<allSize;
-			auto tuple = BufferImageMemoryWithParts<sizeof...(objs)>(
-					get().createBufferUnique(
-							vk::BufferCreateInfo{
-									vk::BufferCreateFlags(),
-									allSize,
-									flags}
-					),
-					get().createImageUnique(imageCreateInfo),
-					vk::UniqueDeviceMemory{}, parts);
-			bufferImageTupleCreateMemory(vk::MemoryPropertyFlagBits::eDeviceLocal, tuple);
-			auto staging = createStagingBufferMemoryOnObjs2(objs...);
-			flushBufferTuple(staging, tuple);
-			return tuple;
-		}
 
-
+/*
 		void buildMemoryOnBsM(BuffersMemory<> &BsM,
 		                      vk::MemoryPropertyFlags memoryPropertyFlags) {
 			size_t size = 0;
@@ -585,7 +624,7 @@ namespace tt {
 			});
 			BsM.size() = size;
 			bindBsm(BsM);
-		}
+		}*/
 
 		auto createSampler(uint32_t levels) {
 			return get().createSamplerUnique(
@@ -631,14 +670,16 @@ namespace tt {
 				vk::PipelineCache pipelineCache,
 				vk::RenderPass jobRenderPass,
 				vk::PrimitiveTopology primitiveTopology = vk::PrimitiveTopology::eTriangleStrip,
-				vk::PolygonMode polygonMode = vk::PolygonMode::eFill
+				vk::PolygonMode polygonMode = vk::PolygonMode::eFill,
+				vk::PipelineTessellationStateCreateInfo = {}
 		);
 
 		std::vector<vk::UniqueCommandBuffer>
 		createCmdBuffers(
 				size_t cmdNum, vk::CommandPool pool,
 				std::function<void(CommandBufferBeginHandle &)> = [](CommandBufferBeginHandle &) {},
-				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits{}
+				vk::CommandBufferUsageFlags commandBufferUsageFlags = vk::CommandBufferUsageFlagBits{},
+				vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary
 		);
 
 
@@ -671,7 +712,7 @@ namespace tt {
 
 		//std::vector<JobDraw> drawJobs;
 	private:
-		std::tuple<JobSkyBox, JobDrawLine, JobDraw> Jobs;
+		std::tuple<JobSkyBox,JobIsland,JobAabb> Jobs;
 	public:
 		std::vector<vk::UniqueCommandBuffer> mainCmdBuffers;
 
@@ -685,14 +726,16 @@ namespace tt {
 				vk::ClearDepthStencilValue{1.0f, 0},
 		};
 
-		void CmdBufferBegin(CommandBufferBeginHandle &, vk::Extent2D, uint32_t frameIndex);
+		void CmdBufferBegin(CommandBufferBeginHandle &,uint32_t frameIndex);
 
-		void CmdBufferRenderpassBegin(RenderpassBeginHandle &, vk::Extent2D, uint32_t frameIndex);
+		void CmdBufferRenderpassBegin(RenderpassBeginHandle &,uint32_t frameIndex);
 
 		void buildCmdBuffer(tt::Window &window);
+
+		void flushMVP();
+
 	};
 
 }
 
 
-#endif //STBOX_DEVICE_HH

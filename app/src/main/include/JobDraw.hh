@@ -1,9 +1,7 @@
 //
 // Created by ttand on 19-9-25.
 //
-
-#ifndef STBOX_JOBDRAW_HH
-#define STBOX_JOBDRAW_HH
+#pragma once
 
 #include "util.hh"
 //#include "Device.hh"
@@ -27,10 +25,11 @@ namespace tt {
 
 		void buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass);
 
-		void setPerspective(tt::Window &swapchain);
+		void setPv();
 
-		void setPv(float dx = 0.0, float dy = 0.0);
-
+		void setMVP(tt::Device &device){
+			setPv();
+		}
 		//memory using
 		std::vector<BufferMemory> BAMs;
 		BuffersMemory<> Bsm;
@@ -43,4 +42,3 @@ namespace tt {
 	};
 }
 
-#endif //STBOX_JOBDRAW_HH

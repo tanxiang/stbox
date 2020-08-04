@@ -1,11 +1,10 @@
 //
 // Created by ttand on 18-2-11.
 //
-
-#ifndef STBOX_UTIL_H
-#define STBOX_UTIL_H
+#pragma once
 /*
 */
+#include <experimental/type_traits>
 #include <unistd.h>
 #include <vulkan.hpp>
 #include <thread>
@@ -84,6 +83,15 @@ namespace tt {
 			return AAssetDir_rewind(get());
 		}
 
+		auto getFileNum() const {
+			rewind();
+			int num = 0;
+			while(getNextFileName()){
+				++num;
+			}
+			return num;
+		}
+
 		AAssetDirHander(AAssetManager *assetManager, const std::string &dirPath):std::unique_ptr<AAssetDir, std::function<void(AAssetDir *)>>{
 				AAssetManager_openDir(assetManager, dirPath.c_str()),
 				[](AAssetDir *AAsset) {
@@ -143,6 +151,11 @@ namespace tt {
 		using std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, std::array<uint32_t, N>>::tuple;
 	};
 
+	struct BufferMemoryWithPartsd
+			: public std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, std::vector<uint32_t>> {
+		using std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, std::vector<uint32_t>>::tuple;
+	};
+
 	template<uint N, uint M = 1>
 	struct BufferImageMemoryWithParts :
 			public std::tuple<vk::UniqueBuffer, vk::UniqueImage, vk::UniqueDeviceMemory, std::array<uint32_t, N>, std::array<vk::UniqueImageView, M>> {
@@ -152,6 +165,14 @@ namespace tt {
 	template<template<uint> typename Tuple, uint N>
 	auto createDescriptorBufferInfoTuple(const Tuple<N> &tuple, uint32_t n) {
 		auto &parts = std::get<std::array<uint32_t, N>>(tuple);
+		uint32_t offset = n ? parts[n - 1] : 0;
+		return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(tuple).get(), offset,
+		                                parts[n] - offset};
+	}
+
+	template<typename Tuple>
+	auto createDescriptorBufferInfoTuple(const Tuple& tuple, uint32_t n) {
+		auto &parts = std::get<std::vector<uint32_t>>(tuple);
 		uint32_t offset = n ? parts[n - 1] : 0;
 		return vk::DescriptorBufferInfo{std::get<vk::UniqueBuffer>(tuple).get(), offset,
 		                                parts[n] - offset};
@@ -233,6 +254,21 @@ namespace tt {
 
 	namespace helper {
 
+		template<typename PodType>
+		auto mapTypeMemory(vk::Device device,vk::DeviceMemory deviceMemory, size_t offset = 0,size_t num = 1){
+			return BufferTypePtr<PodType>{
+					static_cast<PodType *>(device.mapMemory(
+							deviceMemory,
+							offset,
+							sizeof(deviceMemory)*num,
+							vk::MemoryMapFlagBits())),
+					[device, deviceMemory](PodType *pVoid) {
+						//FIXME call ~PodType in array
+						device.unmapMemory(deviceMemory);
+					}
+			};
+		}
+
 		template<typename PodType, typename Tuple>
 		auto mapTypeMemoryAndSize(vk::Device device, Tuple &tupleMemoryAndSize, size_t offset = 0) {
 			auto devMemory = std::get<vk::UniqueDeviceMemory>(tupleMemoryAndSize).get();
@@ -270,7 +306,7 @@ namespace tt {
 				//cmdBuffer->reset(vk::CommandBufferResetFlagBits::eReleaseResources);
 				{
 					CommandBufferBeginHandle cmdBeginHandle{cmdBuffer};
-					type.CmdBufferBegin(cmdBeginHandle, extent2D, frameIndex);
+					type.CmdBufferBegin(cmdBeginHandle, frameIndex);
 					{
 						RenderpassBeginHandle cmdHandleRenderpassBegin{
 								cmdBeginHandle,
@@ -281,8 +317,7 @@ namespace tt {
 										type.clearValues.size(), type.clearValues.data()
 								}
 						};
-						type.CmdBufferRenderpassBegin(cmdHandleRenderpassBegin, extent2D,
-						                              frameIndex);
+						type.CmdBufferRenderpassBegin(cmdHandleRenderpassBegin, frameIndex);
 					}
 
 				}
@@ -339,4 +374,3 @@ namespace tt {
 	}
 }
 
-#endif //STBOX_UTIL_H

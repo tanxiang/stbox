@@ -12,7 +12,6 @@
 #include "Instance.hh"
 #include "Device.hh"
 #include "JobFont.hh"
-#include "JobDraw.hh"
 //#include "onnx.hh"
 #include <functional>
 
@@ -49,11 +48,8 @@ namespace tt {
 
 		auto &window = windows.emplace_back(std::move(surface), *devices,
 		                                    AndroidGetWindowSize(app));
-		//devices->Job<JobDrawLine>().buildCmdBuffer(window, devices->renderPass.get());
 		devices->buildCmdBuffer(window);
-		devices->Job<JobDraw>().setPv();
-		devices->Job<JobDrawLine>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
-		devices->Job<JobSkyBox>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
+		devices->flushMVP();
 	}
 
 	void stboxvk::draw() {
@@ -61,9 +57,8 @@ namespace tt {
 	}
 
 	void stboxvk::draw(float dx, float dy) {
-		devices->Job<JobDraw>().setPv(dx, dy);
-		devices->Job<JobDrawLine>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
-		devices->Job<JobSkyBox>().setMVP(*devices,std::get<vk::UniqueBuffer>(devices->Job<JobDraw>().BAMs[0]).get());
+		JobBase::setRotate(dx, dy);
+		devices->flushMVP();
 		draw();
 	}
 

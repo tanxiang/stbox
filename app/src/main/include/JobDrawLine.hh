@@ -1,9 +1,7 @@
 //
 // Created by ttand on 19-11-11.
 //
-
-#ifndef STBOX_JOBDRAWLINE_HH
-#define STBOX_JOBDRAWLINE_HH
+#pragma once
 
 #include "util.hh"
 //#include "Device.hh"
@@ -14,11 +12,6 @@
 
 
 namespace tt {
-	struct Vertex {
-		float pos[4];  // Position data
-		float color[4];              // Color
-	};
-
 	struct JobDrawLine : public JobBase{
 		vk::UniqueRenderPass renderPass;
 		//vk::UniqueRenderPass createRenderpass(tt::Device &);
@@ -53,7 +46,8 @@ namespace tt {
 		                                       vk::Extent2D win,uint32_t frameIndex);
 
 		//JobDrawLine(JobDrawLine&& j) = default;
+		BufferMemory BAM;
+
 	};
 }
 
-#endif //STBOX_JOBDRAWLINE_HH
