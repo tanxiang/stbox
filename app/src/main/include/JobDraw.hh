@@ -27,6 +27,9 @@ namespace tt {
 
 		void setPv();
 
+		void setMVP(tt::Device &device){
+			setPv();
+		}
 		//memory using
 		std::vector<BufferMemory> BAMs;
 		BuffersMemory<> Bsm;

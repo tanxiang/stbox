@@ -5,7 +5,7 @@
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_LEFT_HANDED
-#define GLM_HAS_IF_CONSTEXPR
+//#define GLM_HAS_IF_CONSTEXPR
 #include "util.hh"
 
 #include <glm/glm.hpp>
