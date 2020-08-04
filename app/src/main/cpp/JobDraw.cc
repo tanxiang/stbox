@@ -3,8 +3,12 @@
 //
 
 #include "JobDraw.hh"
-#include "vertexdata.hh"
 #include "Device.hh"
+
+struct Vertex {
+	float posX, posY, posZ, posW;  // Position data
+	float r, g, b, a;              // Color
+};
 
 namespace tt {
 
@@ -49,7 +53,7 @@ namespace tt {
 
 		std::array vertexInputBindingDescriptions{
 				vk::VertexInputBindingDescription{
-						0, sizeof(VertexUV),
+						0, sizeof(Vertex),
 						vk::VertexInputRate::eVertex
 				}
 		};

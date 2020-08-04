@@ -592,6 +592,28 @@ namespace tt {
 		);
 	}
 
+	template<typename T>
+	auto flushMVPHelper(tt::Device &devices, T &job){
+		if constexpr(std::experimental::is_detected_exact_v<vk::CommandBuffer, hasGraphis,T>)
+			return job.setMVP(devices);
+	}
+
+	template<typename T, typename ... Ts>
+	void flushMVPHelper(tt::Device &devices, T &job,
+	                            Ts &... jobs) {
+		flushMVPHelper(devices, job);
+		flushMVPHelper(devices, jobs...);
+	}
+
+	void Device::flushMVP() {
+		std::apply(
+				[&](auto &... jobs) {
+					flushMVPHelper(*this,jobs...);
+				},
+				Jobs
+		);
+	}
+
 	void Device::writeTextureToImage(ktx2 &texture, vk::Image image) {
 		auto transferSrcBuffer = createStagingBufferMemoryOnObjs(texture.bufferSize());
 		{
@@ -656,4 +678,6 @@ namespace tt {
 		waitFence(copyFence.get());
 
 	}
+
+
 }

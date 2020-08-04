@@ -605,7 +605,7 @@ namespace tt {
 		}
 
 
-
+/*
 		void buildMemoryOnBsM(BuffersMemory<> &BsM,
 		                      vk::MemoryPropertyFlags memoryPropertyFlags) {
 			size_t size = 0;
@@ -624,7 +624,7 @@ namespace tt {
 			});
 			BsM.size() = size;
 			bindBsm(BsM);
-		}
+		}*/
 
 		auto createSampler(uint32_t levels) {
 			return get().createSamplerUnique(
@@ -731,6 +731,9 @@ namespace tt {
 		void CmdBufferRenderpassBegin(RenderpassBeginHandle &,uint32_t frameIndex);
 
 		void buildCmdBuffer(tt::Window &window);
+
+		void flushMVP();
+
 	};
 
 }
