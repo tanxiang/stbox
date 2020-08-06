@@ -261,6 +261,10 @@ namespace tt {
 								app,
 								this
 						),
+						std::make_tuple(
+								app,
+								this
+						),
 				} {
 
 		}
@@ -404,7 +408,7 @@ namespace tt {
 
 		LocalBufferMemory
 		createLocalBufferMemory(size_t dataSize, vk::BufferUsageFlags flags);
-
+/*
 		BufferMemory
 		createBufferAndMemoryFromAssets(android_app *androidAppCtx, std::vector<std::string> names,
 		                                vk::BufferUsageFlags bufferUsageFlags,
@@ -415,7 +419,7 @@ namespace tt {
 		                                    vk::MemoryPropertyFlags memoryPropertyFlags,
 		                                    size_t size, BufferMemory &&bufferMemory);
 
-
+*/
 		void flushBufferToBuffer(vk::Buffer srcbuffer, vk::Buffer decbuffer, size_t size,
 		                         size_t srcoff = 0, size_t decoff = 0);
 
@@ -434,7 +438,7 @@ namespace tt {
 			                    decoff);
 		}
 
-		void bindBsm(BuffersMemory<> &BsM);
+		//void bindBsm(BuffersMemory<> &BsM);
 
 		template<typename Tuple>
 		auto bindBufferMemory(const Tuple &tuple) {
@@ -442,7 +446,7 @@ namespace tt {
 					std::get<vk::UniqueBuffer>(tuple).get(),
 					std::get<vk::UniqueDeviceMemory>(tuple).get(), 0);
 		}
-
+/*
 		template<typename ... Ts>
 		auto &buildBufferOnBsM(BuffersMemory<> &BsM, vk::BufferUsageFlags bufferUsageFlags,
 		                       const Ts &... objs) {
@@ -457,7 +461,7 @@ namespace tt {
 									bufferUsageFlags}
 					)
 			);
-		}
+		}*/
 
 		template<typename ... Ts>
 		auto createStagingBufferMemoryOnObjs(const Ts &... objs) {
@@ -478,13 +482,13 @@ namespace tt {
 			return tuple;
 		}
 
-		template<typename ... Ts>
+/*		template<typename ... Ts>
 		auto createLocalBufferMemoryOnObjs(vk::BufferUsageFlags flags, const Ts &... objs) {
 			auto alig = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
 			auto size = objSize(alig, objs...);
 			return createLocalBufferMemory(size, flags);
 		}
-
+*/
 		template<typename Tuple>
 		auto bufferTupleCreateMemory(vk::MemoryPropertyFlags memoryPropertyFlags,
 		                             Tuple &tuple) {
@@ -712,7 +716,7 @@ namespace tt {
 
 		//std::vector<JobDraw> drawJobs;
 	private:
-		std::tuple<JobSkyBox,JobIsland,JobAabb> Jobs;
+		std::tuple<JobSkyBox,JobIsland,JobAabb,JobDraw> Jobs;
 	public:
 		std::vector<vk::UniqueCommandBuffer> mainCmdBuffers;
 

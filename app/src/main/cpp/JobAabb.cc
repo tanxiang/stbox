@@ -293,7 +293,6 @@ namespace tt {
 	vk::UniquePipeline JobAabb::createGraphsPipeline(tt::Device &device, android_app *app,
 	                                                 vk::PipelineLayout pipelineLayout) {
 
-
 		auto vertShaderModule = device.loadShaderFromAssets("shaders/indir.vert.spv", app);
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/indir.frag.spv", app);
 		std::array pipelineShaderStageCreateInfos{

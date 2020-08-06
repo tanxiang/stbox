@@ -253,7 +253,7 @@ namespace tt {
 		return LocalBufferMemory{std::move(buffer), std::move(memory)};
 	}
 
-
+/*
 	BufferMemory Device::createBufferAndMemoryFromAssets(android_app *androidAppCtx,
 	                                                     std::vector<std::string> names,
 	                                                     vk::BufferUsageFlags bufferUsageFlags,
@@ -315,7 +315,7 @@ namespace tt {
 		}
 		return BAM;
 	}
-
+*/
 	vk::UniquePipeline Device::createGraphsPipeline(
 			vk::ArrayProxy<vk::PipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos,
 			vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo,
@@ -391,7 +391,7 @@ namespace tt {
 		//return vk::UniquePipeline{};
 		return get().createGraphicsPipelineUnique(pipelineCache, pipelineCreateInfo);
 	}
-
+/*
 	BufferMemory Device::flushBufferToDevMemory(vk::BufferUsageFlags bufferUsageFlags,
 	                                            vk::MemoryPropertyFlags memoryPropertyFlags,
 	                                            size_t size,
@@ -417,7 +417,7 @@ namespace tt {
 
 		return BAM;
 	}
-
+*/
 	void Device::flushBufferToBuffer(vk::Buffer srcbuffer, vk::Buffer decbuffer,
 	                                 size_t size, size_t srcoff, size_t decoff) {
 		auto copyCmd = createCmdBuffers(
@@ -432,12 +432,12 @@ namespace tt {
 		waitFence(copyFence.get());
 	}
 
-
+/*
 	void Device::bindBsm(BuffersMemory<> &BsM) {
 		for (auto &buffer:BsM.desAndBuffers()) {
 			get().bindBufferMemory(buffer.buffer().get(), BsM.memory().get(), buffer.off());
 		}
-	}
+	}*/
 
 	vk::UniqueDevice Device::initHander(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface) {
 		std::array<float, 1> queuePriorities{0.0};

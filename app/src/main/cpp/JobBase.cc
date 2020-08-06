@@ -10,14 +10,14 @@ namespace tt {
 	glm::mat4 JobBase::lookat = glm::lookAt(
 			glm::vec3{0, 0, -4},// Camera is at (-5,3,-10), in World Space
 			glm::vec3{0, 0, 0},     // and looks at the origin
-			glm::vec3{0, -1, 0}     /* Head is up (set to 0,-1,0 to look upside-down)*/ );
+			glm::vec3{0, 1, 0}  );
 	glm::qua<float> JobBase::fRotate;
 
 
 	void JobBase::setRotate(float dx, float dy) {
 		static float datx=0.0,daty=0.0;
-		datx+=dx*0.01;
-		daty+=dy*0.01;
+		datx-=dx*0.01;
+		daty-=dy*0.01;
 		glm::vec3 eulerAngle{-daty, datx, 0.0};
 
 		auto c = glm::cos(eulerAngle * 0.5f);
