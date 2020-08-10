@@ -1,9 +1,7 @@
 //
 // Created by ttand on 19-8-2.
 //
-
-#ifndef STBOX_WINDOW_HH
-#define STBOX_WINDOW_HH
+#pragma once
 
 #include "util.hh"
 //#include "Device.hh"
@@ -66,4 +64,3 @@ namespace tt {
 	};
 
 }
-#endif //STBOX_WINDOW_HH

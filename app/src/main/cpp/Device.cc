@@ -2,7 +2,6 @@
 // Created by ttand on 19-8-2.
 //
 
-#include "JobBase.hh"
 #include "Device.hh"
 #include "Window.hh"
 
@@ -386,7 +385,7 @@ namespace tt {
 				[&](auto &... jobs) {
 					buildCmdBufferHelper(window, renderPass.get(), jobs...);
 				},
-				Jobs);
+				JobObjs.tuple);
 
 		mainCmdBuffers = helper::createCmdBuffers(get(), renderPass.get(),
 		                                          *this,
@@ -443,7 +442,7 @@ namespace tt {
 				[&](auto &... jobs) {
 					execSubCmdBufferHelper(handle, jobs...);
 				},
-				Jobs
+				JobObjs.tuple
 		);
 	}
 
@@ -456,7 +455,7 @@ namespace tt {
 					                                            jobs)...};//FIXME graphsCmd exclude job without graphs cmd buffer
 					handle.executeCommands(graphsCmds);
 				},
-				Jobs
+				JobObjs.tuple
 		);
 	}
 
@@ -478,7 +477,7 @@ namespace tt {
 				[&](auto &... jobs) {
 					flushMVPHelper(*this, jobs...);
 				},
-				Jobs
+				JobObjs.tuple
 		);
 	}
 
@@ -545,4 +544,23 @@ namespace tt {
 		waitFence(copyFence.get());
 	}
 
+
+	Device::Device(vk::PhysicalDevice &phy, vk::SurfaceKHR &surface, android_app *app) :
+			vk::UniqueDevice{initHander(phy, surface)}, physicalDevice{phy},
+			//gQueueFamilyIndex{deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex},
+			renderPassFormat{physicalDevice.getSurfaceFormatsKHR(surface)[0].format},
+			renderPass{createRenderpass(renderPassFormat)},
+			commandPool{
+					get().createCommandPoolUnique(vk::CommandPoolCreateInfo{
+							vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+							gQueueFamilyIndex}
+					)
+			},
+			JobObjs{std::make_tuple(app, this)} {
+	}
+
+
+
 }
+
+

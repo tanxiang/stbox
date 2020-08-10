@@ -1,9 +1,7 @@
 //
 // Created by ttand on 20-3-2.
 //
-
-#ifndef STBOX_JOBSKYBOX_HH
-#define STBOX_JOBSKYBOX_HH
+#pragma once
 
 #include "util.hh"
 //#include "Device.hh"
@@ -33,7 +31,7 @@ namespace tt {
 		JobSkyBox(android_app *app,tt::Device &device);
 
 		template <typename tupleType>
-		JobSkyBox(tupleType args):JobSkyBox(std::get<android_app*>(args),*std::get<tt::Device*>(args)){}
+		JobSkyBox(tupleType args):JobSkyBox(std::get<android_app*>(args),*(std::get<Device*>(args))){}
 		vk::UniqueSampler sampler;
 		BufferImageMemoryWithParts<4> memoryWithParts;
 		BufferMemory BAM;
@@ -41,4 +39,3 @@ namespace tt {
 	};
 }
 
-#endif //STBOX_JOBSKYBOX_HH

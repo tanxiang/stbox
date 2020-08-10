@@ -4,9 +4,9 @@
 #pragma once
 /*
 */
+#include <tuple>
 #include <experimental/type_traits>
 #include <unistd.h>
-#include <vulkan.hpp>
 #include <thread>
 #include <queue>
 #include <optional>
@@ -16,6 +16,7 @@
 #include <memory>
 #include <map>
 #include "main.hh"
+#include <vulkan.hpp>
 
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);
 
@@ -137,7 +138,6 @@ namespace tt {
 
 	uint32_t findMemoryTypeIndex(vk::PhysicalDevice physicalDevice, uint32_t memoryTypeBits,
 	                             vk::MemoryPropertyFlags flags);
-
 
 	using ImageViewMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueDeviceMemory>;
 
