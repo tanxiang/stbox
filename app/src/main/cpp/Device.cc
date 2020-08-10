@@ -558,9 +558,6 @@ namespace tt {
 			},
 			JobObjs{std::make_tuple(app, this)} {
 	}
-
-
-
 }
 
 
