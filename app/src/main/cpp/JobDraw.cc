@@ -70,9 +70,9 @@ namespace tt {
 		//setPerspective(swapchain);
 	}
 
-	JobDraw::JobDraw(android_app *app, tt::Device &device) :
+	JobDraw::JobDraw(android_app *app, tt::Device *device) :
 			JobBase{
-					device.createJobBase(
+					device->createJobBase(
 							{
 									vk::DescriptorPoolSize{
 											vk::DescriptorType::eUniformBuffer, 1
@@ -84,10 +84,10 @@ namespace tt {
 					)
 			},
 			graphPipeline{
-					device.get(),
+					device->get(),
 					descriptorPool.get(),
 					[&](vk::PipelineLayout pipelineLayout) {
-						return createPipeline(device, app, pipelineLayout);
+						return createPipeline(*device, app, pipelineLayout);
 					},
 					{},//PushConst
 					std::array{
@@ -97,7 +97,7 @@ namespace tt {
 							}
 					}
 			},
-			BAM{device.createBufferAndMemory(
+			BAM{device->createBufferAndMemory(
 					sizeof(glm::mat4) * 2,
 					vk::BufferUsageFlagBits::eTransferSrc,
 					vk::MemoryPropertyFlagBits::eHostVisible |
@@ -114,7 +114,7 @@ namespace tt {
 				Vertex{{0.0, 0.0, 0.0, 1.0},
 				       {0.0, 0.0,  0.0, 1.0}}};
 
-		bufferMemoryPart = device.createBufferPartsOnObjs(
+		bufferMemoryPart = device->createBufferPartsOnObjs(
 				vk::BufferUsageFlagBits::eStorageBuffer |
 				vk::BufferUsageFlagBits::eUniformBuffer |
 				vk::BufferUsageFlagBits::eVertexBuffer |
@@ -134,7 +134,7 @@ namespace tt {
 						nullptr, &descriptors[0]
 				}
 		};
-		device->updateDescriptorSets(writeDes, nullptr);
+		device->get().updateDescriptorSets(writeDes, nullptr);
 	}
 
 	void JobDraw::setMVP(tt::Device &device) {

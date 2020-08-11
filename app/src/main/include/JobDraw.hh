@@ -33,10 +33,10 @@ namespace tt {
 
 		//static JobDraw create(android_app *app, tt::Device &device);
 
-		JobDraw(android_app *app,tt::Device &device);
+		JobDraw(android_app *app,tt::Device *device);
 
 		template <typename tupleType>
-		JobDraw(tupleType args):JobDraw(std::get<android_app*>(args),*std::get<tt::Device*>(args)){}
+		JobDraw(tupleType args):JobDraw(std::get<android_app*>(args),std::get<tt::Device*>(args)){}
 	};
 }
 

@@ -28,10 +28,10 @@ namespace tt {
 
 		void setMVP(tt::Device &device);
 
-		JobIsland(android_app *app,tt::Device &device);
+		JobIsland(android_app *app,tt::Device *device);
 
 		template <typename tupleType>
-		JobIsland(tupleType args):JobIsland(std::get<android_app*>(args),*std::get<tt::Device*>(args)){}
+		JobIsland(tupleType args):JobIsland(std::get<android_app*>(args),std::get<tt::Device*>(args)){}
 		vk::UniqueSampler sampler;
 		BufferMemoryWithPartsd memoryWithPartsd;
 		std::vector<float> materials;

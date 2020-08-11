@@ -77,9 +77,9 @@ namespace tt {
 		                                   pipelineTessellationStateCreateInfo);
 	}
 
-	JobIsland::JobIsland(android_app *app, tt::Device &device) :
+	JobIsland::JobIsland(android_app *app, tt::Device *device) :
 			JobBase{
-					device.createJobBase(
+					device->createJobBase(
 							{
 									vk::DescriptorPoolSize{
 											vk::DescriptorType::eUniformBuffer, 1
@@ -89,11 +89,11 @@ namespace tt {
 					)
 			},
 			graphPipeline{
-					device.get(),
+					device->get(),
 					descriptorPool.get(),
 					[&](vk::PipelineLayout pipelineLayout) {
 						return createGraphsPipeline(
-								device,
+								*device,
 								app,
 								pipelineLayout);
 					},
@@ -108,7 +108,7 @@ namespace tt {
 							}
 					}
 			},
-			BAM{device.createBufferAndMemory(
+			BAM{device->createBufferAndMemory(
 					sizeof(glm::mat4) * 2,
 					vk::BufferUsageFlagBits::eTransferSrc,
 					vk::MemoryPropertyFlagBits::eHostVisible |
@@ -116,7 +116,7 @@ namespace tt {
 
 		///home/ttand/work/stbox/app/src/main/assets/models/torusknot.obj.ext
 		///home/ttand/work/stbox/app/src/main/assets/models/untitled.obj.ext
-		memoryWithPartsd = device.createBufferPartsdOnAssertDir(
+		memoryWithPartsd = device->createBufferPartsdOnAssertDir(
 				vk::BufferUsageFlagBits::eUniformBuffer |
 				vk::BufferUsageFlagBits::eVertexBuffer |
 				vk::BufferUsageFlagBits::eIndexBuffer |
@@ -138,7 +138,7 @@ namespace tt {
 						nullptr, &descriptors[0]
 				}
 		};
-		device->updateDescriptorSets(writeDes, nullptr);
+		device->get().updateDescriptorSets(writeDes, nullptr);
 		AAssetHander file{app->activity->assetManager, "models/untitled.obj.material.bin"};
 		materials.resize(file.getLength() / 2);
 		file.read(materials.data(), file.getLength());

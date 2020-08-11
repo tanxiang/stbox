@@ -28,10 +28,10 @@ namespace tt {
 
 		void setMVP(tt::Device &device);
 
-		JobSkyBox(android_app *app,tt::Device &device);
+		JobSkyBox(android_app *app,tt::Device *device);
 
 		template <typename tupleType>
-		JobSkyBox(tupleType args):JobSkyBox(std::get<android_app*>(args),*(std::get<Device*>(args))){}
+		JobSkyBox(tupleType args):JobSkyBox(std::get<android_app*>(args),std::get<Device*>(args)){}
 		vk::UniqueSampler sampler;
 		BufferImageMemoryWithParts<4> memoryWithParts;
 		BufferMemory BAM;

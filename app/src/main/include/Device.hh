@@ -16,29 +16,6 @@
 
 
 namespace tt {
-	class Device;
-	struct eva{
-		android_app* b;
-		Device* dev;
-		eva(size_t size,int foo, float bar){}
-
-		template<typename Tup>
-		eva(Tup tup):
-			b(std::get<android_app*>(tup)),
-			dev(std::get<Device*>(tup)){}
-
-		eva(const eva&)=delete;
-	};
-
-
-	struct evb{
-		android_app* b;
-		Device* dev;
-		//evb(size_t size,int foo, float bar):b{bar},f{foo}{}
-
-		template<typename Tup>
-		evb(Tup tup):b(std::get<android_app*>(tup)),dev(std::get<Device*>(tup)){}
-	};
 
 	template <typename... T>
 	struct tupleSameObj {
@@ -677,7 +654,7 @@ namespace tt {
 
 	private:
 		//std::tuple<JobAabb> Jobs;
-		tupleSameObj<JobSkyBox,JobIsland> JobObjs;
+		tupleSameObj<JobSkyBox,JobIsland,JobAabb> JobObjs;
 	};
 
 }

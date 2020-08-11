@@ -57,9 +57,9 @@ namespace tt {
 		                                   vk::PrimitiveTopology::eTriangleStrip);
 	}
 
-	JobSkyBox::JobSkyBox(android_app *app, tt::Device &device) :
+	JobSkyBox::JobSkyBox(android_app *app, tt::Device *device) :
 			JobBase{
-					device.createJobBase(
+					device->createJobBase(
 							{
 									vk::DescriptorPoolSize{
 											vk::DescriptorType::eUniformBuffer, 1
@@ -72,11 +72,11 @@ namespace tt {
 					)
 			},
 			graphPipeline{
-					device.get(),
+					device->get(),
 					descriptorPool.get(),
 					[&](vk::PipelineLayout pipelineLayout) {
 						return createGraphsPipeline(
-								device,
+								*device,
 								app,
 								pipelineLayout);
 					}, {},
@@ -91,7 +91,7 @@ namespace tt {
 							}
 					}
 			},
-			BAM{device.createBufferAndMemory(
+			BAM{device->createBufferAndMemory(
 					sizeof(glm::mat4),
 					vk::BufferUsageFlagBits::eTransferSrc,
 					vk::MemoryPropertyFlagBits::eHostVisible |
@@ -105,7 +105,7 @@ namespace tt {
 
 		//ktx2texture.debugLoad(device.phyDevice(),device.get(),device.graphsQueue(),commandPool.get());
 
-		memoryWithParts = device.createImageBufferPartsOnObjs(
+		memoryWithParts = device->createImageBufferPartsOnObjs(
 				vk::BufferUsageFlagBits::eUniformBuffer |
 				vk::BufferUsageFlagBits::eVertexBuffer |
 				vk::BufferUsageFlagBits::eIndexBuffer |
@@ -122,8 +122,8 @@ namespace tt {
 				sizeof(glm::mat4));
 
 		//device.writeTextureToImage(textCube, std::get<vk::UniqueImage>(memoryWithParts).get());
-		device.writeTextureToImage(ktx2texture, std::get<vk::UniqueImage>(memoryWithParts).get());
-		getUniqueImageViewTuple(memoryWithParts) = device->createImageViewUnique(
+		device->writeTextureToImage(ktx2texture, std::get<vk::UniqueImage>(memoryWithParts).get());
+		getUniqueImageViewTuple(memoryWithParts) = device->get().createImageViewUnique(
 				{
 						{}, std::get<vk::UniqueImage>(memoryWithParts).get(),
 						vk::ImageViewType::eCube, ktx2texture.format(),
@@ -141,7 +141,7 @@ namespace tt {
 				//ktx2texture.vkImageViewCI(std::get<vk::UniqueImage>(memoryWithParts).get())
 		);
 
-		sampler = device->createSamplerUnique(
+		sampler = device->get().createSamplerUnique(
 				vk::SamplerCreateInfo{
 						{},
 						vk::Filter::eLinear,
@@ -177,7 +177,7 @@ namespace tt {
 						&descriptorImageInfo, nullptr
 				},
 		};
-		device->updateDescriptorSets(writeDes, nullptr);
+		device->get().updateDescriptorSets(writeDes, nullptr);
 	}
 
 	void JobSkyBox::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
