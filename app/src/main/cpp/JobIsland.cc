@@ -13,7 +13,7 @@ namespace tt {
 	vk::UniquePipeline JobIsland::createGraphsPipeline(tt::Device &device, android_app *app,
 	                                                   vk::PipelineLayout pipelineLayout) {
 
-		auto vertShaderModule = device.loadShaderFromAssets("shaders/copy.vert.spv", app);
+		auto vertShaderModule = device.loadShaderFromAssets("shaders/copy1.vert.spv", app);
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/mesh.frag.spv", app);
 		auto tescShaderModule = device.loadShaderFromAssets("shaders/passthrough.tesc.spv", app);
 		auto teseShaderModule = device.loadShaderFromAssets("shaders/passthrough.tese.spv", app);

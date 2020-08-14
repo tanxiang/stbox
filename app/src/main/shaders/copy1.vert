@@ -10,5 +10,5 @@ void main() {
 	//outColor = vec4(inPos,1.0);
 	gl_Position = inPos;
 	//outWorldPos = vec3(gl_Position);
-	outo = in1;
+	out0 = in1;
 }
