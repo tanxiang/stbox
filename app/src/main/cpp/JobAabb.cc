@@ -6,12 +6,6 @@
 #include "Device.hh"
 
 
-struct Vertex {
-	float pos[4];  // Position data
-	float color[4];              // Color
-};
-
-
 struct rigidBodyData {
 	std::array<float, 4> pos;//_m0;
 	glm::quat quat;//_m1;
@@ -98,7 +92,7 @@ namespace tt {
 					std::array{
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eUniformBuffer,
-									1, vk::ShaderStageFlagBits::eVertex
+									1, vk::ShaderStageFlagBits::eGeometry
 							}
 					}
 			},
@@ -140,7 +134,7 @@ namespace tt {
 				Collidables,
 				aabbs,
 				sizeof(aabb) * 2,
-				sizeof(Vertex) * 32,
+				sizeof(float) * 128,
 				sizeof(vk::DrawIndirectCommand)*4,
 				sizeof(glm::mat4));
 
@@ -293,13 +287,20 @@ namespace tt {
 	vk::UniquePipeline JobAabb::createGraphsPipeline(tt::Device &device, android_app *app,
 	                                                 vk::PipelineLayout pipelineLayout) {
 
-		auto vertShaderModule = device.loadShaderFromAssets("shaders/indir.vert.spv", app);
+		auto vertShaderModule = device.loadShaderFromAssets("shaders/copy0.vert.spv", app);
+		auto gemoShaderModule = device.loadShaderFromAssets("shaders/aabb.geom.spv", app);
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/indir.frag.spv", app);
 		std::array pipelineShaderStageCreateInfos{
 				vk::PipelineShaderStageCreateInfo{
 						{},
 						vk::ShaderStageFlagBits::eVertex,
 						vertShaderModule.get(),
+						"main"
+				},
+				vk::PipelineShaderStageCreateInfo{
+						{},
+						vk::ShaderStageFlagBits::eGeometry,
+						gemoShaderModule.get(),
 						"main"
 				},
 				vk::PipelineShaderStageCreateInfo{
@@ -312,16 +313,13 @@ namespace tt {
 
 		std::array vertexInputBindingDescriptions{
 				vk::VertexInputBindingDescription{
-						0, sizeof(float) * 8,
+						0, sizeof(float) * 4,
 						vk::VertexInputRate::eVertex
 				}
 		};
 		std::array vertexInputAttributeDescriptions{
 				vk::VertexInputAttributeDescription{
 						0, 0, vk::Format::eR32G32B32A32Sfloat, 0
-				},
-				vk::VertexInputAttributeDescription{
-						1, 0, vk::Format::eR32G32B32A32Sfloat, 16
 				}
 		};
 
@@ -336,7 +334,7 @@ namespace tt {
 		                                   pipelineLayout,
 		                                   pipelineCache.get(),
 		                                   device.renderPass.get(),
-		                                   vk::PrimitiveTopology::eTriangleFan);
+		                                   vk::PrimitiveTopology::eTriangleList);
 	}
 
 	vk::UniquePipeline JobAabb::createComputePipeline(tt::Device &device, android_app *app,

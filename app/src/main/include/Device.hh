@@ -654,7 +654,7 @@ namespace tt {
 
 	private:
 		//std::tuple<JobAabb> Jobs;
-		tupleSameObj<JobSkyBox,JobIsland,JobAabb> JobObjs;
+		tupleSameObj<JobSkyBox,JobAabb> JobObjs;
 	};
 
 }

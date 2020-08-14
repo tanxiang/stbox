@@ -12,20 +12,14 @@
 
 
 namespace tt {
-	struct Vertex {
-		float pos[4];  // Position data
-		float color[4];              // Color
-	};
+
 
 	struct JobAabb: public JobBase{
 		vk::UniqueRenderPass renderPass;
-		//vk::UniqueRenderPass createRenderpass(tt::Device &);
-
 		PipelineResource compPipeline;
 		PipelineResource graphPipeline;
 		BufferMemoryWithParts<7> bufferMemoryPart;
-		BufferMemory outputMemory;
-		vk::UniqueCommandBuffer cCommandBuffer;
+		//BufferMemory outputMemory;
 		Thread worker;
 		std::vector<vk::UniqueCommandBuffer> gcmdBuffers;
 		std::vector<vk::UniqueCommandBuffer> cCmdbuffers;
@@ -37,11 +31,6 @@ namespace tt {
 		}
 		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
-
-		//static JobAabb
-		//create(android_app *app, tt::Device &device);
-
-		//static JobBase createBase(tt::Device &device);
 
 		JobAabb(android_app *app,tt::Device &device);
 
@@ -55,7 +44,6 @@ namespace tt {
 		void CmdBufferRenderPassContinueBegin(CommandBufferBeginHandle &cmdHandleBegin,
 		                                       vk::Extent2D win,uint32_t frameIndex);
 
-		//JobAabb(JobAabb&& j) = default;
 		BufferMemory BAM;
 
 	};

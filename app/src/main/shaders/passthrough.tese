@@ -8,15 +8,12 @@ layout (binding = 0) uniform UBO
     mat4 model;
 } ubo;
 layout (location = 0) in vec3 inNormal[];
-//layout (location = 1) in vec2 inUV[];
 
 layout (location = 0) out vec3 outWorldPos;
 layout (location = 1) out vec3 outNormal;
 
-//layout (location = 1) out vec2 outUV;
-
 void main(void)
-{ ;
+{
     gl_Position = ubo.MVP * (
     	gl_TessCoord[0] * gl_in[0].gl_Position +
     	gl_TessCoord[1] * gl_in[1].gl_Position +
