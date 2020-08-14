@@ -22,11 +22,11 @@ void main() {
     vec4 quat = gl_in[2].gl_Position;
 
     gl_Position = ubo.MVP*vec4(min.x,max.y,min.zw);
-    outColor = vec4(0.0, 0.0, 0.0,1.0);
+    outColor = vec4(0.0, 1.0, 0.0,1.0);
     EmitVertex();
 
     gl_Position = ubo.MVP*vec4(max.xy,min.zw);
-    outColor = vec4(0.0, 0.0, 0.0,1.0);
+    outColor = vec4(1.0, 1.0, 0.0,1.0);
     EmitVertex();
 
     gl_Position = ubo.MVP*min;
@@ -34,27 +34,27 @@ void main() {
     EmitVertex();
 
     gl_Position = ubo.MVP*vec4(max.x,min.yzw);
-    outColor = vec4(0.0, 0.0, 0.0,1.0);
+    outColor = vec4(1.0, 0.0, 0.0,1.0);
     EmitVertex();
 
     gl_Position = ubo.MVP*vec4(max.x,min.y,max.zw);
-    outColor = vec4(0.0, 0.0, 0.0,1.0);
+    outColor = vec4(1.0, 0.0, 1.0,1.0);
     EmitVertex();
 
     gl_Position = ubo.MVP*vec4(max.xy,min.zw);
-    outColor = vec4(0.0, 0.0, 0.0,1.0);
+    outColor = vec4(1.0, 1.0, 0.0,1.0);
     EmitVertex();
 
     gl_Position = ubo.MVP*max;
-    outColor = vec4(0.0, 0.0, 0.0,1.0);
+    outColor = vec4(1.0, 1.0, 1.0,1.0);
     EmitVertex();
 
     gl_Position = ubo.MVP*vec4(min.x,max.y,min.zw);
-    outColor = vec4(0.0, 0.0, 0.0,1.0);
+    outColor = vec4(0.0, 1.0, 0.0,1.0);
     EmitVertex();
 
     gl_Position = ubo.MVP*vec4(min.x,max.yzw);
-    outColor = vec4(0.0, 0.0, 0.0,1.0);
+    outColor = vec4(0.0, 1.0, 1.0,1.0);
     EmitVertex();
 
     gl_Position = ubo.MVP*min;
@@ -62,19 +62,19 @@ void main() {
     EmitVertex();
 
     gl_Position = ubo.MVP*vec4(min.xy,max.zw);
-    outColor = vec4(0.0, 0.0, 0.0,1.0);
+    outColor = vec4(0.0, 0.0, 1.0,1.0);
     EmitVertex();
 
     gl_Position = ubo.MVP*vec4(max.x,min.y,max.zw);
-    outColor = vec4(0.0, 0.0, 0.0,1.0);
+    outColor = vec4(1.0, 0.0, 1.0,1.0);
     EmitVertex();
 
     gl_Position = ubo.MVP*vec4(min.x,max.yzw);
-    outColor = vec4(0.0, 0.0, 0.0,1.0);
+    outColor = vec4(0.0, 1.0, 1.0,1.0);
     EmitVertex();
 
     gl_Position = ubo.MVP*max;
-    outColor = vec4(0.0, 0.0, 0.0,1.0);
+    outColor = vec4(1.0, 1.0, 1.0,1.0);
     EmitVertex();
 
     EndPrimitive();

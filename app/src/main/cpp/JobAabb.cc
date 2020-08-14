@@ -434,7 +434,7 @@ namespace tt {
 	void JobAabb::setMVP(tt::Device &device) {
 		{
 			auto memory_ptr = helper::mapTypeMemoryAndSize<glm::mat4>(ownerDevice(), BAM);
-			memory_ptr[0] = perspective * lookat;
+			memory_ptr[0] = perspective * lookat * glm::mat4_cast(fRotate);
 
 		}
 		auto buffer = std::get<vk::UniqueBuffer>(BAM).get();
