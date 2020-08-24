@@ -63,13 +63,17 @@ layout(set = 0,binding = 4) writeonly buffer outPos { ioInfo outinfo[]; };
 
 layout(set = 0,binding = 5) writeonly buffer outCmd { cmdInfo cmdinfo[]; };
 
+layout(set = 0,binding = 6) writeonly buffer outPosCube { ioInfo outCubeinfo[];};
+
+layout(set = 0,binding = 7) writeonly buffer outCmdCube { cmdInfo cmdCubeinfo[];};
+
 layout(push_constant, std430) uniform flags_push
 {
     ivec4 fl4;
 } flags;
 
 vec3 qtransform( vec4 q, vec3 v ){
-    return v + 2.0*cross(cross(v, -q.xyz ) + q.w*v, -q.xyz);
+    return v + 2.0*cross(q.xyz,cross(q.xyz,v) + q.w*v);
 }
 
 void b3ComputeWorldAabb(uint compID)
@@ -91,6 +95,8 @@ void b3ComputeWorldAabb(uint compID)
 
 
 void outAabb(vec3 min,vec3 max,vec4 quat,uint vindex){
+    vindex = vindex * 3;
+
     outinfo[vindex].point=vec4(min,1.0);
     //outinfo[vindex].color=vec4(0.0,1.0,0.0,1.0);
 
@@ -98,23 +104,40 @@ void outAabb(vec3 min,vec3 max,vec4 quat,uint vindex){
     //outinfo[vindex+1].color=vec4(1.0,1.0,0.0,1.0);
 
     outinfo[vindex+2].point=quat;
-}
-void main()
-{
-    b3ComputeWorldAabb(gl_GlobalInvocationID.x);
-    uint vindex = gl_GlobalInvocationID.x*8;
-    vec4 quat = RigidBodyDatas.BodyDatas[gl_GlobalInvocationID.x].quat;
-
-    vec4 min = localShapeAABB.bb[gl_GlobalInvocationID.x].min;
-    vec4 max = localShapeAABB.bb[gl_GlobalInvocationID.x].max;
-
-    outAabb(min.xyz,max.xyz,quat,vindex);
-
-    if(gl_WorkGroupID.x == 0){
+    if(vindex == 0){
         cmdinfo[0].vetCont=3;
         cmdinfo[0].insCont=1;
         cmdinfo[0].vetOff=0;
         cmdinfo[0].insOff=0;
     }
+}
+
+void outAabbCube(vec3 min,vec3 max,vec4 pos,vec4 quat,uint vindex){
+    vindex = vindex * 4;
+    outCubeinfo[vindex].point=pos;
+
+    outCubeinfo[vindex+1].point=quat;
+
+    outCubeinfo[vindex+2].point=vec4(min,1.0);
+
+    outCubeinfo[vindex+3].point=vec4(max,1.0);
+    if(vindex == 0){
+        cmdCubeinfo[0].vetCont=4;
+        cmdCubeinfo[0].insCont=1;
+        cmdCubeinfo[0].vetOff=0;
+        cmdCubeinfo[0].insOff=0;
+    }
+}
+void main()
+{
+    b3ComputeWorldAabb(gl_GlobalInvocationID.x);
+    uint vindex = gl_GlobalInvocationID.x;
+    vec4 quat = RigidBodyDatas.BodyDatas[vindex].quat;
+    vec4 pos = RigidBodyDatas.BodyDatas[vindex].pos;
+
+    vec4 min = localShapeAABB.bb[vindex].min;
+    vec4 max = localShapeAABB.bb[vindex].max;
+    outAabb(min.xyz,max.xyz,quat,vindex);
+    outAabbCube(min.xyz,max.xyz,pos,quat,vindex);
 
 }

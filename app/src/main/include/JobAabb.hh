@@ -18,7 +18,9 @@ namespace tt {
 		vk::UniqueRenderPass renderPass;
 		PipelineResource compPipeline;
 		PipelineResource graphPipeline;
-		BufferMemoryWithParts<7> bufferMemoryPart;
+		PipelineResource graphPipelineCube;
+
+		BufferMemoryWithParts<9> bufferMemoryPart;
 		//BufferMemory outputMemory;
 		Thread worker;
 		std::vector<vk::UniqueCommandBuffer> gcmdBuffers;
@@ -30,6 +32,7 @@ namespace tt {
 			return *cCmdbuffers[0];
 		}
 		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
+		vk::UniquePipeline createGraphsPipelineCube(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 
 		JobAabb(android_app *app,tt::Device &device);

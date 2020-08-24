@@ -12,9 +12,6 @@ layout (binding = 0) uniform UBO
 
 layout (location = 0) out vec4 outColor;
 
-vec3 qtransform( vec4 q, vec3 v ){
-    return v + 2.0*cross(cross(v, -q.xyz ) + q.w*v, -q.xyz);
-}
 
 void main() {
     vec4 min = gl_in[0].gl_Position;

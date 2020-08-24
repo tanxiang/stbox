@@ -436,7 +436,6 @@ namespace tt {
 		execSubCmdBufferHelper(handle, jobs...);
 	}
 
-
 	void Device::CmdBufferBegin(CommandBufferBeginHandle &handle, uint32_t frameIndex) {
 		std::apply(
 				[&](auto &... jobs) {
@@ -446,13 +445,12 @@ namespace tt {
 		);
 	}
 
-
 	void Device::CmdBufferRenderpassBegin(RenderpassBeginHandle &handle,
 	                                      uint32_t frameIndex) {
 		std::apply(
 				[&](auto &... jobs) {
-					std::array graphsCmds{getSubCmdBufferHelper(frameIndex,
-					                                            jobs)...};//FIXME graphsCmd exclude job without graphs cmd buffer
+					std::array graphsCmds{getSubCmdBufferHelper(frameIndex,jobs)...};
+					//FIXME graphsCmd exclude job without graphs cmd buffer
 					handle.executeCommands(graphsCmds);
 				},
 				JobObjs.tuple

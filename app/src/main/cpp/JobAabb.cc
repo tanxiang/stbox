@@ -33,13 +33,13 @@ namespace tt {
 					device.createJobBase(
 							{
 									vk::DescriptorPoolSize{
-											vk::DescriptorType::eUniformBuffer, 1
+											vk::DescriptorType::eUniformBuffer, 2
 									},
 									vk::DescriptorPoolSize{
-											vk::DescriptorType::eStorageBuffer, 6
+											vk::DescriptorType::eStorageBuffer, 8
 									}
 							},
-							2
+							3
 					)
 			},
 			//renderPass{createRenderpass(device)},
@@ -76,6 +76,14 @@ namespace tt {
 							vk::DescriptorSetLayoutBinding{
 									5, vk::DescriptorType::eStorageBuffer,
 									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+								6, vk::DescriptorType::eStorageBuffer,
+										1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									7, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
 							}
 
 					}
@@ -96,8 +104,24 @@ namespace tt {
 							}
 					}
 			},
+			graphPipelineCube{
+					device.get(),
+					descriptorPool.get(),
+					[&](vk::PipelineLayout pipelineLayout) {
+						return createGraphsPipelineCube(
+								device,
+								app,
+								pipelineLayout);
+					}, {},
+					std::array{
+							vk::DescriptorSetLayoutBinding{
+									0, vk::DescriptorType::eUniformBuffer,
+									1, vk::ShaderStageFlagBits::eGeometry
+							}
+					}
+			},
 			BAM{device.createBufferAndMemory(
-					sizeof(glm::mat4)*2,
+					sizeof(glm::mat4) * 2,
 					vk::BufferUsageFlagBits::eTransferSrc,
 					vk::MemoryPropertyFlagBits::eHostVisible |
 					vk::MemoryPropertyFlagBits::eHostCoherent)} {
@@ -119,7 +143,7 @@ namespace tt {
 		};
 		std::array aabbs{
 				aabb{{0.0f, 0.0f, 0.0f, 1.0},
-				     {0.3f, 0.4f,  0.5f,  1.0}},
+				     {0.3f, 0.4f, 0.5f, 1.0}},
 				aabb{},
 				aabb{},
 		};
@@ -135,19 +159,14 @@ namespace tt {
 				aabbs,
 				sizeof(aabb) * 2,
 				sizeof(float) * 128,
-				sizeof(vk::DrawIndirectCommand)*4,
+				sizeof(vk::DrawIndirectCommand) * 2,
+				sizeof(float) * 128,
+				sizeof(vk::DrawIndirectCommand) * 2,
 				sizeof(glm::mat4));
 
 
-		std::array descriptors{
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 0),
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 1),
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 2),
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 3),
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 4),
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 5),
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 6),
-		};
+		auto  descriptors = bufferMemoryPart.arrayOfDescs();
+
 		std::array writeDes{
 				vk::WriteDescriptorSet{
 						compPipeline.getDescriptorSet(), 0, 0, 1,
@@ -180,9 +199,24 @@ namespace tt {
 						nullptr, &descriptors[5]
 				},
 				vk::WriteDescriptorSet{
+						compPipeline.getDescriptorSet(), 6, 0, 1,
+						vk::DescriptorType::eStorageBuffer,
+						nullptr, &descriptors[6]
+				},
+				vk::WriteDescriptorSet{
+						compPipeline.getDescriptorSet(), 7, 0, 1,
+						vk::DescriptorType::eStorageBuffer,
+						nullptr, &descriptors[7]
+				},
+				vk::WriteDescriptorSet{
 						graphPipeline.getDescriptorSet(), 0, 0, 1,
 						vk::DescriptorType::eUniformBuffer,
-						nullptr, &descriptors[6]
+						nullptr, &descriptors[8]
+				},
+				vk::WriteDescriptorSet{
+						graphPipelineCube.getDescriptorSet(), 0, 0, 1,
+						vk::DescriptorType::eUniformBuffer,
+						nullptr, &descriptors[8]
 				}
 		};
 
@@ -263,7 +297,7 @@ namespace tt {
 							BarrierHostRead,
 							{});					 */
 
-				},{},vk::CommandBufferLevel::eSecondary
+				}, {}, vk::CommandBufferLevel::eSecondary
 		);
 		/*
 		vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eTransfer;
@@ -327,7 +361,6 @@ namespace tt {
 				{}, vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
 				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
 		};
-		//return vk::UniquePipeline{};
 
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
 		                                   pipelineVertexInputStateCreateInfo,
@@ -335,6 +368,59 @@ namespace tt {
 		                                   pipelineCache.get(),
 		                                   device.renderPass.get(),
 		                                   vk::PrimitiveTopology::eTriangleList);
+	}
+
+	vk::UniquePipeline JobAabb::createGraphsPipelineCube(tt::Device &device, android_app *app,
+	                                                     vk::PipelineLayout pipelineLayout) {
+
+		auto vertShaderModule = device.loadShaderFromAssets("shaders/copy0.vert.spv", app);
+		auto gemoShaderModule = device.loadShaderFromAssets("shaders/cube.geom.spv", app);
+		auto fargShaderModule = device.loadShaderFromAssets("shaders/indir.frag.spv", app);
+		std::array pipelineShaderStageCreateInfos{
+				vk::PipelineShaderStageCreateInfo{
+						{},
+						vk::ShaderStageFlagBits::eVertex,
+						vertShaderModule.get(),
+						"main"
+				},
+				vk::PipelineShaderStageCreateInfo{
+						{},
+						vk::ShaderStageFlagBits::eGeometry,
+						gemoShaderModule.get(),
+						"main"
+				},
+				vk::PipelineShaderStageCreateInfo{
+						{},
+						vk::ShaderStageFlagBits::eFragment,
+						fargShaderModule.get(),
+						"main"
+				}
+		};
+
+		std::array vertexInputBindingDescriptions{
+				vk::VertexInputBindingDescription{
+						0, sizeof(float) * 4,
+						vk::VertexInputRate::eVertex
+				}
+		};
+		std::array vertexInputAttributeDescriptions{
+				vk::VertexInputAttributeDescription{
+						0, 0, vk::Format::eR32G32B32A32Sfloat, 0
+				}
+		};
+
+		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
+				{}, vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
+				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
+		};
+		//return vk::UniquePipeline{};
+
+		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
+		                                   pipelineVertexInputStateCreateInfo,
+		                                   pipelineLayout,
+		                                   pipelineCache.get(),
+		                                   device.renderPass.get(),
+		                                   vk::PrimitiveTopology::eLineListWithAdjacency);
 	}
 
 	vk::UniquePipeline JobAabb::createComputePipeline(tt::Device &device, android_app *app,
@@ -425,10 +511,35 @@ namespace tt {
 				{createDescriptorBufferInfoTuple(bufferMemoryPart, 4).offset}
 		);
 
-		cmdHandleRenderpassBegin.drawIndirect(std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
-		                                      createDescriptorBufferInfoTuple(bufferMemoryPart, 5).offset, 2,
-		                                      sizeof(vk::DrawIndirectCommand));
+		cmdHandleRenderpassBegin.drawIndirect(
+				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 5).offset,
+				1,
+				sizeof(vk::DrawIndirectCommand));
 		//cmdHandleRenderpassBegin.draw(8, 1, 0, 0);
+
+		cmdHandleRenderpassBegin.bindPipeline(
+				vk::PipelineBindPoint::eGraphics,
+				graphPipelineCube.get());
+
+		cmdHandleRenderpassBegin.bindDescriptorSets(
+				vk::PipelineBindPoint::eGraphics,
+				graphPipelineCube.layout(), 0,
+				graphPipelineCube.getDescriptorSets(),
+				{}
+		);
+
+		cmdHandleRenderpassBegin.bindVertexBuffers(
+				0, {std::get<vk::UniqueBuffer>(bufferMemoryPart).get()},
+				{createDescriptorBufferInfoTuple(bufferMemoryPart, 6).offset}
+		);
+
+		cmdHandleRenderpassBegin.drawIndirect(
+				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 7).offset,
+				2,
+				sizeof(vk::DrawIndirectCommand));
+
 	}
 
 	void JobAabb::setMVP(tt::Device &device) {
@@ -444,7 +555,7 @@ namespace tt {
 				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
 				sizeof(glm::mat4),
 				0,
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 6).offset);
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 8).offset);
 
 		{
 			auto memory_ptr = helper::mapTypeMemoryAndSize<rigidBodyData>(ownerDevice(), BAM);
@@ -454,7 +565,6 @@ namespace tt {
 			};
 
 		}
-
 		device.flushBufferToBuffer(
 				buffer,
 				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),

@@ -145,10 +145,21 @@ namespace tt {
 
 	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t, std::vector<vk::DescriptorBufferInfo> >;
 
+
+	template<typename BT,typename T, T... ints>
+	auto arrayDescsSequence(BT& BufferMemoryWithParts,std::integer_sequence<T, ints...> int_seq)
+	{
+		return std::array{createDescriptorBufferInfoTuple(BufferMemoryWithParts,ints)...};
+	}
+
 	template<uint N>
 	struct BufferMemoryWithParts
 			: public std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, std::array<uint32_t, N>> {
 		using std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, std::array<uint32_t, N>>::tuple;
+
+		auto arrayOfDescs(){
+			return arrayDescsSequence(*this,std::make_index_sequence<N>{});
+		}
 	};
 
 	struct BufferMemoryWithPartsd
