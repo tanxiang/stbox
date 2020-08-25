@@ -76,6 +76,29 @@ vec3 qtransform( vec4 q, vec3 v ){
     return v + 2.0*cross(q.xyz,cross(q.xyz,v) + q.w*v);
 }
 
+mat3 QuatGetRotationMatrixABS(vec4 quat)
+{
+    vec3 quatsq = vec3(quat.x * quat.x, quat.y * quat.y, quat.z * quat.z);
+    mat3 quat_mat;
+
+    quat_mat[0].x = 1 - 2 * quatsq.y - 2 * quatsq.z;
+    quat_mat[0].y = 2 * quat.x * quat.y - 2 * quat.w * quat.z;
+    quat_mat[0].z = 2 * quat.x * quat.z + 2 * quat.w * quat.y;
+    //quat_mat[0].w = 0.f;
+
+    quat_mat[1].x = 2 * quat.x * quat.y + 2 * quat.w * quat.z;
+    quat_mat[1].y = 1 - 2 * quatsq.x - 2 * quatsq.z;
+    quat_mat[1].z = 2 * quat.y * quat.z - 2 * quat.w * quat.x;
+    //quat_mat[1].w = 0.f;
+
+    quat_mat[2].x = 2 * quat.x * quat.z - 2 * quat.w * quat.y;
+    quat_mat[2].y = 2 * quat.y * quat.z + 2 * quat.w * quat.x;
+    quat_mat[2].z = 1 - 2 * quatsq.x - 2 * quatsq.y;
+    //quat_mat[2].w = 0.f;
+
+    return mat3(abs(quat_mat[0]),abs(quat_mat[1]),abs(quat_mat[2]));
+}
+
 void b3ComputeWorldAabb(uint compID)
 {
     int shapeIndex = Collidables.b3Collidable[RigidBodyDatas.BodyDatas[compID].collidableIdx_invMass_restituitionCoeff_frictionCoeff[0]][3];
@@ -92,6 +115,7 @@ void b3ComputeWorldAabb(uint compID)
         //AABBArg.bb[compID].min.w=compID;
     }
 }
+
 
 
 void outAabb(vec3 min,vec3 max,vec4 quat,uint vindex){
@@ -112,7 +136,18 @@ void outAabb(vec3 min,vec3 max,vec4 quat,uint vindex){
     }
 }
 
-void outAabbCube(vec3 min,vec3 max,vec4 pos,vec4 quat,uint vindex){
+
+void computeWorldAabb(vec3 min,vec3 max,vec4 quat,uint vindex){
+    mat3 matQuatABS = QuatGetRotationMatrixABS(quat);
+    vec3 center = (max + min)*0.5;
+    vec3 extent = (max - min)*0.5;
+    vec3 centerAabb=qtransform(quat,center);
+    vec3 extentAabb=vec3(dot(extent,matQuatABS[0]),dot(extent,matQuatABS[1]),dot(extent,matQuatABS[2]));
+
+    outAabb(centerAabb-extentAabb,centerAabb+extentAabb,quat,vindex);
+}
+
+void outCube(vec3 min,vec3 max,vec4 pos,vec4 quat,uint vindex){
     vindex = vindex * 4;
     outCubeinfo[vindex].point=pos;
 
@@ -130,14 +165,14 @@ void outAabbCube(vec3 min,vec3 max,vec4 pos,vec4 quat,uint vindex){
 }
 void main()
 {
-    b3ComputeWorldAabb(gl_GlobalInvocationID.x);
     uint vindex = gl_GlobalInvocationID.x;
+    //computeWorldAabb(vindex);
+
     vec4 quat = RigidBodyDatas.BodyDatas[vindex].quat;
     vec4 pos = RigidBodyDatas.BodyDatas[vindex].pos;
 
     vec4 min = localShapeAABB.bb[vindex].min;
     vec4 max = localShapeAABB.bb[vindex].max;
-    outAabb(min.xyz,max.xyz,quat,vindex);
-    outAabbCube(min.xyz,max.xyz,pos,quat,vindex);
-
+    outCube(min.xyz,max.xyz,pos,quat,vindex);
+    computeWorldAabb(min.xyz,max.xyz,quat,vindex);
 }
