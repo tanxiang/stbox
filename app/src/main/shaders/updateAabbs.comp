@@ -137,14 +137,14 @@ void outAabb(vec3 min,vec3 max,vec4 quat,uint vindex){
 }
 
 
-void computeWorldAabb(vec3 min,vec3 max,vec4 quat,uint vindex){
+void computeWorldAabb(vec3 min,vec3 max,vec4 pos,vec4 quat,uint vindex){
     mat3 matQuatABS = QuatGetRotationMatrixABS(quat);
     vec3 center = (max + min)*0.5;
     vec3 extent = (max - min)*0.5;
     vec3 centerAabb=qtransform(quat,center);
     vec3 extentAabb=extent * matQuatABS;//vec3(dot(extent,matQuatABS[0]),dot(extent,matQuatABS[1]),dot(extent,matQuatABS[2]));
 
-    outAabb(centerAabb-extentAabb,centerAabb+extentAabb,quat,vindex);
+    outAabb(centerAabb-extentAabb+pos.xyz,centerAabb+extentAabb+pos.xyz,quat,vindex);
 }
 
 void outCube(vec3 min,vec3 max,vec4 pos,vec4 quat,uint vindex){
@@ -171,5 +171,5 @@ void main()
     vec4 min = localShapeAABB.bb[vindex].min;
     vec4 max = localShapeAABB.bb[vindex].max;
     outCube(min.xyz,max.xyz,pos,quat,vindex);
-    computeWorldAabb(min.xyz,max.xyz,quat,vindex);
+    computeWorldAabb(min.xyz,max.xyz,pos,quat,vindex);
 }

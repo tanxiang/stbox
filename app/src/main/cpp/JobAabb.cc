@@ -367,7 +367,8 @@ namespace tt {
 		                                   pipelineLayout,
 		                                   pipelineCache.get(),
 		                                   device.renderPass.get(),
-		                                   vk::PrimitiveTopology::eTriangleList);
+		                                   vk::PrimitiveTopology::eTriangleList,
+		                                   vk::PolygonMode::eLine);
 	}
 
 	vk::UniquePipeline JobAabb::createGraphsPipelineCube(tt::Device &device, android_app *app,
