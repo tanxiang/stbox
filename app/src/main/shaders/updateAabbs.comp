@@ -142,7 +142,7 @@ void computeWorldAabb(vec3 min,vec3 max,vec4 quat,uint vindex){
     vec3 center = (max + min)*0.5;
     vec3 extent = (max - min)*0.5;
     vec3 centerAabb=qtransform(quat,center);
-    vec3 extentAabb=vec3(dot(extent,matQuatABS[0]),dot(extent,matQuatABS[1]),dot(extent,matQuatABS[2]));
+    vec3 extentAabb=extent * matQuatABS;//vec3(dot(extent,matQuatABS[0]),dot(extent,matQuatABS[1]),dot(extent,matQuatABS[2]));
 
     outAabb(centerAabb-extentAabb,centerAabb+extentAabb,quat,vindex);
 }
@@ -150,11 +150,8 @@ void computeWorldAabb(vec3 min,vec3 max,vec4 quat,uint vindex){
 void outCube(vec3 min,vec3 max,vec4 pos,vec4 quat,uint vindex){
     vindex = vindex * 4;
     outCubeinfo[vindex].point=pos;
-
     outCubeinfo[vindex+1].point=quat;
-
     outCubeinfo[vindex+2].point=vec4(min,1.0);
-
     outCubeinfo[vindex+3].point=vec4(max,1.0);
     if(vindex == 0){
         cmdCubeinfo[0].vetCont=4;
