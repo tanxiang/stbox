@@ -85,13 +85,6 @@ namespace tt{
 			if (!std::strcmp(VK_EXT_DEBUG_REPORT_EXTENSION_NAME, ExtName))
 				return tt::Instance{std::move(ins), true};
 
-
-		//VULKAN_HPP_DEFAULT_DISPATCHER.vkGetPhysicalDeviceProperties2=vkGetPhysicalDeviceProperties2;
-
-		//vkCreateDebugReportCallbackEXT((VkInstance)ins.get(),(VkDebugReportCallbackCreateInfoEXT*)&debugReportInfo, nullptr,&debugReportCallback);
-		//auto vkDestroyDebugReportCallbackEXT = static_cast<PFN_vkDestroyDebugReportCallbackEXT>(ins->getProcAddr("vkDestroyDebugReportCallbackEXT"));
-		//assert(vkCreateDebugReportCallbackEXT);
-		//assert(vkDestroyDebugReportCallbackEXT);
 		return tt::Instance{std::move(ins)};
 	}
 
