@@ -82,21 +82,10 @@ namespace tt{
 		};
 		auto ins = vk::createInstanceUnique(instanceInfo);
 		for (auto &ExtName:instanceEtensionNames)
-			if (!std::strcmp(VK_EXT_DEBUG_REPORT_EXTENSION_NAME, ExtName)) {
-				auto vkCreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT) (ins->getProcAddr(
-						"vkCreateDebugReportCallbackEXT"));
-				vk::DebugReportCallbackCreateInfoEXT debugReportInfo{
-						vk::DebugReportFlagBitsEXT::eError |
-						vk::DebugReportFlagBitsEXT::eWarning |
-						vk::DebugReportFlagBitsEXT::ePerformanceWarning |
-						vk::DebugReportFlagBitsEXT::eDebug |
-						vk::DebugReportFlagBitsEXT::eInformation,
-						DebugReportCallback};
-				vkCreateDebugReportCallbackEXT((VkInstance) ins.get(),
-				                               (VkDebugReportCallbackCreateInfoEXT *) &debugReportInfo,
-				                               nullptr, &debugReportCallback);
-				MY_LOG(ERROR) << "vkCreateDebugReportCallbackEXT";
-			}
+			if (!std::strcmp(VK_EXT_DEBUG_REPORT_EXTENSION_NAME, ExtName))
+				return tt::Instance{std::move(ins), true};
+
+
 		//VULKAN_HPP_DEFAULT_DISPATCHER.vkGetPhysicalDeviceProperties2=vkGetPhysicalDeviceProperties2;
 
 		//vkCreateDebugReportCallbackEXT((VkInstance)ins.get(),(VkDebugReportCallbackCreateInfoEXT*)&debugReportInfo, nullptr,&debugReportCallback);
@@ -106,4 +95,17 @@ namespace tt{
 		return tt::Instance{std::move(ins)};
 	}
 
+	Instance::Instance(vk::UniqueInstance &&ins,bool debug) : vk::UniqueInstance{std::move(ins)},
+	                                               dispatchLoaderExt{get()} {
+		if(debug) {
+			vk::DebugReportCallbackCreateInfoEXT debugReportInfo{
+					vk::DebugReportFlagBitsEXT::eError |
+					vk::DebugReportFlagBitsEXT::eWarning |
+					vk::DebugReportFlagBitsEXT::ePerformanceWarning |
+					vk::DebugReportFlagBitsEXT::eDebug |
+					vk::DebugReportFlagBitsEXT::eInformation,
+					DebugReportCallback};
+			debugReportCallbackExt = get().createDebugReportCallbackEXTUnique(debugReportInfo, nullptr,dispatchLoaderExt);
+		}
+	}
 }
