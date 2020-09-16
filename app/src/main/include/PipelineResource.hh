@@ -17,6 +17,7 @@ namespace tt {
 
 		template<typename ... Ts>
 		auto createDescriptorSetLayouts(const Ts &... objs) {
+			vk::DescriptorSetLayoutBindingFlagsCreateInfoEXT{};
 			return std::vector{
 					device.createDescriptorSetLayout(
 							vk::DescriptorSetLayoutCreateInfo{

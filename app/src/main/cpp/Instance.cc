@@ -55,8 +55,8 @@ namespace tt{
 			//MY_LOG(INFO) << prop.layerName;
 			//instanceLayerPropertiesName.emplace_back(prop.layerName);
 		//}
-		vk::ApplicationInfo vkAppInfo{"stbox", VK_VERSION_1_0, "stbox",
-		                              VK_VERSION_1_0, VK_API_VERSION_1_0};
+		vk::ApplicationInfo vkAppInfo{"stbox", VK_VERSION_1_1, "stbox",
+		                              VK_VERSION_1_1, VK_API_VERSION_1_1};
 
 		std::vector instanceEtensionNames{
 				VK_KHR_SURFACE_EXTENSION_NAME,
@@ -97,7 +97,7 @@ namespace tt{
 				                               nullptr, &debugReportCallback);
 				MY_LOG(ERROR) << "vkCreateDebugReportCallbackEXT";
 			}
-
+		//VULKAN_HPP_DEFAULT_DISPATCHER.vkGetPhysicalDeviceProperties2=vkGetPhysicalDeviceProperties2;
 
 		//vkCreateDebugReportCallbackEXT((VkInstance)ins.get(),(VkDebugReportCallbackCreateInfoEXT*)&debugReportInfo, nullptr,&debugReportCallback);
 		//auto vkDestroyDebugReportCallbackEXT = static_cast<PFN_vkDestroyDebugReportCallbackEXT>(ins->getProcAddr("vkDestroyDebugReportCallbackEXT"));

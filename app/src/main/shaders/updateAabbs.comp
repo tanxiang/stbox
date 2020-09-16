@@ -42,7 +42,7 @@ layout(set = 0, binding = 2)readonly buffer b3ShapeAabb
     aabb bb[];
 } localShapeAABB;//_39
 
-layout(set = 0, binding = 3) buffer B3Aabb
+layout(set = 0, binding = 3)buffer B3Aabb
 {
     aabb bb[];
 } AABB;//_40
@@ -160,6 +160,7 @@ void outCube(vec3 min,vec3 max,vec4 pos,vec4 quat,uint vindex){
         cmdCubeinfo[0].insOff=0;
     }
 }
+
 void main()
 {
     uint vindex = gl_GlobalInvocationID.x;

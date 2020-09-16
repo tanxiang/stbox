@@ -1,0 +1,78 @@
+#version 450
+layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;
+
+struct aabb//_17
+{
+    vec4 min;
+    vec4 max;
+};
+
+layout(set = 0, binding = 0)readonly buffer lfAABB
+{
+    aabb lfbb[];
+} ;//_39
+
+layout(set = 0, binding = 1)buffer nodeAABB
+{
+    aabb ndbb[];
+} ;//_40
+
+layout(set = 0, binding = 2)buffer lfMap
+{
+    uint fIndex;
+};//_40
+
+layout(set = 0, binding = 3)buffer nodeMap
+{
+    uvec4 index;//fa index lc index rc index
+};//_40
+
+
+struct cmdInfo{
+    uint vetCont;
+    uint insCont;
+    uint vetOff;
+    uint insOff;
+};
+
+
+uint interleaveBits(uint x)
+{
+//........ ........ ......12 3456789A	//x
+//....1..2 ..3..4.. 5..6..7. .8..9..A	//x after interleaving bits
+
+//......12 3456789A ......12 3456789A	//x ^ (x << 16)
+//11111111 ........ ........ 11111111	//0x FF 00 00 FF
+//......12 ........ ........ 3456789A	//x = (x ^ (x << 16)) & 0xFF0000FF;
+
+//......12 ........ 3456789A 3456789A	//x ^ (x <<  8)
+//......11 ........ 1111.... ....1111	//0x 03 00 F0 0F
+//......12 ........ 3456.... ....789A	//x = (x ^ (x <<  8)) & 0x0300F00F;
+
+//..12..12 ....3456 3456.... 789A789A	//x ^ (x <<  4)
+//......11 ....11.. ..11.... 11....11	//0x 03 0C 30 C3
+//......12 ....34.. ..56.... 78....9A	//x = (x ^ (x <<  4)) & 0x030C30C3;
+
+//....1212 ..3434.. 5656..78 78..9A9A	//x ^ (x <<  2)
+//....1..1 ..1..1.. 1..1..1. .1..1..1	//0x 09 24 92 49
+//....1..2 ..3..4.. 5..6..7. .8..9..A	//x = (x ^ (x <<  2)) & 0x09249249;
+
+//........ ........ ......11 11111111	//0x000003FF
+    x &= 0x000003FFu;		//Clear all bits above bit 10
+
+    x = (x ^ (x << 16)) & 0xFF0000FFu;
+    x = (x ^ (x <<  8)) & 0x0300F00Fu;
+    x = (x ^ (x <<  4)) & 0x030C30C3u;
+    x = (x ^ (x <<  2)) & 0x09249249u;
+    return x;
+}
+
+uint getMortonCode(uint x, uint y, uint z)
+{
+    return interleaveBits(x) << 0 | interleaveBits(y) << 1 | interleaveBits(z) << 2;
+}
+
+void main()
+{
+
+}

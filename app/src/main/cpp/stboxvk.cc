@@ -30,8 +30,8 @@ namespace tt {
 	}
 
 	void stboxvk::initDevice(android_app *app, tt::Instance &instance,
-	                            vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR surface) {
-		devices = std::make_unique<Device>(physicalDevice, surface,app);//reconnect
+	                         vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR surface) {
+		devices = std::make_unique<Device>(physicalDevice, surface, app);//reconnect
 	}
 
 	void stboxvk::initWindow(android_app *app, tt::Instance &instance) {
@@ -43,6 +43,12 @@ namespace tt {
 			auto phyDevices = instance->enumeratePhysicalDevices()[0];
 			auto phyFeatures = phyDevices.getFeatures();
 			MY_LOG(INFO) << "geometryShader : " << phyFeatures.geometryShader;
+
+			auto Properties2 = phyDevices.getProperties2<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceSubgroupProperties>(
+					instance.extProcDispatch());
+			auto subgroupProperties = Properties2.get<vk::PhysicalDeviceSubgroupProperties>();
+			MY_LOG(INFO) << vk::to_string(subgroupProperties.supportedOperations)
+			             << subgroupProperties.quadOperationsInAllStages;
 			initDevice(app, instance, phyDevices, surface.get());
 		}
 

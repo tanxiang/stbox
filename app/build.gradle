@@ -22,7 +22,7 @@ android {
             //abiFilter "x86"
         }
         shaders {
-            glslcArgs.addAll(['-c'])
+            glslcArgs.addAll(['-c','--target-spv=spv1.3'])
         }
     }
 
