@@ -48,7 +48,7 @@ namespace tt {
 					instance.extProcDispatch());
 			auto subgroupProperties = Properties2.get<vk::PhysicalDeviceSubgroupProperties>();
 			MY_LOG(INFO) << vk::to_string(subgroupProperties.supportedOperations)
-			             << subgroupProperties.quadOperationsInAllStages;
+			             << " size: " <<subgroupProperties.subgroupSize;
 			initDevice(app, instance, phyDevices, surface.get());
 		}
 
