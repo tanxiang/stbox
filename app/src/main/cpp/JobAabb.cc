@@ -10,7 +10,7 @@ struct rigidBodyData {
 	std::array<float, 4> pos;//_m0;
 	glm::quat quat;//_m1;
 	std::array<float, 4> linVal;//_m2;
-	std::array<float, 4> argVal;
+	glm::quat argVal;
 	__uint32_t collidableIdx;
 	float invMass;
 	float restituitionCoeff;
@@ -19,6 +19,15 @@ struct rigidBodyData {
 struct aabb {
 	std::array<float, 4> min;
 	std::array<float, 4> max;
+};
+
+struct Invariant{
+	float Mass;
+	float restituitionCoeff;
+	float frictionCoeff;
+	float otCoeff;
+	glm::mat3 Inertia;
+	aabb LocalAabb;
 };
 struct collidable {
 	int m_bvhIndex;
