@@ -21,7 +21,7 @@ struct aabb {
 	std::array<float, 4> max;
 };
 
-struct Invariant{
+struct Invariant {
 	float Mass;
 	float restituitionCoeff;
 	float frictionCoeff;
@@ -51,8 +51,54 @@ namespace tt {
 							3
 					)
 			},
-			//renderPass{createRenderpass(device)},
-			compPipeline{
+			compMprPipeline{
+					device.get(),
+					descriptorPool.get(),
+					std::array{
+							[&](vk::PipelineLayout pipelineLayout) {
+								return createComputePipeline(
+										device,
+										app,
+										pipelineLayout);
+							}
+					},{},
+					std::array{
+							vk::DescriptorSetLayoutBinding{
+									0, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									1, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									2, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									3, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									4, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									5, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									6, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									7, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							}
+
+					}
+			},
+			/*compPipeline{
 					device.get(),
 					descriptorPool.get(),
 					[&](vk::PipelineLayout pipelineLayout) {
@@ -87,8 +133,8 @@ namespace tt {
 									1, vk::ShaderStageFlagBits::eCompute
 							},
 							vk::DescriptorSetLayoutBinding{
-								6, vk::DescriptorType::eStorageBuffer,
-										1, vk::ShaderStageFlagBits::eCompute
+									6, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
 							},
 							vk::DescriptorSetLayoutBinding{
 									7, vk::DescriptorType::eStorageBuffer,
@@ -96,7 +142,7 @@ namespace tt {
 							}
 
 					}
-			},
+			},*/
 			graphPipeline{
 					device.get(),
 					descriptorPool.get(),
@@ -174,46 +220,46 @@ namespace tt {
 				sizeof(glm::mat4));
 
 
-		auto  descriptors = bufferMemoryPart.arrayOfDescs();
+		auto descriptors = bufferMemoryPart.arrayOfDescs();
 
 		std::array writeDes{
 				vk::WriteDescriptorSet{
-						compPipeline.getDescriptorSet(), 0, 0, 1,
+						compMprPipeline.getDescriptorSet(), 0, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[0]
 				},
 				vk::WriteDescriptorSet{
-						compPipeline.getDescriptorSet(), 1, 0, 1,
+						compMprPipeline.getDescriptorSet(), 1, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[1]
 				},
 				vk::WriteDescriptorSet{
-						compPipeline.getDescriptorSet(), 2, 0, 1,
+						compMprPipeline.getDescriptorSet(), 2, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[2]
 				},
 				vk::WriteDescriptorSet{
-						compPipeline.getDescriptorSet(), 3, 0, 1,
+						compMprPipeline.getDescriptorSet(), 3, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[3]
 				},
 				vk::WriteDescriptorSet{
-						compPipeline.getDescriptorSet(), 4, 0, 1,
+						compMprPipeline.getDescriptorSet(), 4, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[4]
 				},
 				vk::WriteDescriptorSet{
-						compPipeline.getDescriptorSet(), 5, 0, 1,
+						compMprPipeline.getDescriptorSet(), 5, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[5]
 				},
 				vk::WriteDescriptorSet{
-						compPipeline.getDescriptorSet(), 6, 0, 1,
+						compMprPipeline.getDescriptorSet(), 6, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[6]
 				},
 				vk::WriteDescriptorSet{
-						compPipeline.getDescriptorSet(), 7, 0, 1,
+						compMprPipeline.getDescriptorSet(), 7, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[7]
 				},
@@ -253,13 +299,13 @@ namespace tt {
 							BarrierHostWrite, {});
 
 					commandBufferBeginHandle.bindPipeline(vk::PipelineBindPoint::eCompute,
-					                                      compPipeline.get());
+					                                      compMprPipeline.get());
 
 					commandBufferBeginHandle.bindDescriptorSets(
 							vk::PipelineBindPoint::eCompute,
-							compPipeline.layout(),
+							compMprPipeline.layout(),
 							0,
-							std::array{compPipeline.getDescriptorSet()},
+							std::array{compMprPipeline.getDescriptorSet()},
 							std::array{0u}
 					);
 

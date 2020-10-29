@@ -199,7 +199,7 @@ namespace tt {
 
 			std::copy_n(std::array{0.5f, 0.5f, 0.5f,}.begin(), 3, pushdata.begin() + 12);
 
-			cmdHandleRenderpassBegin.pushConstants(graphPipeline.getLayout(),
+			cmdHandleRenderpassBegin.pushConstants(graphPipeline.layout(),
 			                                       vk::ShaderStageFlagBits::eFragment, 0,
 			                                       sizeof(float) * pushdata.size(),
 			                                       pushdata.data()

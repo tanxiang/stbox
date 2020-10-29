@@ -16,7 +16,8 @@ namespace tt {
 
 	struct JobAabb: public JobBase{
 		vk::UniqueRenderPass renderPass;
-		PipelineResource compPipeline;
+		//PipelineResource compPipeline;
+		gpuProgram<2> compMprPipeline;
 		PipelineResource graphPipeline;
 		PipelineResource graphPipelineCube;
 
