@@ -74,11 +74,13 @@ namespace tt {
 			graphPipeline{
 					device->get(),
 					descriptorPool.get(),
-					[&](vk::PipelineLayout pipelineLayout) {
-						return createGraphsPipeline(
-								*device,
-								app,
-								pipelineLayout);
+					std::array{
+							[&](vk::PipelineLayout pipelineLayout) {
+								return createGraphsPipeline(
+										*device,
+										app,
+										pipelineLayout);
+							}
 					}, {},
 					std::array{
 							vk::DescriptorSetLayoutBinding{

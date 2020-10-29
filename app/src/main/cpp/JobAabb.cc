@@ -61,7 +61,7 @@ namespace tt {
 										app,
 										pipelineLayout);
 							}
-					},{},
+					}, {},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eStorageBuffer,
@@ -146,11 +146,13 @@ namespace tt {
 			graphPipeline{
 					device.get(),
 					descriptorPool.get(),
-					[&](vk::PipelineLayout pipelineLayout) {
-						return createGraphsPipeline(
-								device,
-								app,
-								pipelineLayout);
+					std::array{
+							[&](vk::PipelineLayout pipelineLayout) {
+								return createGraphsPipeline(
+										device,
+										app,
+										pipelineLayout);
+							}
 					}, {},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
@@ -162,11 +164,13 @@ namespace tt {
 			graphPipelineCube{
 					device.get(),
 					descriptorPool.get(),
-					[&](vk::PipelineLayout pipelineLayout) {
-						return createGraphsPipelineCube(
-								device,
-								app,
-								pipelineLayout);
+					std::array{
+							[&](vk::PipelineLayout pipelineLayout) {
+								return createGraphsPipelineCube(
+										device,
+										app,
+										pipelineLayout);
+							}
 					}, {},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
