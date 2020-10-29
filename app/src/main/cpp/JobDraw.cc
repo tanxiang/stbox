@@ -86,8 +86,10 @@ namespace tt {
 			graphPipeline{
 					device->get(),
 					descriptorPool.get(),
-					[&](vk::PipelineLayout pipelineLayout) {
-						return createPipeline(*device, app, pipelineLayout);
+					std::array{
+							[&](vk::PipelineLayout pipelineLayout) {
+								return createPipeline(*device, app, pipelineLayout);
+							}
 					},
 					{},//PushConst
 					std::array{
@@ -112,7 +114,7 @@ namespace tt {
 				Vertex{{-0.7, -0.5, 0.5, 1.0},
 				       {1.0,  1.0,  1.0, 1.0}},
 				Vertex{{0.0, 0.0, 0.0, 1.0},
-				       {0.0, 0.0,  0.0, 1.0}}};
+				       {0.0, 0.0, 0.0, 1.0}}};
 
 		bufferMemoryPart = device->createBufferPartsOnObjs(
 				vk::BufferUsageFlagBits::eStorageBuffer |

@@ -12,7 +12,7 @@
 namespace tt {
 	struct JobDraw : public JobBase{
 		vk::UniquePipeline createPipeline(tt::Device&,android_app* app,vk::PipelineLayout pipelineLayout);
-		PipelineResource graphPipeline;
+		gpuProgram<> graphPipeline;
 
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
 		auto getGraphisCmdBuffer(uint32_t index){

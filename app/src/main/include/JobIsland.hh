@@ -13,7 +13,7 @@
 namespace tt {
 	struct JobIsland: public JobBase {
 		std::vector<vk::UniqueCommandBuffer> gcmdBuffers;
-		PipelineResource graphPipeline;
+		gpuProgram<> graphPipeline;
 		Thread worker;
 		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 

@@ -16,8 +16,8 @@ namespace tt {
 		vk::UniqueRenderPass renderPass;
 		//vk::UniqueRenderPass createRenderpass(tt::Device &);
 
-		PipelineResource compPipeline;
-		PipelineResource graphPipeline;
+		gpuProgram<> compPipeline;
+		gpuProgram<> graphPipeline;
 		BufferMemoryWithParts<4> bufferMemoryPart;
 		BufferMemory outputMemory;
 		vk::UniqueCommandBuffer cCommandBuffer;

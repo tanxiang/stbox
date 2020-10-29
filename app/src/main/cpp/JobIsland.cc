@@ -66,7 +66,7 @@ namespace tt {
 		};
 
 
-		vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{{},3};
+		vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{{}, 3};
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
 		                                   pipelineVertexInputStateCreateInfo,
 		                                   pipelineLayout,
@@ -91,11 +91,13 @@ namespace tt {
 			graphPipeline{
 					device->get(),
 					descriptorPool.get(),
-					[&](vk::PipelineLayout pipelineLayout) {
-						return createGraphsPipeline(
-								*device,
-								app,
-								pipelineLayout);
+					std::array{
+							[&](vk::PipelineLayout pipelineLayout) {
+								return createGraphsPipeline(
+										*device,
+										app,
+										pipelineLayout);
+							}
 					},
 					std::array{
 							vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0,
