@@ -101,7 +101,7 @@ namespace tt {
 			graphPipeline{
 					device.get(),
 					descriptorPool.get(),
-					std::array<std::function<vk::UniquePipeline (vk::PipelineLayout pipelineLayout)>,2>{
+					/*std::array<std::function<vk::UniquePipeline (vk::PipelineLayout pipelineLayout)>,2>{
 							[&](vk::PipelineLayout pipelineLayout) {
 								return createGraphsPipeline(
 										device,
@@ -114,7 +114,19 @@ namespace tt {
 										app,
 										pipelineLayout);
 							}
-					}, {},
+					},*/
+					{},
+					[&](std::array<vk::UniquePipeline,2>& pipelines,vk::PipelineLayout pipelineLayout){
+						pipelines[0]=createGraphsPipeline(
+								device,
+								app,
+								pipelineLayout);
+						pipelines[1]=createGraphsPipelineCube(
+								device,
+								app,
+								pipelineLayout);
+
+					},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eUniformBuffer,

@@ -98,6 +98,21 @@ namespace tt {
 			}
 		}
 
+		template<typename ... Ts>
+		gpuProgram(vk::Device dev, vk::DescriptorPool desPool,
+		           vk::ArrayProxy<const vk::PushConstantRange> PushConstantRange,
+		           std::function<void(std::array<vk::UniquePipeline,pipeNum>&,vk::PipelineLayout)>func,
+		           const Ts &... objs)
+				: device{dev}, pool{desPool},
+				  descriptorSetLayouts{createDescriptorSetLayouts(objs...)},
+				  pipelineLayout{createPipelineLayout(PushConstantRange)}//,
+		//pipeline{func(pipelineLayout.get())}
+		{
+			createDescriptorSets();
+			//auto pipelineiter = pipeline.begin();
+			func(pipeline,pipelineLayout.get());
+		}
+
 		gpuProgram(gpuProgram &&) = default;
 	};
 }
