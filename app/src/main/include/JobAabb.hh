@@ -18,8 +18,7 @@ namespace tt {
 		vk::UniqueRenderPass renderPass;
 		//PipelineResource compPipeline;
 		gpuProgram<2> compMprPipeline;
-		gpuProgram<> graphPipeline;
-		gpuProgram<> graphPipelineCube;
+		gpuProgram<2> graphPipeline;
 
 		BufferMemoryWithParts<9> bufferMemoryPart;
 		//BufferMemory outputMemory;

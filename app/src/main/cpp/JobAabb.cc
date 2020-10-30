@@ -98,73 +98,16 @@ namespace tt {
 
 					}
 			},
-			/*compPipeline{
-					device.get(),
-					descriptorPool.get(),
-					[&](vk::PipelineLayout pipelineLayout) {
-						return createComputePipeline(
-								device,
-								app,
-								pipelineLayout);
-					}, {},
-					std::array{
-							vk::DescriptorSetLayoutBinding{
-									0, vk::DescriptorType::eStorageBuffer,
-									1, vk::ShaderStageFlagBits::eCompute
-							},
-							vk::DescriptorSetLayoutBinding{
-									1, vk::DescriptorType::eStorageBuffer,
-									1, vk::ShaderStageFlagBits::eCompute
-							},
-							vk::DescriptorSetLayoutBinding{
-									2, vk::DescriptorType::eStorageBuffer,
-									1, vk::ShaderStageFlagBits::eCompute
-							},
-							vk::DescriptorSetLayoutBinding{
-									3, vk::DescriptorType::eStorageBuffer,
-									1, vk::ShaderStageFlagBits::eCompute
-							},
-							vk::DescriptorSetLayoutBinding{
-									4, vk::DescriptorType::eStorageBuffer,
-									1, vk::ShaderStageFlagBits::eCompute
-							},
-							vk::DescriptorSetLayoutBinding{
-									5, vk::DescriptorType::eStorageBuffer,
-									1, vk::ShaderStageFlagBits::eCompute
-							},
-							vk::DescriptorSetLayoutBinding{
-									6, vk::DescriptorType::eStorageBuffer,
-									1, vk::ShaderStageFlagBits::eCompute
-							},
-							vk::DescriptorSetLayoutBinding{
-									7, vk::DescriptorType::eStorageBuffer,
-									1, vk::ShaderStageFlagBits::eCompute
-							}
-
-					}
-			},*/
 			graphPipeline{
 					device.get(),
 					descriptorPool.get(),
-					std::array{
+					std::array<std::function<vk::UniquePipeline (vk::PipelineLayout pipelineLayout)>,2>{
 							[&](vk::PipelineLayout pipelineLayout) {
 								return createGraphsPipeline(
 										device,
 										app,
 										pipelineLayout);
-							}
-					}, {},
-					std::array{
-							vk::DescriptorSetLayoutBinding{
-									0, vk::DescriptorType::eUniformBuffer,
-									1, vk::ShaderStageFlagBits::eGeometry
-							}
-					}
-			},
-			graphPipelineCube{
-					device.get(),
-					descriptorPool.get(),
-					std::array{
+							},
 							[&](vk::PipelineLayout pipelineLayout) {
 								return createGraphsPipelineCube(
 										device,
@@ -269,11 +212,6 @@ namespace tt {
 				},
 				vk::WriteDescriptorSet{
 						graphPipeline.getDescriptorSet(), 0, 0, 1,
-						vk::DescriptorType::eUniformBuffer,
-						nullptr, &descriptors[8]
-				},
-				vk::WriteDescriptorSet{
-						graphPipelineCube.getDescriptorSet(), 0, 0, 1,
 						vk::DescriptorType::eUniformBuffer,
 						nullptr, &descriptors[8]
 				}
@@ -580,14 +518,14 @@ namespace tt {
 
 		cmdHandleRenderpassBegin.bindPipeline(
 				vk::PipelineBindPoint::eGraphics,
-				graphPipelineCube.get());
+				graphPipeline.get(1));
 
-		cmdHandleRenderpassBegin.bindDescriptorSets(
-				vk::PipelineBindPoint::eGraphics,
-				graphPipelineCube.layout(), 0,
-				graphPipelineCube.getDescriptorSets(),
-				{}
-		);
+//		cmdHandleRenderpassBegin.bindDescriptorSets(
+//				vk::PipelineBindPoint::eGraphics,
+//				graphPipeline.layout(), 0,
+//				graphPipeline.getDescriptorSets(),
+//				{}
+//		);
 
 		cmdHandleRenderpassBegin.bindVertexBuffers(
 				0, {std::get<vk::UniqueBuffer>(bufferMemoryPart).get()},
