@@ -54,14 +54,14 @@ namespace tt {
 			compMprPipeline{
 					device.get(),
 					descriptorPool.get(),
-					std::array{
-							[&](vk::PipelineLayout pipelineLayout) {
-								return createComputePipeline(
-										device,
-										app,
-										pipelineLayout);
-							}
-					}, {},
+					{},
+					[&](std::array<vk::UniquePipeline, 2> &pipelines,
+					    vk::PipelineLayout pipelineLayout) {
+						pipelines[0] = createComputePipeline(
+								device,
+								app,
+								pipelineLayout);
+					},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
 									0, vk::DescriptorType::eStorageBuffer,
@@ -101,31 +101,13 @@ namespace tt {
 			graphPipeline{
 					device.get(),
 					descriptorPool.get(),
-					/*std::array<std::function<vk::UniquePipeline (vk::PipelineLayout pipelineLayout)>,2>{
-							[&](vk::PipelineLayout pipelineLayout) {
-								return createGraphsPipeline(
-										device,
-										app,
-										pipelineLayout);
-							},
-							[&](vk::PipelineLayout pipelineLayout) {
-								return createGraphsPipelineCube(
-										device,
-										app,
-										pipelineLayout);
-							}
-					},*/
 					{},
-					[&](std::array<vk::UniquePipeline,2>& pipelines,vk::PipelineLayout pipelineLayout){
-						pipelines[0]=createGraphsPipeline(
-								device,
-								app,
-								pipelineLayout);
-						pipelines[1]=createGraphsPipelineCube(
-								device,
-								app,
-								pipelineLayout);
-
+					[&](std::array<vk::UniquePipeline, 2> &pipelines,
+					    vk::PipelineLayout pipelineLayout) {
+						createGraphsPipelines(pipelines,
+						                      device,
+						                      app,
+						                      pipelineLayout);
 					},
 					std::array{
 							vk::DescriptorSetLayoutBinding{
@@ -321,18 +303,14 @@ namespace tt {
 		device.waitFence(renderFence.get());*/
 	}
 
-
-	//vk::UniqueRenderPass JobAabb
-	//::createRenderpass(tt::Device &) {
-	//	return vk::UniqueRenderPass();
-	//}
-
-	vk::UniquePipeline JobAabb::createGraphsPipeline(tt::Device &device, android_app *app,
-	                                                 vk::PipelineLayout pipelineLayout) {
-
+	void
+	JobAabb::createGraphsPipelines(std::array<vk::UniquePipeline, 2> &pipelines, Device &device,
+	                               android_app *app, vk::PipelineLayout pipelineLayout) {
 		auto vertShaderModule = device.loadShaderFromAssets("shaders/copy0.vert.spv", app);
 		auto gemoShaderModule = device.loadShaderFromAssets("shaders/aabb.geom.spv", app);
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/indir.frag.spv", app);
+		auto gemocubeShaderModule = device.loadShaderFromAssets("shaders/cube.geom.spv", app);
+
 		std::array pipelineShaderStageCreateInfos{
 				vk::PipelineShaderStageCreateInfo{
 						{},
@@ -371,66 +349,26 @@ namespace tt {
 				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
 		};
 
-		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
-		                                   pipelineVertexInputStateCreateInfo,
-		                                   pipelineLayout,
-		                                   pipelineCache.get(),
-		                                   device.renderPass.get(),
-		                                   vk::PrimitiveTopology::eTriangleList,
-		                                   vk::PolygonMode::eLine);
-	}
+		pipelines[0] = device.createGraphsPipeline(pipelineShaderStageCreateInfos,
+		                                           pipelineVertexInputStateCreateInfo,
+		                                           pipelineLayout,
+		                                           pipelineCache.get(),
+		                                           device.renderPass.get(),
+		                                           vk::PrimitiveTopology::eTriangleList,
+		                                           vk::PolygonMode::eLine);
 
-	vk::UniquePipeline JobAabb::createGraphsPipelineCube(tt::Device &device, android_app *app,
-	                                                     vk::PipelineLayout pipelineLayout) {
-
-		auto vertShaderModule = device.loadShaderFromAssets("shaders/copy0.vert.spv", app);
-		auto gemoShaderModule = device.loadShaderFromAssets("shaders/cube.geom.spv", app);
-		auto fargShaderModule = device.loadShaderFromAssets("shaders/indir.frag.spv", app);
-		std::array pipelineShaderStageCreateInfos{
-				vk::PipelineShaderStageCreateInfo{
-						{},
-						vk::ShaderStageFlagBits::eVertex,
-						vertShaderModule.get(),
-						"main"
-				},
-				vk::PipelineShaderStageCreateInfo{
-						{},
-						vk::ShaderStageFlagBits::eGeometry,
-						gemoShaderModule.get(),
-						"main"
-				},
-				vk::PipelineShaderStageCreateInfo{
-						{},
-						vk::ShaderStageFlagBits::eFragment,
-						fargShaderModule.get(),
-						"main"
-				}
-		};
-
-		std::array vertexInputBindingDescriptions{
-				vk::VertexInputBindingDescription{
-						0, sizeof(float) * 4,
-						vk::VertexInputRate::eVertex
-				}
-		};
-		std::array vertexInputAttributeDescriptions{
-				vk::VertexInputAttributeDescription{
-						0, 0, vk::Format::eR32G32B32A32Sfloat, 0
-				}
-		};
-
-		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{
-				{}, vertexInputBindingDescriptions.size(), vertexInputBindingDescriptions.data(),
-				vertexInputAttributeDescriptions.size(), vertexInputAttributeDescriptions.data()
-		};
-		//return vk::UniquePipeline{};
-
-		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
-		                                   pipelineVertexInputStateCreateInfo,
-		                                   pipelineLayout,
-		                                   pipelineCache.get(),
-		                                   device.renderPass.get(),
-		                                   vk::PrimitiveTopology::eLineListWithAdjacency);
+		pipelineShaderStageCreateInfos[1] = vk::PipelineShaderStageCreateInfo{
+				{},
+				vk::ShaderStageFlagBits::eGeometry,
+				gemocubeShaderModule.get(),
+				"main"
+		},
+				pipelines[1] = device.createGraphsPipeline(pipelineShaderStageCreateInfos,
+				                                           pipelineVertexInputStateCreateInfo,
+				                                           pipelineLayout,
+				                                           pipelineCache.get(),
+				                                           device.renderPass.get(),
+				                                           vk::PrimitiveTopology::eLineListWithAdjacency);
 	}
 
 	vk::UniquePipeline JobAabb::createComputePipeline(tt::Device &device, android_app *app,
@@ -582,6 +520,4 @@ namespace tt {
 				0,
 				createDescriptorBufferInfoTuple(bufferMemoryPart, 0).offset);
 	}
-
-
 }

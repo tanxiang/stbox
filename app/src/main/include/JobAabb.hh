@@ -31,8 +31,10 @@ namespace tt {
 		auto getComputerCmdBuffer(){
 			return *cCmdbuffers[0];
 		}
-		vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
-		vk::UniquePipeline createGraphsPipelineCube(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
+		//vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
+		//vk::UniquePipeline createGraphsPipelineCube(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
+		void createGraphsPipelines(std::array<vk::UniquePipeline,2>& pipelines,tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
+
 		vk::UniquePipeline createComputePipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 
 		JobAabb(android_app *app,tt::Device &device);

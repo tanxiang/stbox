@@ -106,10 +106,8 @@ namespace tt {
 				: device{dev}, pool{desPool},
 				  descriptorSetLayouts{createDescriptorSetLayouts(objs...)},
 				  pipelineLayout{createPipelineLayout(PushConstantRange)}//,
-		//pipeline{func(pipelineLayout.get())}
 		{
 			createDescriptorSets();
-			//auto pipelineiter = pipeline.begin();
 			func(pipeline,pipelineLayout.get());
 		}
 
