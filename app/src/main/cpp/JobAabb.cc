@@ -309,7 +309,6 @@ namespace tt {
 		auto vertShaderModule = device.loadShaderFromAssets("shaders/copy0.vert.spv", app);
 		auto gemoShaderModule = device.loadShaderFromAssets("shaders/aabb.geom.spv", app);
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/indir.frag.spv", app);
-		auto gemocubeShaderModule = device.loadShaderFromAssets("shaders/cube.geom.spv", app);
 
 		std::array pipelineShaderStageCreateInfos{
 				vk::PipelineShaderStageCreateInfo{
@@ -356,6 +355,8 @@ namespace tt {
 		                                           device.renderPass.get(),
 		                                           vk::PrimitiveTopology::eTriangleList,
 		                                           vk::PolygonMode::eLine);
+
+		auto gemocubeShaderModule = device.loadShaderFromAssets("shaders/cube.geom.spv", app);
 
 		pipelineShaderStageCreateInfos[1] = vk::PipelineShaderStageCreateInfo{
 				{},
