@@ -290,17 +290,6 @@ namespace tt {
 
 				}, {}, vk::CommandBufferLevel::eSecondary
 		);
-		/*
-		vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eTransfer;
-		std::array submitInfos{
-				vk::SubmitInfo{
-						0, nullptr, &pipelineStageFlags,
-						1, &cmdbuffers[0].get(),
-				}
-		};
-		auto renderFence = device->createFenceUnique(vk::FenceCreateInfo{});
-		device.graphsQueue().submit(submitInfos, renderFence.get());
-		device.waitFence(renderFence.get());*/
 	}
 
 	void
@@ -363,13 +352,13 @@ namespace tt {
 				vk::ShaderStageFlagBits::eGeometry,
 				gemocubeShaderModule.get(),
 				"main"
-		},
-				pipelines[1] = device.createGraphsPipeline(pipelineShaderStageCreateInfos,
-				                                           pipelineVertexInputStateCreateInfo,
-				                                           pipelineLayout,
-				                                           pipelineCache.get(),
-				                                           device.renderPass.get(),
-				                                           vk::PrimitiveTopology::eLineListWithAdjacency);
+		};
+		pipelines[1] = device.createGraphsPipeline(pipelineShaderStageCreateInfos,
+		                                           pipelineVertexInputStateCreateInfo,
+		                                           pipelineLayout,
+		                                           pipelineCache.get(),
+		                                           device.renderPass.get(),
+		                                           vk::PrimitiveTopology::eLineListWithAdjacency);
 	}
 
 	vk::UniquePipeline JobAabb::createComputePipeline(tt::Device &device, android_app *app,
