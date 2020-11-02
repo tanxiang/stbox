@@ -55,9 +55,10 @@ namespace tt {
 					descriptorSetLayouts.data(),
 			};
 			device.allocateDescriptorSets(
-					&descriptorSetAllocateInfo,descriptorSets.data()
+					&descriptorSetAllocateInfo, descriptorSets.data()
 			);
 		}
+
 	public:
 
 		auto &getDescriptorSets() {
@@ -82,34 +83,36 @@ namespace tt {
 			device.freeDescriptorSets(pool, descriptorSets);
 		}
 
-		template<typename Funcs, typename ... Ts>
-		gpuProgram(vk::Device dev, vk::DescriptorPool desPool, Funcs funcs,
-		           vk::ArrayProxy<const vk::PushConstantRange> PushConstantRange,
-		           const Ts &... objs)
-				: device{dev}, pool{desPool},
-				  descriptorSetLayouts{createDescriptorSetLayouts(objs...)},
-				  pipelineLayout{createPipelineLayout(PushConstantRange)}//,
-				  //pipeline{func(pipelineLayout.get())}
-				  {
-			createDescriptorSets();
-			auto pipelineiter = pipeline.begin();
-			for(auto& func:funcs){
-				*pipelineiter++ = func(pipelineLayout.get());
-			}
-		}
 
 		template<typename ... Ts>
 		gpuProgram(vk::Device dev, vk::DescriptorPool desPool,
 		           vk::ArrayProxy<const vk::PushConstantRange> PushConstantRange,
-		           std::function<void(std::array<vk::UniquePipeline,pipeNum>&,vk::PipelineLayout)>func,
+		           std::function<void(std::array<vk::UniquePipeline, pipeNum> &,
+		                              vk::PipelineLayout)> func,
 		           const Ts &... objs)
 				: device{dev}, pool{desPool},
 				  descriptorSetLayouts{createDescriptorSetLayouts(objs...)},
 				  pipelineLayout{createPipelineLayout(PushConstantRange)}//,
 		{
 			createDescriptorSets();
-			func(pipeline,pipelineLayout.get());
+			func(pipeline, pipelineLayout.get());
 		}
+
+
+		template<typename Funcs, typename ... Ts>
+		gpuProgram(vk::Device dev, vk::DescriptorPool desPool, Funcs funcs,
+		           vk::ArrayProxy<const vk::PushConstantRange> PushConstantRange,
+		           const Ts &... objs)
+				:gpuProgram{dev, desPool, PushConstantRange,
+				            [&](std::array<vk::UniquePipeline, pipeNum> &rpipelines,
+				                vk::PipelineLayout rpipelineLayout) {
+					            auto pipelineiter = rpipelines.begin();
+					            for (auto &func:funcs) {
+						            *pipelineiter++ = func(rpipelineLayout);
+					            }
+				            },
+				            objs...} {}
+
 
 		gpuProgram(gpuProgram &&) = default;
 	};
