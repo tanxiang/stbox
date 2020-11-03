@@ -57,7 +57,8 @@ namespace tt {
 					{},
 					[&](std::array<vk::UniquePipeline, 2> &pipelines,
 					    vk::PipelineLayout pipelineLayout) {
-						pipelines[0] = createComputePipeline(
+						createComputePipeline(
+								pipelines,
 								device,
 								app,
 								pipelineLayout);
@@ -361,7 +362,7 @@ namespace tt {
 		                                           vk::PrimitiveTopology::eLineListWithAdjacency);
 	}
 
-	vk::UniquePipeline JobAabb::createComputePipeline(tt::Device &device, android_app *app,
+	void JobAabb::createComputePipeline(std::array<vk::UniquePipeline,2>& pipelines,tt::Device &device, android_app *app,
 	                                                  vk::PipelineLayout pipelineLayout) {
 		auto compShaderModule = device.loadShaderFromAssets("shaders/updateAabbs.comp.spv", app);
 
@@ -405,7 +406,7 @@ namespace tt {
 				pipelineLayout
 		};
 
-		return device->createComputePipelineUnique(pipelineCache.get(), computePipelineCreateInfo);
+		pipelines[0]=device->createComputePipelineUnique(pipelineCache.get(), computePipelineCreateInfo);
 	}
 
 	void JobAabb::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
