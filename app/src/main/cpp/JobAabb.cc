@@ -407,6 +407,13 @@ namespace tt {
 		};
 
 		pipelines[0]=device->createComputePipelineUnique(pipelineCache.get(), computePipelineCreateInfo);
+
+		auto compMprShaderModule = device.loadShaderFromAssets("shaders/mpr.comp.spv", app);
+
+		shaderStageCreateInfo.module = compMprShaderModule.get();
+
+		pipelines[1]=device->createComputePipelineUnique(pipelineCache.get(), computePipelineCreateInfo);
+
 	}
 
 	void JobAabb::buildCmdBuffer(tt::Window &swapchain, vk::RenderPass renderPass) {
