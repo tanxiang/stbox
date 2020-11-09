@@ -45,10 +45,10 @@ namespace tt {
 											vk::DescriptorType::eUniformBuffer, 2
 									},
 									vk::DescriptorPoolSize{
-											vk::DescriptorType::eStorageBuffer, 8
+											vk::DescriptorType::eStorageBuffer, 12
 									}
 							},
-							3
+							4
 					)
 			},
 			compMprPipeline{
@@ -97,6 +97,23 @@ namespace tt {
 									1, vk::ShaderStageFlagBits::eCompute
 							}
 
+					}, std::array{
+							vk::DescriptorSetLayoutBinding{
+									0, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									1, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									2, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									3, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							},
 					}
 			},
 			graphPipeline{
@@ -186,22 +203,22 @@ namespace tt {
 						nullptr, &descriptors[3]
 				},
 				vk::WriteDescriptorSet{
-						compMprPipeline.getDescriptorSet(), 4, 0, 1,
+						compMprPipeline.getDescriptorSet(1), 0, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[4]
 				},
 				vk::WriteDescriptorSet{
-						compMprPipeline.getDescriptorSet(), 5, 0, 1,
+						compMprPipeline.getDescriptorSet(1), 1, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[5]
 				},
 				vk::WriteDescriptorSet{
-						compMprPipeline.getDescriptorSet(), 6, 0, 1,
+						compMprPipeline.getDescriptorSet(1), 2, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[6]
 				},
 				vk::WriteDescriptorSet{
-						compMprPipeline.getDescriptorSet(), 7, 0, 1,
+						compMprPipeline.getDescriptorSet(1), 3, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[7]
 				},
@@ -242,7 +259,7 @@ namespace tt {
 							vk::PipelineBindPoint::eCompute,
 							compMprPipeline.layout(),
 							0,
-							std::array{compMprPipeline.getDescriptorSet()},
+							compMprPipeline.getDescriptorSets(),
 							std::array{0u}
 					);
 
@@ -362,8 +379,10 @@ namespace tt {
 		                                           vk::PrimitiveTopology::eLineListWithAdjacency);
 	}
 
-	void JobAabb::createComputePipeline(std::array<vk::UniquePipeline,2>& pipelines,tt::Device &device, android_app *app,
-	                                                  vk::PipelineLayout pipelineLayout) {
+	void
+	JobAabb::createComputePipeline(std::array<vk::UniquePipeline, 2> &pipelines, tt::Device &device,
+	                               android_app *app,
+	                               vk::PipelineLayout pipelineLayout) {
 		auto compShaderModule = device.loadShaderFromAssets("shaders/updateAabbs.comp.spv", app);
 
 		std::array specializationMapEntrys{
@@ -406,13 +425,15 @@ namespace tt {
 				pipelineLayout
 		};
 
-		pipelines[0]=device->createComputePipelineUnique(pipelineCache.get(), computePipelineCreateInfo);
+		pipelines[0] = device->createComputePipelineUnique(pipelineCache.get(),
+		                                                   computePipelineCreateInfo);
 
 		auto compMprShaderModule = device.loadShaderFromAssets("shaders/mpr.comp.spv", app);
 
 		shaderStageCreateInfo.module = compMprShaderModule.get();
 
-		pipelines[1]=device->createComputePipelineUnique(pipelineCache.get(), computePipelineCreateInfo);
+		pipelines[1] = device->createComputePipelineUnique(pipelineCache.get(),
+		                                                   computePipelineCreateInfo);
 
 	}
 

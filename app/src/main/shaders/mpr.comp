@@ -2,7 +2,7 @@
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-struct b3RigidBodyData
+struct RigidBodyData
 {
     vec4 pos;//_m0;
     vec4 quat;//_m1;
@@ -14,7 +14,6 @@ struct b3RigidBodyData
 struct Invariant
 {
     vec4 invMass_restituitionCoeff_frictionCoeff;//collidableIdx_invMass_restituitionCoeff_frictionCoeff;
-
     mat4 pos_quat_lin_arg;
 };
 
@@ -35,6 +34,19 @@ struct MprSimplex{
     MprSupport Support[4];
 };
 
+struct ioInfo
+{
+    vec4 point;
+};
+
+struct cmdInfo{
+    uint vetCont;
+    uint insCont;
+    uint vetOff;
+    uint insOff;
+};
+
+
 vec3 qtransform(vec4 q, vec3 v){
     return v + 2.0*cross(q.xyz, cross(q.xyz, v) + q.w*v);
 }
@@ -44,10 +56,33 @@ vec3 qrtransform(vec4 q, vec3 v){
 }
 
 
-layout(set = 0, binding = 0)readonly buffer b3RigidBodyDatas
+layout(set = 0, binding = 0)readonly buffer RigidBodyDatas
 {
-    b3RigidBodyData BodyDatas[];
+    RigidBodyData BodyDatas[];
 };
+
+layout(set = 0, binding = 1)readonly buffer Collidables
+{
+    ivec4 Collidable[];
+} ;
+
+layout(set = 0, binding = 2)readonly buffer ShapeAabb
+{
+    aabb bb[];
+} localShapeAABB;//_39
+
+layout(set = 0, binding = 3)buffer Aabb
+{
+    aabb bb[];
+} AABB;//_40
+
+layout(set = 0,binding = 4) writeonly buffer outPos { ioInfo outinfo[]; };
+
+layout(set = 0,binding = 5) writeonly buffer outCmd { cmdInfo cmdinfo[]; };
+
+layout(set = 0,binding = 6) writeonly buffer outPosCube { ioInfo outCubeinfo[];};
+
+layout(set = 0,binding = 7) writeonly buffer outCmdCube { cmdInfo cmdCubeinfo[];};
 
 layout(set = 0, binding = 1)readonly buffer bodyInvariants
 {
@@ -59,18 +94,9 @@ layout(set = 0, binding = 1)readonly buffer pairs
     ivec4 pair[];
 };
 
-layout(set = 0, binding = 2)readonly buffer b3ShapeAabb
-{
-    aabb bb[];
-} localShapeAABB;//_39
-
-layout(set = 0, binding = 3)buffer B3Aabb
-{
-    aabb bb[];
-} AABB;//_40
 
 vec3 SupportPoint(uint bodyIndex, vec3 dir){
-    b3RigidBodyData bodyData = BodyDatas[bodyIndex];
+    RigidBodyData bodyData = BodyDatas[bodyIndex];
     vec3 dirq = qtransform(bodyData.quat, dir);
     vec3 max, min;
     vec3 supq = vec3(dirq.x>0?max.x:min.x, dirq.y>0?max.y:min.y, dirq.z>0?max.z:min.z);
@@ -141,13 +167,14 @@ int mprPenetration(uint pairIdex) {
             if (dot(vc, Simplex.Support[0].v.xyz)>0){
                 return 1;
             }
-            else{
+            else {
                 v1 = v3;//
             }
-        }else{
+        } else {
             v2 = v3;//
         }
     } while (true);
+    return 0;
 }
 
 void main()

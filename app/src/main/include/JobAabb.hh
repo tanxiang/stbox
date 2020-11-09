@@ -17,7 +17,7 @@ namespace tt {
 	struct JobAabb: public JobBase{
 		vk::UniqueRenderPass renderPass;
 		//PipelineResource compPipeline;
-		gpuProgram<2> compMprPipeline;
+		gpuProgram<2,2,2> compMprPipeline;
 		gpuProgram<2> graphPipeline;
 
 		BufferMemoryWithParts<9> bufferMemoryPart;

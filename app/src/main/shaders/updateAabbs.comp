@@ -10,16 +10,28 @@ struct b3RigidBodyData
     ivec4 collidableIdx_invMass_restituitionCoeff_frictionCoeff;
 };
 
-struct b3RigidBodyDataArg
+struct Invariant
 {
-    mat4 pos_quat_lin_arg;
     vec4 collidableIdx_invMass_restituitionCoeff_frictionCoeff;
+    mat4 pos_quat_lin_arg;
 };
 
 struct aabb//_17
 {
     vec4 min;
     vec4 max;
+};
+
+struct ioInfo
+{
+    vec4 point;
+};
+
+struct cmdInfo{
+    uint vetCont;
+    uint insCont;
+    uint vetOff;
+    uint insOff;
 };
 
 layout(set = 0, binding = 0)readonly buffer b3RigidBodyDatas
@@ -47,25 +59,13 @@ layout(set = 0, binding = 3)buffer B3Aabb
     aabb bb[];
 } AABB;//_40
 
-struct ioInfo
-{
-    vec4 point;
-};
+layout(set = 1,binding = 0) writeonly buffer outPos { ioInfo outinfo[]; };
 
-struct cmdInfo{
-    uint vetCont;
-    uint insCont;
-    uint vetOff;
-    uint insOff;
-};
+layout(set = 1,binding = 1) writeonly buffer outCmd { cmdInfo cmdinfo[]; };
 
-layout(set = 0,binding = 4) writeonly buffer outPos { ioInfo outinfo[]; };
+layout(set = 1,binding = 2) writeonly buffer outPosCube { ioInfo outCubeinfo[];};
 
-layout(set = 0,binding = 5) writeonly buffer outCmd { cmdInfo cmdinfo[]; };
-
-layout(set = 0,binding = 6) writeonly buffer outPosCube { ioInfo outCubeinfo[];};
-
-layout(set = 0,binding = 7) writeonly buffer outCmdCube { cmdInfo cmdCubeinfo[];};
+layout(set = 1,binding = 3) writeonly buffer outCmdCube { cmdInfo cmdCubeinfo[];};
 
 layout(push_constant, std430) uniform flags_push
 {
