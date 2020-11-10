@@ -12,16 +12,14 @@ struct rigidBodyData {
 	std::array<float, 4> linVal;//_m2;
 	glm::quat argVal;
 	__uint32_t collidableIdx;
-	float invMass;
-	float restituitionCoeff;
-	float frictionCoeff;
+	__uint32_t invMassIdx;
 };
 struct aabb {
 	std::array<float, 4> min;
 	std::array<float, 4> max;
 };
 
-struct Invariant {
+struct invariant {
 	float Mass;
 	float restituitionCoeff;
 	float frictionCoeff;
@@ -147,8 +145,12 @@ namespace tt {
 		std::array RigidBody{
 				rigidBodyData{
 						{0.0f, 0.3f, 0.0f, 0.0f},
-						rquat, {}, {}, 0, {}
+						rquat, {}, {}, 0, 0
 				},
+				rigidBodyData{
+						{0.1f, 0.1f, -0.4f, 0.0f},
+						rquat, {}, {}, 0, 0
+				}
 		};
 		//MY_LOG(INFO)<<"<<quat0[0]<<"<<quat0[0]<<':'<<quat0[1]<<':'<<quat0[2]<<':'<<quat0[3];
 		std::array Collidables{

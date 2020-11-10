@@ -71,28 +71,34 @@ layout(set = 0, binding = 2)readonly buffer ShapeAabb
     aabb bb[];
 } localShapeAABB;//_39
 
-layout(set = 0, binding = 3)buffer Aabb
+layout(set = 0, binding = 3)readonly buffer Aabb
 {
     aabb bb[];
 } AABB;//_40
 
-layout(set = 0,binding = 4) writeonly buffer outPos { ioInfo outinfo[]; };
+layout(set = 0, binding = 4)readonly buffer pairs
+{
+    ivec4 pair[];
+};
 
-layout(set = 0,binding = 5) writeonly buffer outCmd { cmdInfo cmdinfo[]; };
-
-layout(set = 0,binding = 6) writeonly buffer outPosCube { ioInfo outCubeinfo[];};
-
-layout(set = 0,binding = 7) writeonly buffer outCmdCube { cmdInfo cmdCubeinfo[];};
+layout(set = 0, binding = 5)buffer outBdatas
+{
+    ivec4 outBdata[];
+};
 
 layout(set = 0, binding = 1)readonly buffer bodyInvariants
 {
     Invariant bodyInvariant[];
 };
 
-layout(set = 0, binding = 1)readonly buffer pairs
-{
-    ivec4 pair[];
-};
+
+layout(set = 1,binding = 0) writeonly buffer outPos { ioInfo outinfo[]; };
+
+layout(set = 1,binding = 1) writeonly buffer outCmd { cmdInfo cmdinfo[]; };
+
+layout(set = 1,binding = 2) writeonly buffer outPosCube { ioInfo outCubeinfo[];};
+
+layout(set = 1,binding = 3) writeonly buffer outCmdCube { cmdInfo cmdCubeinfo[];};
 
 
 vec3 SupportPoint(uint bodyIndex, vec3 dir){

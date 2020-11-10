@@ -54,10 +54,15 @@ layout(set = 0, binding = 2)readonly buffer b3ShapeAabb
     aabb bb[];
 } localShapeAABB;//_39
 
-layout(set = 0, binding = 3)buffer B3Aabb
+layout(set = 0, binding = 3)writeonly buffer B3Aabb
 {
     aabb bb[];
 } AABB;//_40
+
+layout(set = 0, binding = 4)readonly buffer pairs
+{
+    ivec4 pair[];
+};
 
 layout(set = 1,binding = 0) writeonly buffer outPos { ioInfo outinfo[]; };
 
@@ -123,7 +128,6 @@ void outAabb(vec3 min,vec3 max,vec4 quat,uint vindex){
 
     outinfo[vindex].point=vec4(min,1.0);
     //outinfo[vindex].color=vec4(0.0,1.0,0.0,1.0);
-
     outinfo[vindex+1].point=vec4(max,1.0);
     //outinfo[vindex+1].color=vec4(1.0,1.0,0.0,1.0);
 
