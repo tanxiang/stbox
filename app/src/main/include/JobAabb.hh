@@ -20,7 +20,7 @@ namespace tt {
 		gpuProgram<2,2,2> compMprPipeline;
 		gpuProgram<2> graphPipeline;
 
-		BufferMemoryWithParts<9> bufferMemoryPart;
+		BufferMemoryWithParts<10> bufferMemoryPart;
 		//BufferMemory outputMemory;
 		Thread worker;
 		std::vector<vk::UniqueCommandBuffer> gcmdBuffers;

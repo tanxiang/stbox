@@ -279,7 +279,7 @@ namespace tt {
 					std::array BarrierShaderWrite{
 							vk::BufferMemoryBarrier{
 									vk::AccessFlagBits::eShaderWrite,
-									vk::AccessFlagBits::eTransferRead,
+									vk::AccessFlagBits::eShaderRead,
 									VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
 									std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
 									0, VK_WHOLE_SIZE,
@@ -287,13 +287,26 @@ namespace tt {
 					};
 					commandBufferBeginHandle.pipelineBarrier(
 							vk::PipelineStageFlagBits::eComputeShader,
-							vk::PipelineStageFlagBits::eTransfer,
+							vk::PipelineStageFlagBits::eComputeShader,
 							vk::DependencyFlags{},
 							{},
 							BarrierShaderWrite,
 							{});
 
-					/*commandBufferBeginHandle.copyBuffer(
+					//commandBufferBeginHandle.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+
+					commandBufferBeginHandle.bindPipeline(vk::PipelineBindPoint::eCompute,
+					                                      compMprPipeline.get(1));
+					commandBufferBeginHandle.bindDescriptorSets(
+							vk::PipelineBindPoint::eCompute,
+							compMprPipeline.layout(),
+							0,
+							compMprPipeline.getDescriptorSets(),
+							std::array{0u}
+					);
+					commandBufferBeginHandle.dispatch(1, 1, 1);
+/*
+					commandBufferBeginHandle.copyBuffer(
 							std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
 							std::get<vk::UniqueBuffer>(outputMemory).get(),
 							{vk::BufferCopy{
@@ -422,17 +435,15 @@ namespace tt {
 				data.size() * sizeof(decltype(data)::value_type), data.data()
 		};
 
-		vk::PipelineShaderStageCreateInfo shaderStageCreateInfo{
-				{},
-				vk::ShaderStageFlagBits::eCompute,
-				compShaderModule.get(),
-				"main",
-				&specializationInfo
-		};
-
 		vk::ComputePipelineCreateInfo computePipelineCreateInfo{
 				{},
-				shaderStageCreateInfo,
+				{
+						{},
+						vk::ShaderStageFlagBits::eCompute,
+						compShaderModule.get(),
+						"main",
+						&specializationInfo
+				},
 				pipelineLayout
 		};
 
@@ -441,8 +452,9 @@ namespace tt {
 
 		auto compMprShaderModule = device.loadShaderFromAssets("shaders/mpr.comp.spv", app);
 
-		shaderStageCreateInfo.module = compMprShaderModule.get();
+		//shaderStageCreateInfo.module = compMprShaderModule.get();
 
+		computePipelineCreateInfo.stage.module =  compMprShaderModule.get();
 		pipelines[1] = device->createComputePipelineUnique(pipelineCache.get(),
 		                                                   computePipelineCreateInfo);
 

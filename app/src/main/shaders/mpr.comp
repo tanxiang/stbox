@@ -110,17 +110,17 @@ vec3 SupportPoint(uint bodyIndex, vec3 dir){
     return qrtransform(bodyData.quat, supq) + bodyData.pos.xyz;
 }
 
-int mprPenetration(uint pairIdex) {
-    int bodyIndex1 = pair[pairIdex].x;
-    int bodyIndex2 = pair[pairIdex].y;
-
+int mprPenetration(uint pairIndex) {
+    int bodyIndex1 = pair[pairIndex].x;
+    int bodyIndex2 = pair[pairIndex].y;
+/*
     int IIndex1 = BodyDatas[bodyIndex1].InvariantArg.x;
     int IIndex2 = BodyDatas[bodyIndex2].InvariantArg.x;
 
     if (bodyInvariant[IIndex1].invMass_restituitionCoeff_frictionCoeff[0] == 0.0 &&
     bodyInvariant[IIndex2].invMass_restituitionCoeff_frictionCoeff[0] == 0.0)
     return 0;
-
+*/
     MprSimplex Simplex;
     Simplex.Support[0].v1 = BodyDatas[bodyIndex1].pos;
     Simplex.Support[0].v2 = BodyDatas[bodyIndex2].pos;
@@ -185,6 +185,6 @@ int mprPenetration(uint pairIdex) {
 
 void main()
 {
-    uint vindex = gl_GlobalInvocationID.x;
+    uint vindex = gl_WorkGroupID.x;
     mprPenetration(vindex);
 }
