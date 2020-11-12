@@ -1,18 +1,18 @@
 #version 450
 layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;
 
-struct b3RigidBodyData
+struct RigidBodyData
 {
     vec4 pos;//_m0;
     vec4 quat;//_m1;
     vec4 linVal;//_m2;
     vec4 argVal;
-    ivec4 collidableIdx_invMass_restituitionCoeff_frictionCoeff;
+    ivec4 cilf;//collidableIdx_InvariantIdx_localAabbIdx_frictionCoeff;
 };
 
 struct Invariant
 {
-    vec4 collidableIdx_invMass_restituitionCoeff_frictionCoeff;
+    vec4 invMass_restituitionCoeff_frictionCoeff;//collidableIdx_invMass_restituitionCoeff_frictionCoeff;
     mat4 pos_quat_lin_arg;
 };
 
@@ -34,19 +34,19 @@ struct cmdInfo{
     uint insOff;
 };
 
-layout(set = 0, binding = 0)readonly buffer b3RigidBodyDatas
+layout(set = 0, binding = 0)readonly buffer inRigidBodyDatas
 {
-    b3RigidBodyData BodyDatas[];
+    RigidBodyData BodyDatas[];
 } RigidBodyDatas;
 
-layout(set = 0, binding = 1)readonly buffer b3Collidables
+layout(set = 0, binding = 1)readonly buffer inCollidables
 {
-    ivec4 b3Collidable[];
+    ivec4 Collidable[];
 } Collidables;
 
-layout(set = 0, binding = 1)readonly buffer b3Collidables_f
+layout(set = 0, binding = 1)readonly buffer inCollidables_f
 {
-    vec4 b3Collidable[];
+    vec4 Collidable[];
 } Collidables_f;//_381;
 
 layout(set = 0, binding = 2)readonly buffer b3ShapeAabb
@@ -59,7 +59,7 @@ layout(set = 0, binding = 3)writeonly buffer B3Aabb
     aabb bb[];
 } AABB;//_40
 
-layout(set = 0, binding = 4)readonly buffer pairs
+layout(set = 0, binding = 4)writeonly buffer pairs
 {
     ivec4 pair[];
 };
@@ -106,7 +106,7 @@ mat3 QuatGetRotationMatrixABS(vec4 quat)
 
 void b3ComputeWorldAabb(uint compID)
 {
-    int shapeIndex = Collidables.b3Collidable[RigidBodyDatas.BodyDatas[compID].collidableIdx_invMass_restituitionCoeff_frictionCoeff[0]][3];
+    int shapeIndex = Collidables.Collidable[RigidBodyDatas.BodyDatas[compID].cilf[0]][3];
     if (shapeIndex > -1)
     {
         vec4 extent0 = (localShapeAABB.bb[shapeIndex].max - localShapeAABB.bb[shapeIndex].min) * vec4(0.5);
@@ -133,7 +133,7 @@ void outAabb(vec3 min,vec3 max,vec4 quat,uint vindex){
 
     outinfo[vindex+2].point=quat;
     if(vindex == 0){
-        cmdinfo[0].vetCont=3;
+        cmdinfo[0].vetCont=gl_NumWorkGroups.x*3;
         cmdinfo[0].insCont=1;
         cmdinfo[0].vetOff=0;
         cmdinfo[0].insOff=0;
@@ -158,7 +158,7 @@ void outCube(vec3 min,vec3 max,vec4 pos,vec4 quat,uint vindex){
     outCubeinfo[vindex+2].point=vec4(min,1.0);
     outCubeinfo[vindex+3].point=vec4(max,1.0);
     if(vindex == 0){
-        cmdCubeinfo[0].vetCont=4;
+        cmdCubeinfo[0].vetCont=gl_NumWorkGroups.x*4;
         cmdCubeinfo[0].insCont=1;
         cmdCubeinfo[0].vetOff=0;
         cmdCubeinfo[0].insOff=0;
@@ -167,14 +167,16 @@ void outCube(vec3 min,vec3 max,vec4 pos,vec4 quat,uint vindex){
 
 void main()
 {
-    uint vindex = gl_GlobalInvocationID.x;
+    uint vindex = gl_WorkGroupID.x;
     //computeWorldAabb(vindex);
 
     vec4 quat = RigidBodyDatas.BodyDatas[vindex].quat;
     vec4 pos = RigidBodyDatas.BodyDatas[vindex].pos;
 
-    vec4 min = localShapeAABB.bb[vindex].min;
-    vec4 max = localShapeAABB.bb[vindex].max;
+    uint localAabbIdx = RigidBodyDatas.BodyDatas[vindex].cilf[2];
+    vec4 min = localShapeAABB.bb[localAabbIdx].min;
+    vec4 max = localShapeAABB.bb[localAabbIdx].max;
     outCube(min.xyz,max.xyz,pos,quat,vindex);
     computeWorldAabb(min.xyz,max.xyz,pos,quat,vindex);
+    pair[vindex]=ivec4(0,1,0,0);
 }

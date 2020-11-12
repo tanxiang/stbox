@@ -8,7 +8,7 @@ struct RigidBodyData
     vec4 quat;//_m1;
     vec4 linVal;//_m2;
     vec4 argVal;
-    ivec4 InvariantArg;//_invMass_restituitionCoeff_frictionCoeff;
+    ivec4 cilf;//collidableIdx_InvariantIdx_localAabbIdx_frictionCoeff;
 };
 
 struct Invariant

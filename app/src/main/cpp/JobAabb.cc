@@ -13,6 +13,8 @@ struct rigidBodyData {
 	glm::quat argVal;
 	__uint32_t collidableIdx;
 	__uint32_t invMassIdx;
+	__uint32_t LocalAabbIdx;
+	__uint32_t ext0;
 };
 struct aabb {
 	std::array<float, 4> min;
@@ -25,7 +27,6 @@ struct invariant {
 	float frictionCoeff;
 	float otCoeff;
 	glm::mat3 Inertia;
-	aabb LocalAabb;
 };
 struct collidable {
 	int m_bvhIndex;
@@ -144,12 +145,14 @@ namespace tt {
 		auto rquat = glm::mix(quat0, quat1, 0.22f);
 		std::array RigidBody{
 				rigidBodyData{
-						{0.0f, 0.3f, 0.0f, 0.0f},
-						rquat, {}, {}, 0, 0
+						{0.0f, 0.3f, 0.0f, 0.0f}, rquat,
+						{}, {},
+						0, 0, 0, 0
 				},
 				rigidBodyData{
-						{0.1f, 0.1f, -0.4f, 0.0f},
-						rquat, {}, {}, 0, 0
+						{0.1f, 0.1f, -0.4f, 0.0f}, rquat,
+						{}, {},
+						0, 0, 0, 0
 				}
 		};
 		//MY_LOG(INFO)<<"<<quat0[0]<<"<<quat0[0]<<':'<<quat0[1]<<':'<<quat0[2]<<':'<<quat0[3];
@@ -178,7 +181,8 @@ namespace tt {
 				sizeof(vk::DrawIndirectCommand) * 2,
 				sizeof(float) * 128,
 				sizeof(vk::DrawIndirectCommand) * 2,
-				sizeof(glm::mat4));
+				sizeof(glm::mat4),
+				sizeof(uint32_t)*4);
 
 
 		auto descriptors = bufferMemoryPart.arrayOfDescs();
@@ -203,6 +207,11 @@ namespace tt {
 						compMprPipeline.getDescriptorSet(), 3, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[3]
+				},
+				vk::WriteDescriptorSet{
+						compMprPipeline.getDescriptorSet(), 4, 0, 1,
+						vk::DescriptorType::eStorageBuffer,
+						nullptr, &descriptors[9]
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 0, 0, 1,
@@ -265,7 +274,7 @@ namespace tt {
 							std::array{0u}
 					);
 
-					commandBufferBeginHandle.dispatch(1, 1, 1);
+					commandBufferBeginHandle.dispatch(2, 1, 1);
 
 					std::array BarrierShaderWrite{
 							vk::BufferMemoryBarrier{
