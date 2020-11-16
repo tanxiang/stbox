@@ -177,12 +177,15 @@ namespace tt {
 				Collidables,
 				aabbs,
 				sizeof(aabb) * 2,
+				sizeof(uint32_t)*4,
+				sizeof(vk::DispatchIndirectCommand) * 2,
 				sizeof(float) * 128,
 				sizeof(vk::DrawIndirectCommand) * 2,
 				sizeof(float) * 128,
 				sizeof(vk::DrawIndirectCommand) * 2,
-				sizeof(glm::mat4),
-				sizeof(uint32_t)*4);
+				sizeof(float) * 128,
+				sizeof(vk::DrawIndirectCommand) * 2,
+				sizeof(glm::mat4));//pair
 
 
 		auto descriptors = bufferMemoryPart.arrayOfDescs();
@@ -201,42 +204,42 @@ namespace tt {
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(), 2, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[2]
+						nullptr, &descriptors[2]//in aabb
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(), 3, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[3]
+						nullptr, &descriptors[3]//out aabb
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(), 4, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[9]
+						nullptr, &descriptors[4]//pair
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 0, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[4]
+						nullptr, &descriptors[8]
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 1, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[5]
+						nullptr, &descriptors[9]
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 2, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[6]
+						nullptr, &descriptors[10]
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 3, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[7]
+						nullptr, &descriptors[11]
 				},
 				vk::WriteDescriptorSet{
 						graphPipeline.getDescriptorSet(), 0, 0, 1,
 						vk::DescriptorType::eUniformBuffer,
-						nullptr, &descriptors[8]
+						nullptr, &descriptors[12]
 				}
 		};
 
@@ -498,12 +501,12 @@ namespace tt {
 
 		cmdHandleRenderpassBegin.bindVertexBuffers(
 				0, {std::get<vk::UniqueBuffer>(bufferMemoryPart).get()},
-				{createDescriptorBufferInfoTuple(bufferMemoryPart, 4).offset}
+				{createDescriptorBufferInfoTuple(bufferMemoryPart, 8).offset}
 		);
 
 		cmdHandleRenderpassBegin.drawIndirect(
 				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 5).offset,
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 9).offset,
 				1,
 				sizeof(vk::DrawIndirectCommand));
 		//cmdHandleRenderpassBegin.draw(8, 1, 0, 0);
@@ -521,12 +524,12 @@ namespace tt {
 
 		cmdHandleRenderpassBegin.bindVertexBuffers(
 				0, {std::get<vk::UniqueBuffer>(bufferMemoryPart).get()},
-				{createDescriptorBufferInfoTuple(bufferMemoryPart, 6).offset}
+				{createDescriptorBufferInfoTuple(bufferMemoryPart, 10).offset}
 		);
 
 		cmdHandleRenderpassBegin.drawIndirect(
 				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 7).offset,
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 11).offset,
 				2,
 				sizeof(vk::DrawIndirectCommand));
 
@@ -545,7 +548,7 @@ namespace tt {
 				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
 				sizeof(glm::mat4),
 				0,
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 8).offset);
+				createDescriptorBufferInfoTuple(bufferMemoryPart, 12).offset);
 
 		{
 			auto memory_ptr = helper::mapTypeMemoryAndSize<rigidBodyData>(ownerDevice(), BAM);

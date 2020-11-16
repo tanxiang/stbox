@@ -34,6 +34,13 @@ struct cmdInfo{
     uint insOff;
 };
 
+struct cmdInfodis{
+    uint vetCont;
+    uint insCont;
+    uint vetOff;
+    uint insOff;
+};
+
 layout(set = 0, binding = 0)readonly buffer inRigidBodyDatas
 {
     RigidBodyData BodyDatas[];
