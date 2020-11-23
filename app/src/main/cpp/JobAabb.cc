@@ -34,6 +34,51 @@ struct collidable {
 	int m_shapeType;
 	int m_shapeIndex;
 };
+
+
+template<size_t tSize,typename  ... Args>
+struct memoryArgs {
+	std::array<std::string_view, tSize> nameList;
+	std::tuple<Args...> memoryTupleList;
+
+	template<typename  ... Ts>
+	constexpr memoryArgs(Ts ... objs)
+			: nameList{(objs.first)...}, memoryTupleList{(objs.second)...} {}
+
+	constexpr std::size_t nameIdx(std::string_view findname) const {
+		std::size_t n = 0;
+		for (auto &name:nameList) {
+			if (name == findname)
+				return n;
+			++n;
+		}
+		assert("can not find str");
+	}
+
+	constexpr std::size_t bindIdx(std::string_view findname) const {
+		return nameIdx(findname) + 1;
+	}
+};
+
+template<typename  ... Ts>
+memoryArgs(Ts ... objs)
+-> memoryArgs<sizeof...(objs), decltype(objs.second)...>;
+
+constexpr memoryArgs aabbMemargs{
+		std::pair{"RigidBody", 12},
+		std::pair{"Collidables", 12},
+		std::pair{"Aabbsin", 12},
+		std::pair{"Aabbsout", 12},
+		std::pair{"Pairs", 12},
+		std::pair{"DispatchIndirectCommand", 12},
+		std::pair{"DispatchIndirectCommandVt", 12},
+		std::pair{"DrawIndirectCommandA", 12},
+		std::pair{"DrawIndirectCommandAVt", 12},
+		std::pair{"DrawIndirectCommandB", 12},
+		std::pair{"DrawIndirectCommandBVt", 12},
+		std::pair{"DrawIndirectCommand", 12},
+		std::pair{"MVP", 12}
+};
 namespace tt {
 
 	JobAabb::JobAabb(android_app *app, tt::Device &device) :
@@ -177,7 +222,7 @@ namespace tt {
 				Collidables,
 				aabbs,
 				sizeof(aabb) * 2,
-				sizeof(uint32_t)*4,
+				sizeof(uint32_t) * 4,
 				sizeof(vk::DispatchIndirectCommand) * 2,
 				sizeof(float) * 128,
 				sizeof(vk::DrawIndirectCommand) * 2,
@@ -457,7 +502,7 @@ namespace tt {
 
 		//shaderStageCreateInfo.module = compMprShaderModule.get();
 
-		computePipelineCreateInfo.stage.module =  compMprShaderModule.get();
+		computePipelineCreateInfo.stage.module = compMprShaderModule.get();
 		pipelines[1] = device->createComputePipelineUnique(pipelineCache.get(),
 		                                                   computePipelineCreateInfo);
 
