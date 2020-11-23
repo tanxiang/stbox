@@ -36,7 +36,7 @@ struct collidable {
 };
 
 
-template<size_t tSize,typename  ... Args>
+template<size_t tSize, typename  ... Args>
 struct memoryArgs {
 	std::array<std::string_view, tSize> nameList;
 	std::tuple<Args...> memoryTupleList;
@@ -64,20 +64,48 @@ template<typename  ... Ts>
 memoryArgs(Ts ... objs)
 -> memoryArgs<sizeof...(objs), decltype(objs.second)...>;
 
+
 constexpr memoryArgs aabbMemargs{
-		std::pair{"RigidBody", 12},
-		std::pair{"Collidables", 12},
-		std::pair{"Aabbsin", 12},
-		std::pair{"Aabbsout", 12},
-		std::pair{"Pairs", 12},
-		std::pair{"DispatchIndirectCommand", 12},
-		std::pair{"DispatchIndirectCommandVt", 12},
-		std::pair{"DrawIndirectCommandA", 12},
-		std::pair{"DrawIndirectCommandAVt", 12},
-		std::pair{"DrawIndirectCommandB", 12},
-		std::pair{"DrawIndirectCommandBVt", 12},
-		std::pair{"DrawIndirectCommand", 12},
-		std::pair{"MVP", 12}
+		std::pair{"RigidBody",
+		          std::array{
+				          rigidBodyData{
+						          {0.0f, 0.3f, 0.0f, 0.0f},
+						          {.0f, 0.0432974f, .0f, 0.901406f},
+						          {}, {},
+						          0, 0, 0, 0
+				          },
+				          rigidBodyData{
+						          {0.1f, 0.1f, -0.4f, 0.0f},
+						          {.0f, 0.0432974f, .0f, 0.901406f},
+						          {}, {},
+						          0, 0, 0, 0
+				          }
+		          }
+		},
+		std::pair{"Collidables",
+		          std::array{
+				          collidable{0, 0, 0, 0},
+				          collidable{},
+		          }
+		},
+		std::pair{"Aabbsin",
+		          std::array{
+				          aabb{{0.0f, 0.0f, 0.0f, 1.0},
+				               {0.3f, 0.4f, 0.5f, 1.0}},
+				          aabb{},
+				          aabb{},
+		          }
+		},
+		std::pair{"Aabbsout", sizeof(aabb) * 2},
+		std::pair{"Pairs", sizeof(uint)*2},
+		std::pair{"DispatchIndirectCommand", sizeof(vk::DispatchIndirectCommand)*2},
+		std::pair{"DrawIndirectCommandAVt", sizeof(float) * 128},
+		std::pair{"DrawIndirectCommandA", sizeof(vk::DrawIndirectCommand) * 2},
+		std::pair{"DrawIndirectCommandBVt", sizeof(float) * 128},
+		std::pair{"DrawIndirectCommandB", sizeof(vk::DrawIndirectCommand) * 2},
+		std::pair{"DrawIndirectCommandMprVt", sizeof(float) * 128},
+		std::pair{"DrawIndirectCommandMpr", sizeof(vk::DrawIndirectCommand) * 2},
+		std::pair{"MVP", sizeof(glm::mat4)}
 };
 namespace tt {
 
@@ -183,7 +211,7 @@ namespace tt {
 					vk::BufferUsageFlagBits::eTransferSrc,
 					vk::MemoryPropertyFlagBits::eHostVisible |
 					vk::MemoryPropertyFlagBits::eHostCoherent)} {
-
+/*
 		//glm::slerp(glm::qua<float>{},glm::qua<float>{},0.3);
 		auto quat0 = glm::angleAxis(0.0f, glm::vec3(0.0f, 0.0f, 0.0f));
 		auto quat1 = glm::angleAxis(180.0f, glm::vec3(0.0f, 0.1f, 0.0f));
@@ -200,7 +228,8 @@ namespace tt {
 						0, 0, 0, 0
 				}
 		};
-		//MY_LOG(INFO)<<"<<quat0[0]<<"<<quat0[0]<<':'<<quat0[1]<<':'<<quat0[2]<<':'<<quat0[3];
+		MY_LOG(INFO) << "<<quat0[0]<<" << rquat[0] << ',' << rquat[1] << ',' << rquat[2] << ','
+		             << rquat[3];
 		std::array Collidables{
 				collidable{0, 0, 0, 0},
 				collidable{},
@@ -211,6 +240,7 @@ namespace tt {
 				aabb{},
 				aabb{},
 		};
+
 		bufferMemoryPart = device.createBufferPartsOnObjs(
 				vk::BufferUsageFlagBits::eStorageBuffer |
 				vk::BufferUsageFlagBits::eUniformBuffer |
@@ -231,7 +261,16 @@ namespace tt {
 				sizeof(float) * 128,
 				sizeof(vk::DrawIndirectCommand) * 2,
 				sizeof(glm::mat4));//pair
-
+*/
+		bufferMemoryPart = 	std::apply([&](auto const&... tupleArgs){
+			return device.createBufferPartsOnObjs(
+					vk::BufferUsageFlagBits::eStorageBuffer |
+					vk::BufferUsageFlagBits::eUniformBuffer |
+					vk::BufferUsageFlagBits::eVertexBuffer |
+					vk::BufferUsageFlagBits::eTransferDst |
+					vk::BufferUsageFlagBits::eTransferSrc |
+					vk::BufferUsageFlagBits::eIndirectBuffer,tupleArgs...);
+			},aabbMemargs.memoryTupleList);
 
 		auto descriptors = bufferMemoryPart.arrayOfDescs();
 
