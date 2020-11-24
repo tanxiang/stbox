@@ -42,10 +42,10 @@ struct memoryArgs {
 	std::tuple<Args...> memoryTupleList;
 
 	template<typename  ... Ts>
-	constexpr memoryArgs(Ts ... objs)
+	consteval memoryArgs(Ts ... objs)
 			: nameList{(objs.first)...}, memoryTupleList{(objs.second)...} {}
 
-	constexpr std::size_t nameIdx(std::string_view findname) const {
+	consteval std::size_t nameIdx(std::string_view findname) const {
 		std::size_t n = 0;
 		for (auto &name:nameList) {
 			if (name == findname)
@@ -55,7 +55,7 @@ struct memoryArgs {
 		assert("can not find str");
 	}
 
-	constexpr std::size_t bindIdx(std::string_view findname) const {
+	consteval std::size_t bindIdx(std::string_view findname) const {
 		return nameIdx(findname) + 1;
 	}
 };
@@ -65,18 +65,18 @@ memoryArgs(Ts ... objs)
 -> memoryArgs<sizeof...(objs), decltype(objs.second)...>;
 
 
-constexpr memoryArgs aabbMemargs{
+constexpr memoryArgs memargs{
 		std::pair{"RigidBody",
 		          std::array{
 				          rigidBodyData{
 						          {0.0f, 0.3f, 0.0f, 0.0f},
-						          {.0f, 0.0432974f, .0f, 0.901406f},
+						          {0.901406f,.0f, 0.0432974f, .0f},
 						          {}, {},
 						          0, 0, 0, 0
 				          },
 				          rigidBodyData{
 						          {0.1f, 0.1f, -0.4f, 0.0f},
-						          {.0f, 0.0432974f, .0f, 0.901406f},
+						          {0.901406f,.0f, 0.0432974f, .0f},
 						          {}, {},
 						          0, 0, 0, 0
 				          }
@@ -211,57 +211,7 @@ namespace tt {
 					vk::BufferUsageFlagBits::eTransferSrc,
 					vk::MemoryPropertyFlagBits::eHostVisible |
 					vk::MemoryPropertyFlagBits::eHostCoherent)} {
-/*
-		//glm::slerp(glm::qua<float>{},glm::qua<float>{},0.3);
-		auto quat0 = glm::angleAxis(0.0f, glm::vec3(0.0f, 0.0f, 0.0f));
-		auto quat1 = glm::angleAxis(180.0f, glm::vec3(0.0f, 0.1f, 0.0f));
-		auto rquat = glm::mix(quat0, quat1, 0.22f);
-		std::array RigidBody{
-				rigidBodyData{
-						{0.0f, 0.3f, 0.0f, 0.0f}, rquat,
-						{}, {},
-						0, 0, 0, 0
-				},
-				rigidBodyData{
-						{0.1f, 0.1f, -0.4f, 0.0f}, rquat,
-						{}, {},
-						0, 0, 0, 0
-				}
-		};
-		MY_LOG(INFO) << "<<quat0[0]<<" << rquat[0] << ',' << rquat[1] << ',' << rquat[2] << ','
-		             << rquat[3];
-		std::array Collidables{
-				collidable{0, 0, 0, 0},
-				collidable{},
-		};
-		std::array aabbs{
-				aabb{{0.0f, 0.0f, 0.0f, 1.0},
-				     {0.3f, 0.4f, 0.5f, 1.0}},
-				aabb{},
-				aabb{},
-		};
 
-		bufferMemoryPart = device.createBufferPartsOnObjs(
-				vk::BufferUsageFlagBits::eStorageBuffer |
-				vk::BufferUsageFlagBits::eUniformBuffer |
-				vk::BufferUsageFlagBits::eVertexBuffer |
-				vk::BufferUsageFlagBits::eTransferDst |
-				vk::BufferUsageFlagBits::eTransferSrc |
-				vk::BufferUsageFlagBits::eIndirectBuffer,
-				RigidBody,
-				Collidables,
-				aabbs,
-				sizeof(aabb) * 2,
-				sizeof(uint32_t) * 4,
-				sizeof(vk::DispatchIndirectCommand) * 2,
-				sizeof(float) * 128,
-				sizeof(vk::DrawIndirectCommand) * 2,
-				sizeof(float) * 128,
-				sizeof(vk::DrawIndirectCommand) * 2,
-				sizeof(float) * 128,
-				sizeof(vk::DrawIndirectCommand) * 2,
-				sizeof(glm::mat4));//pair
-*/
 		bufferMemoryPart = 	std::apply([&](auto const&... tupleArgs){
 			return device.createBufferPartsOnObjs(
 					vk::BufferUsageFlagBits::eStorageBuffer |
@@ -270,35 +220,36 @@ namespace tt {
 					vk::BufferUsageFlagBits::eTransferDst |
 					vk::BufferUsageFlagBits::eTransferSrc |
 					vk::BufferUsageFlagBits::eIndirectBuffer,tupleArgs...);
-			},aabbMemargs.memoryTupleList);
+			}, memargs.memoryTupleList);
 
 		auto descriptors = bufferMemoryPart.arrayOfDescs();
 
+		std::string aabb("Aabbsrin");
 		std::array writeDes{
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(), 0, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[0]
+						nullptr, &descriptors[memargs.nameIdx("RigidBody")]
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(), 1, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[1]
+						nullptr, &descriptors[memargs.nameIdx("Collidables")]
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(), 2, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[2]//in aabb
+						nullptr, &descriptors[memargs.nameIdx("Aabbsin")]//in aabb
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(), 3, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[3]//out aabb
+						nullptr, &descriptors[memargs.nameIdx("Aabbsout")]//out aabb
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(), 4, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[4]//pair
+						nullptr, &descriptors[memargs.nameIdx("Pairs")]//pair
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 0, 0, 1,

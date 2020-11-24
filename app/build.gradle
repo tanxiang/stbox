@@ -4,6 +4,7 @@ apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion 28
+    ndkVersion '22.0.6917172'
     defaultConfig {
         applicationId "net.xigang.ttand.stbox"
         minSdkVersion 24
@@ -13,7 +14,7 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                cppFlags "-std=c++1z -fexceptions"
+                cppFlags "-std=c++2a -fexceptions"
                 arguments "-DANDROID_STL=c++_shared"
             }
         }

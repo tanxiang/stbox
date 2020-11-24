@@ -458,17 +458,6 @@ namespace tt {
 			return tuple;
 		}
 
-		template<typename ... Ts>
-		auto createBufferPartsOnObjsDefFlags(const Ts &... objs){
-			return createBufferPartsOnObjs(
-					vk::BufferUsageFlagBits::eStorageBuffer |
-					vk::BufferUsageFlagBits::eUniformBuffer |
-					vk::BufferUsageFlagBits::eVertexBuffer |
-					vk::BufferUsageFlagBits::eTransferDst |
-					vk::BufferUsageFlagBits::eTransferSrc |
-					vk::BufferUsageFlagBits::eIndirectBuffer,
-					objs...);
-		}
 
 		template<typename ... Ts>
 		auto createImageBufferPartsOnObjs(vk::BufferUsageFlags flags,
