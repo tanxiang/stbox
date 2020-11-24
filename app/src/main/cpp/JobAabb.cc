@@ -98,7 +98,7 @@ constexpr memoryArgs memargs{
 		},
 		std::pair{"Aabbsout", sizeof(aabb) * 2},
 		std::pair{"Pairs", sizeof(uint)*2},
-		std::pair{"DispatchIndirectCommand", sizeof(vk::DispatchIndirectCommand)*2},
+		std::pair{"DispatchIndirectCommandPass", sizeof(vk::DispatchIndirectCommand)*2},
 		std::pair{"DrawIndirectCommandAVt", sizeof(float) * 128},
 		std::pair{"DrawIndirectCommandA", sizeof(vk::DrawIndirectCommand) * 2},
 		std::pair{"DrawIndirectCommandBVt", sizeof(float) * 128},
@@ -254,27 +254,27 @@ namespace tt {
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 0, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[8]
+						nullptr, &descriptors[memargs.nameIdx("DrawIndirectCommandBVt")]
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 1, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[9]
+						nullptr, &descriptors[memargs.nameIdx("DrawIndirectCommandB")]
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 2, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[10]
+						nullptr, &descriptors[memargs.nameIdx("DrawIndirectCommandMprVt")]
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 3, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[11]
+						nullptr, &descriptors[memargs.nameIdx("DrawIndirectCommandMpr")]
 				},
 				vk::WriteDescriptorSet{
 						graphPipeline.getDescriptorSet(), 0, 0, 1,
 						vk::DescriptorType::eUniformBuffer,
-						nullptr, &descriptors[12]
+						nullptr, &descriptors[memargs.nameIdx("MVP")]
 				}
 		};
 
