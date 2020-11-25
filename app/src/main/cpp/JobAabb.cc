@@ -35,37 +35,7 @@ struct collidable {
 	int m_shapeIndex;
 };
 
-
-template<size_t tSize, typename  ... Args>
-struct memoryArgs {
-	std::array<std::string_view, tSize> nameList;
-	std::tuple<Args...> memoryTupleList;
-
-	template<typename  ... Ts>
-	consteval memoryArgs(Ts ... objs)
-			: nameList{(objs.first)...}, memoryTupleList{(objs.second)...} {}
-
-	consteval std::size_t nameIdx(std::string_view findname) const {
-		std::size_t n = 0;
-		for (auto &name:nameList) {
-			if (name == findname)
-				return n;
-			++n;
-		}
-		assert("can not find str");
-	}
-
-	consteval std::size_t bindIdx(std::string_view findname) const {
-		return nameIdx(findname) + 1;
-	}
-};
-
-template<typename  ... Ts>
-memoryArgs(Ts ... objs)
--> memoryArgs<sizeof...(objs), decltype(objs.second)...>;
-
-
-constexpr memoryArgs memargs{
+constexpr tt::memoryArgs memargs{
 		std::pair{"RigidBody",
 		          std::array{
 				          rigidBodyData{
@@ -99,12 +69,12 @@ constexpr memoryArgs memargs{
 		std::pair{"Aabbsout", sizeof(aabb) * 2},
 		std::pair{"Pairs", sizeof(uint)*2},
 		std::pair{"DispatchIndirectCommandPass", sizeof(vk::DispatchIndirectCommand)*2},
-		std::pair{"DICMPROutVt", sizeof(float) * 128},
-		std::pair{"DICMPROut", sizeof(vk::DrawIndirectCommand) * 2},
 		std::pair{"DICInAABBsVt", sizeof(float) * 128},
 		std::pair{"DICInAABBs", sizeof(vk::DrawIndirectCommand) * 2},
 		std::pair{"DICOutAABBsVt", sizeof(float) * 128},
 		std::pair{"DICOutAABBs", sizeof(vk::DrawIndirectCommand) * 2},
+		std::pair{"DICMPROutVt", sizeof(float) * 128},
+		std::pair{"DICMPROut", sizeof(vk::DrawIndirectCommand) * 2},
 		std::pair{"MVP", sizeof(glm::mat4)}
 };
 namespace tt {
@@ -117,7 +87,7 @@ namespace tt {
 											vk::DescriptorType::eUniformBuffer, 2
 									},
 									vk::DescriptorPoolSize{
-											vk::DescriptorType::eStorageBuffer, 12
+											vk::DescriptorType::eStorageBuffer, 14
 									}
 							},
 							4
@@ -184,6 +154,15 @@ namespace tt {
 							},
 							vk::DescriptorSetLayoutBinding{
 									3, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							},
+
+							vk::DescriptorSetLayoutBinding{
+									4, vk::DescriptorType::eStorageBuffer,
+									1, vk::ShaderStageFlagBits::eCompute
+							},
+							vk::DescriptorSetLayoutBinding{
+									5, vk::DescriptorType::eStorageBuffer,
 									1, vk::ShaderStageFlagBits::eCompute
 							},
 					}
