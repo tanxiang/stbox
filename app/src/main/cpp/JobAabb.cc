@@ -99,12 +99,12 @@ constexpr memoryArgs memargs{
 		std::pair{"Aabbsout", sizeof(aabb) * 2},
 		std::pair{"Pairs", sizeof(uint)*2},
 		std::pair{"DispatchIndirectCommandPass", sizeof(vk::DispatchIndirectCommand)*2},
-		std::pair{"DrawIndirectCommandAVt", sizeof(float) * 128},
-		std::pair{"DrawIndirectCommandA", sizeof(vk::DrawIndirectCommand) * 2},
-		std::pair{"DrawIndirectCommandBVt", sizeof(float) * 128},
-		std::pair{"DrawIndirectCommandB", sizeof(vk::DrawIndirectCommand) * 2},
-		std::pair{"DrawIndirectCommandMprVt", sizeof(float) * 128},
-		std::pair{"DrawIndirectCommandMpr", sizeof(vk::DrawIndirectCommand) * 2},
+		std::pair{"DICMPROutVt", sizeof(float) * 128},
+		std::pair{"DICMPROut", sizeof(vk::DrawIndirectCommand) * 2},
+		std::pair{"DICInAABBsVt", sizeof(float) * 128},
+		std::pair{"DICInAABBs", sizeof(vk::DrawIndirectCommand) * 2},
+		std::pair{"DICOutAABBsVt", sizeof(float) * 128},
+		std::pair{"DICOutAABBs", sizeof(vk::DrawIndirectCommand) * 2},
 		std::pair{"MVP", sizeof(glm::mat4)}
 };
 namespace tt {
@@ -224,7 +224,6 @@ namespace tt {
 
 		auto descriptors = bufferMemoryPart.arrayOfDescs();
 
-		std::string aabb("Aabbsrin");
 		std::array writeDes{
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(), 0, 0, 1,
@@ -254,22 +253,22 @@ namespace tt {
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 0, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[memargs.nameIdx("DrawIndirectCommandBVt")]
+						nullptr, &descriptors[memargs.nameIdx("DICInAABBsVt")]
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 1, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[memargs.nameIdx("DrawIndirectCommandB")]
+						nullptr, &descriptors[memargs.nameIdx("DICInAABBs")]
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 2, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[memargs.nameIdx("DrawIndirectCommandMprVt")]
+						nullptr, &descriptors[memargs.nameIdx("DICOutAABBsVt")]
 				},
 				vk::WriteDescriptorSet{
 						compMprPipeline.getDescriptorSet(1), 3, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
-						nullptr, &descriptors[memargs.nameIdx("DrawIndirectCommandMpr")]
+						nullptr, &descriptors[memargs.nameIdx("DICOutAABBs")]
 				},
 				vk::WriteDescriptorSet{
 						graphPipeline.getDescriptorSet(), 0, 0, 1,
@@ -536,12 +535,12 @@ namespace tt {
 
 		cmdHandleRenderpassBegin.bindVertexBuffers(
 				0, {std::get<vk::UniqueBuffer>(bufferMemoryPart).get()},
-				{createDescriptorBufferInfoTuple(bufferMemoryPart, 8).offset}
+				{createDescriptorBufferInfoTuple(bufferMemoryPart, memargs.nameIdx("DICInAABBsVt")).offset}
 		);
 
 		cmdHandleRenderpassBegin.drawIndirect(
 				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 9).offset,
+				createDescriptorBufferInfoTuple(bufferMemoryPart, memargs.nameIdx("DICInAABBs")).offset,
 				1,
 				sizeof(vk::DrawIndirectCommand));
 		//cmdHandleRenderpassBegin.draw(8, 1, 0, 0);
@@ -559,12 +558,12 @@ namespace tt {
 
 		cmdHandleRenderpassBegin.bindVertexBuffers(
 				0, {std::get<vk::UniqueBuffer>(bufferMemoryPart).get()},
-				{createDescriptorBufferInfoTuple(bufferMemoryPart, 10).offset}
+				{createDescriptorBufferInfoTuple(bufferMemoryPart, memargs.nameIdx("DICOutAABBsVt")).offset}
 		);
 
 		cmdHandleRenderpassBegin.drawIndirect(
 				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 11).offset,
+				createDescriptorBufferInfoTuple(bufferMemoryPart, memargs.nameIdx("DICOutAABBs")).offset,
 				2,
 				sizeof(vk::DrawIndirectCommand));
 
@@ -583,7 +582,7 @@ namespace tt {
 				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
 				sizeof(glm::mat4),
 				0,
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 12).offset);
+				createDescriptorBufferInfoTuple(bufferMemoryPart, memargs.nameIdx("MVP")).offset);
 
 		{
 			auto memory_ptr = helper::mapTypeMemoryAndSize<rigidBodyData>(ownerDevice(), BAM);
@@ -598,6 +597,6 @@ namespace tt {
 				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
 				sizeof(rigidBodyData),
 				0,
-				createDescriptorBufferInfoTuple(bufferMemoryPart, 0).offset);
+				createDescriptorBufferInfoTuple(bufferMemoryPart, memargs.nameIdx("RigidBody")).offset);
 	}
 }
