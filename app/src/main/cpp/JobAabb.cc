@@ -156,7 +156,6 @@ namespace tt {
 									3, vk::DescriptorType::eStorageBuffer,
 									1, vk::ShaderStageFlagBits::eCompute
 							},
-
 							vk::DescriptorSetLayoutBinding{
 									4, vk::DescriptorType::eStorageBuffer,
 									1, vk::ShaderStageFlagBits::eCompute
@@ -171,7 +170,7 @@ namespace tt {
 					device.get(),
 					descriptorPool.get(),
 					{},
-					[&](std::array<vk::UniquePipeline, 2> &pipelines,
+					[&](std::array<vk::UniquePipeline, 3> &pipelines,
 					    vk::PipelineLayout pipelineLayout) {
 						createGraphsPipelines(pipelines,
 						                      device,
@@ -248,6 +247,16 @@ namespace tt {
 						compMprPipeline.getDescriptorSet(1), 3, 0, 1,
 						vk::DescriptorType::eStorageBuffer,
 						nullptr, &descriptors[memargs.nameIdx("DICOutAABBs")]
+				},
+				vk::WriteDescriptorSet{
+						compMprPipeline.getDescriptorSet(1), 4, 0, 1,
+						vk::DescriptorType::eStorageBuffer,
+						nullptr, &descriptors[memargs.nameIdx("DICMPROutVt")]
+				},
+				vk::WriteDescriptorSet{
+						compMprPipeline.getDescriptorSet(1), 5, 0, 1,
+						vk::DescriptorType::eStorageBuffer,
+						nullptr, &descriptors[memargs.nameIdx("DICMPROut")]
 				},
 				vk::WriteDescriptorSet{
 						graphPipeline.getDescriptorSet(), 0, 0, 1,
@@ -351,7 +360,7 @@ namespace tt {
 	}
 
 	void
-	JobAabb::createGraphsPipelines(std::array<vk::UniquePipeline, 2> &pipelines, Device &device,
+	JobAabb::createGraphsPipelines(std::array<vk::UniquePipeline, 3> &pipelines, Device &device,
 	                               android_app *app, vk::PipelineLayout pipelineLayout) {
 		auto vertShaderModule = device.loadShaderFromAssets("shaders/copy0.vert.spv", app);
 		auto gemoShaderModule = device.loadShaderFromAssets("shaders/aabb.geom.spv", app);
@@ -412,6 +421,22 @@ namespace tt {
 				"main"
 		};
 		pipelines[1] = device.createGraphsPipeline(pipelineShaderStageCreateInfos,
+		                                           pipelineVertexInputStateCreateInfo,
+		                                           pipelineLayout,
+		                                           pipelineCache.get(),
+		                                           device.renderPass.get(),
+		                                           vk::PrimitiveTopology::eLineListWithAdjacency);
+
+
+		auto gemoPortalShaderModule = device.loadShaderFromAssets("shaders/portal.geom.spv", app);
+
+		pipelineShaderStageCreateInfos[1] = vk::PipelineShaderStageCreateInfo{
+				{},
+				vk::ShaderStageFlagBits::eGeometry,
+				gemoPortalShaderModule.get(),
+				"main"
+		};
+		pipelines[2] = device.createGraphsPipeline(pipelineShaderStageCreateInfos,
 		                                           pipelineVertexInputStateCreateInfo,
 		                                           pipelineLayout,
 		                                           pipelineCache.get(),
@@ -543,7 +568,22 @@ namespace tt {
 		cmdHandleRenderpassBegin.drawIndirect(
 				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
 				createDescriptorBufferInfoTuple(bufferMemoryPart, memargs.nameIdx("DICOutAABBs")).offset,
-				2,
+				1,
+				sizeof(vk::DrawIndirectCommand));
+
+		cmdHandleRenderpassBegin.bindPipeline(
+				vk::PipelineBindPoint::eGraphics,
+				graphPipeline.get(2));
+
+		cmdHandleRenderpassBegin.bindVertexBuffers(
+				0, {std::get<vk::UniqueBuffer>(bufferMemoryPart).get()},
+				{createDescriptorBufferInfoTuple(bufferMemoryPart, memargs.nameIdx("DICMPROutVt")).offset}
+		);
+
+		cmdHandleRenderpassBegin.drawIndirect(
+				std::get<vk::UniqueBuffer>(bufferMemoryPart).get(),
+				createDescriptorBufferInfoTuple(bufferMemoryPart, memargs.nameIdx("DICMPROut")).offset,
+				1,
 				sizeof(vk::DrawIndirectCommand));
 
 	}

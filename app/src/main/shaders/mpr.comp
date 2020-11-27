@@ -64,7 +64,7 @@ layout(set = 0, binding = 0)readonly buffer RigidBodyDatas
 layout(set = 0, binding = 1)readonly buffer Collidables
 {
     ivec4 Collidable[];
-} ;
+};
 
 layout(set = 0, binding = 2)readonly buffer ShapeAabb
 {
@@ -92,13 +92,33 @@ layout(set = 0, binding = 1)readonly buffer bodyInvariants
 };
 
 
-layout(set = 1,binding = 0) writeonly buffer outPos { ioInfo outinfo[]; };
+//layout(set = 1,binding = 0) writeonly buffer outPos { ioInfo outinfo[]; };
 
-layout(set = 1,binding = 1) writeonly buffer outCmd { cmdInfo cmdinfo[]; };
+//layout(set = 1,binding = 1) writeonly buffer outCmd { cmdInfo cmdinfo[]; };
 
-layout(set = 1,binding = 2) writeonly buffer outPosCube { ioInfo outCubeinfo[];};
+//layout(set = 1,binding = 2) writeonly buffer outPosCube { ioInfo outCubeinfo[];};
 
-layout(set = 1,binding = 3) writeonly buffer outCmdCube { cmdInfo cmdCubeinfo[];};
+//layout(set = 1,binding = 3) writeonly buffer outCmdCube { cmdInfo cmdCubeinfo[];};
+
+layout(set = 1, binding = 4) writeonly buffer outPosCube { ioInfo outinfo[]; };
+
+layout(set = 1, binding = 5) writeonly buffer outCmdCube { cmdInfo cmdinfo[]; };
+
+void outpt(vec3 v0,vec3 v1, vec3 v2, vec3 v3){
+
+    uint vindex = gl_WorkGroupID.x * 4;
+    outinfo[vindex].point=vec4(v0,1.0);
+    outinfo[vindex+1].point=vec4(v1,1.0);
+    outinfo[vindex+2].point=vec4(v2,1.0);
+    outinfo[vindex+3].point=vec4(v3,1.0);
+    //outinfo[vindex+3].point=vec4(0.0,0.0,0.0,0.0);
+    if(gl_WorkGroupID.x == 0){
+        cmdinfo[0].vetCont=gl_NumWorkGroups.x*4;
+        cmdinfo[0].insCont=1;
+        cmdinfo[0].vetOff=0;
+        cmdinfo[0].insOff=0;
+    }
+}
 
 
 vec3 SupportPoint(uint bodyIndex, vec3 dir){
@@ -113,25 +133,25 @@ vec3 SupportPoint(uint bodyIndex, vec3 dir){
 int mprPenetration(uint pairIndex) {
     int bodyIndex1 = pair[pairIndex].x;
     int bodyIndex2 = pair[pairIndex].y;
-/*
-    int IIndex1 = BodyDatas[bodyIndex1].InvariantArg.x;
-    int IIndex2 = BodyDatas[bodyIndex2].InvariantArg.x;
+    /*
+        int IIndex1 = BodyDatas[bodyIndex1].InvariantArg.x;
+        int IIndex2 = BodyDatas[bodyIndex2].InvariantArg.x;
 
-    if (bodyInvariant[IIndex1].invMass_restituitionCoeff_frictionCoeff[0] == 0.0 &&
-    bodyInvariant[IIndex2].invMass_restituitionCoeff_frictionCoeff[0] == 0.0)
-    return 0;
-*/
+        if (bodyInvariant[IIndex1].invMass_restituitionCoeff_frictionCoeff[0] == 0.0 &&
+        bodyInvariant[IIndex2].invMass_restituitionCoeff_frictionCoeff[0] == 0.0)
+        return 0;
     MprSimplex Simplex;
     Simplex.Support[0].v1 = BodyDatas[bodyIndex1].pos;
-    Simplex.Support[0].v2 = BodyDatas[bodyIndex2].pos;
-    Simplex.Support[0].v = Simplex.Support[0].v1 - Simplex.Support[0].v2;
+    Simplex.Support[0].v2 = BodyDatas[bodyIndex2].pos;    */
+
+    vec3 v0 = (BodyDatas[bodyIndex1].pos - BodyDatas[bodyIndex2].pos).xyz;
 
     vec3 dir = vec3(0.0);
-    if (Simplex.Support[0].v.xyz == dir){
+    if (v0 == dir){
         return 0;
     }
     else
-    dir = Simplex.Support[0].v.xyz;
+    dir = v0;
 
     vec3 v1 = SupportPoint(bodyIndex1, - dir) - SupportPoint(bodyIndex2, dir);
 
@@ -156,10 +176,10 @@ int mprPenetration(uint pairIndex) {
     vec3 va;
     vec3 vb;
     do {
-        va = v1-Simplex.Support[0].v.xyz;
-        vb = v2-Simplex.Support[0].v.xyz;
+        va = v1-v0;
+        vb = v2-v0;
         dir = cross(va, vb);
-        if (dot(Simplex.Support[0].v.xyz, dir)>0.0){
+        if (dot(v0, dir)>0.0){
             vec3 vt = v1;v1=v2;v2=vt;
             dir = -dir;
         }
@@ -168,9 +188,10 @@ int mprPenetration(uint pairIndex) {
         return 0;
 
         vec3 vc = cross(v1, v3);
-        if (dot(vc, Simplex.Support[0].v.xyz)>0){
+        if (dot(vc, v0)>0){
             vc = cross(v3, v2);
-            if (dot(vc, Simplex.Support[0].v.xyz)>0){
+            if (dot(vc, v0)>0){
+                outpt(v0,v1,v2,v3);
                 return 1;
             }
             else {
@@ -185,6 +206,11 @@ int mprPenetration(uint pairIndex) {
 
 void main()
 {
+
+    cmdinfo[0].vetCont=0;
+    cmdinfo[0].insCont=0;
+    cmdinfo[0].vetOff=0;
+    cmdinfo[0].insOff=0;
     uint vindex = gl_WorkGroupID.x;
-    mprPenetration(vindex);
+    uint ret = mprPenetration(vindex);
 }

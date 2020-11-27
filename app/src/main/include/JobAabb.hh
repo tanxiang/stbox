@@ -18,7 +18,7 @@ namespace tt {
 		vk::UniqueRenderPass renderPass;
 		//PipelineResource compPipeline;
 		gpuProgram<2,2,2> compMprPipeline;
-		gpuProgram<2> graphPipeline;
+		gpuProgram<3> graphPipeline;
 
 		BufferMemoryWithParts<13> bufferMemoryPart;
 		//BufferMemory outputMemory;
@@ -33,7 +33,7 @@ namespace tt {
 		}
 		//vk::UniquePipeline createGraphsPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 		//vk::UniquePipeline createGraphsPipelineCube(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
-		void createGraphsPipelines(std::array<vk::UniquePipeline,2>& pipelines,tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
+		void createGraphsPipelines(std::array<vk::UniquePipeline,3>& pipelines,tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 
 		void createComputePipeline(std::array<vk::UniquePipeline,2>& pipelines,tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 
