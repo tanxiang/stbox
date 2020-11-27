@@ -2,7 +2,6 @@
 // Created by ttand on 19-8-2.
 //
 
-#include "JobBase.hh"
 #include "Device.hh"
 #include "Window.hh"
 
@@ -40,49 +39,7 @@ namespace tt {
 		return ShaderModules;
 	}
 
-/*
-	std::map<std::string, vk::UniquePipeline> Device::createComputePipeline(android_app *app) {
-		auto shaderModules = loadShaderFromAssetsDir("shaders", app);
-		std::map<std::string, vk::UniquePipeline> mapComputePipeline;
-		auto descriptorSetLayout = createDescriptorSetLayoutUnique(
-				std::vector<vk::DescriptorSetLayoutBinding>{
-						vk::DescriptorSetLayoutBinding{
-								0,
-								vk::DescriptorType::eStorageImage,
-								1,
-								vk::ShaderStageFlagBits::eCompute
-						},
-						vk::DescriptorSetLayoutBinding{
-								1,
-								vk::DescriptorType::eStorageImage,
-								1,
-								vk::ShaderStageFlagBits::eCompute
-						}
-				}
-		);
-		auto pipelineLayout = createPipelineLayout(descriptorSetLayout);
 
-		for (auto &shaderModule:shaderModules) {
-			vk::PipelineShaderStageCreateInfo shaderStageCreateInfo{
-					vk::PipelineShaderStageCreateFlags(),
-					vk::ShaderStageFlagBits::eCompute,
-					std::get<vk::UniqueShaderModule>(shaderModule).get(),
-					"forward"
-			};
-			vk::ComputePipelineCreateInfo computePipelineCreateInfo{
-					vk::PipelineCreateFlags(),
-					shaderStageCreateInfo,
-					pipelineLayout.get()
-			};
-			mapComputePipeline.emplace(std::get<std::string>(shaderModule),
-			                           get().createComputePipelineUnique(pipelineCache.get(),
-			                                                             computePipelineCreateInfo));
-		}
-		return mapComputePipeline;
-	};
-
-
-*/
 	vk::UniqueRenderPass Device::createRenderpass(vk::Format surfaceDefaultFormat) {
 		//auto surfaceDefaultFormat = device.getSurfaceDefaultFormat(surface.get());
 		renderPassFormat = surfaceDefaultFormat;
@@ -254,69 +211,6 @@ namespace tt {
 		return LocalBufferMemory{std::move(buffer), std::move(memory)};
 	}
 
-
-	BufferMemory Device::createBufferAndMemoryFromAssets(android_app *androidAppCtx,
-	                                                     std::vector<std::string> names,
-	                                                     vk::BufferUsageFlags bufferUsageFlags,
-	                                                     vk::MemoryPropertyFlags memoryPropertyFlags) {
-		auto alignment = phyDevice().getProperties().limits.minStorageBufferOffsetAlignment;
-		off_t offset = 0;
-		std::vector<std::tuple<AAssetHander, off_t, off_t >> fileHanders;
-		for (auto &name:names) {
-			AAssetHander file{androidAppCtx->activity->assetManager, name};
-			if (!file)
-				throw std::runtime_error{"asset not found"};
-			auto length = file.getLength();
-			fileHanders.emplace_back(std::move(file), offset, length);
-			length += (alignment - 1) - ((length - 1) % alignment);
-			offset += length;
-		}
-		if (memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal) {
-			auto StagingBufferMemory = createStagingBufferMemoryOnObjs(offset);
-			{
-				auto bufferPtr = mapBufferMemory(StagingBufferMemory);
-				for (auto &file:fileHanders) {
-					std::get<0>(file).read(
-							(char *) bufferPtr.get() + std::get<1>(file),
-							std::get<2>(file));
-					MY_LOG(INFO) << "off " << std::get<1>(file) << " size " << std::get<2>(file)
-					             << " Align" << alignment;
-				}
-			}
-			auto BAM2 = createBufferAndMemory(offset, bufferUsageFlags, memoryPropertyFlags);
-			auto copyCmd = createCmdBuffers(
-					1, gPoolUnique.get(),
-					[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
-						commandBufferBeginHandle.copyBuffer(
-								std::get<vk::UniqueBuffer>(StagingBufferMemory).get(),
-								std::get<vk::UniqueBuffer>(BAM2).get(),
-								{vk::BufferCopy{0, 0, offset}});
-					},
-					vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-
-			auto copyFence = submitCmdBuffer(copyCmd[0].get());
-			waitFence(copyFence.get());
-			for (auto &file:fileHanders) {
-				std::get<std::vector<vk::DescriptorBufferInfo>>(BAM2).emplace_back(
-						std::get<vk::UniqueBuffer>(BAM2).get(), std::get<1>(file),
-						std::get<2>(file));
-			}
-			return BAM2;
-		}
-
-		auto BAM = createBufferAndMemory(offset, bufferUsageFlags, memoryPropertyFlags);
-		auto bufferPtr = mapBufferMemory(BAM);
-		for (auto &file:fileHanders) {
-			std::get<0>(file).read((char *) bufferPtr.get() + std::get<1>(file),
-			                       std::get<2>(file));
-			std::get<std::vector<vk::DescriptorBufferInfo>>(BAM).emplace_back(
-					std::get<vk::UniqueBuffer>(BAM).get(), std::get<1>(file), std::get<2>(file));
-			MY_LOG(INFO) << "off " << std::get<1>(file) << " size " << std::get<2>(file) << " Align"
-			             << alignment;
-		}
-		return BAM;
-	}
-
 	vk::UniquePipeline Device::createGraphsPipeline(
 			vk::ArrayProxy<vk::PipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos,
 			vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo,
@@ -393,31 +287,6 @@ namespace tt {
 		return get().createGraphicsPipelineUnique(pipelineCache, pipelineCreateInfo);
 	}
 
-	BufferMemory Device::flushBufferToDevMemory(vk::BufferUsageFlags bufferUsageFlags,
-	                                            vk::MemoryPropertyFlags memoryPropertyFlags,
-	                                            size_t size,
-	                                            BufferMemory &&bufferMemory) {
-		auto BAM = createBufferAndMemory(
-				size,
-				bufferUsageFlags,
-				memoryPropertyFlags
-		);
-
-		auto copyCmd = createCmdBuffers(
-				1, gPoolUnique.get(),
-				[&](CommandBufferBeginHandle &commandBufferBeginHandle) {
-					commandBufferBeginHandle.copyBuffer(
-							std::get<vk::UniqueBuffer>(bufferMemory).get(),
-							std::get<vk::UniqueBuffer>(BAM).get(),
-							{vk::BufferCopy{0, 0, size}});
-				},
-				vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-
-		auto copyFence = submitCmdBuffer(copyCmd[0].get());
-		waitFence(copyFence.get());
-
-		return BAM;
-	}
 
 	void Device::flushBufferToBuffer(vk::Buffer srcbuffer, vk::Buffer decbuffer,
 	                                 size_t size, size_t srcoff, size_t decoff) {
@@ -433,12 +302,6 @@ namespace tt {
 		waitFence(copyFence.get());
 	}
 
-
-	void Device::bindBsm(BuffersMemory<> &BsM) {
-		for (auto &buffer:BsM.desAndBuffers()) {
-			get().bindBufferMemory(buffer.buffer().get(), BsM.memory().get(), buffer.off());
-		}
-	}
 
 	vk::UniqueDevice Device::initHander(vk::PhysicalDevice &phyDevice, vk::SurfaceKHR &surface) {
 		std::array<float, 1> queuePriorities{0.0};
@@ -519,8 +382,11 @@ namespace tt {
 				0.1f, 256.0f
 		);
 
-		std::apply([&](auto &... jobs) { buildCmdBufferHelper(window, renderPass.get(), jobs...); },
-		           Jobs);
+		std::apply(
+				[&](auto &... jobs) {
+					buildCmdBufferHelper(window, renderPass.get(), jobs...);
+				},
+				JobObjs.tuple);
 
 		mainCmdBuffers = helper::createCmdBuffers(get(), renderPass.get(),
 		                                          *this,
@@ -540,13 +406,13 @@ namespace tt {
 
 	template<typename T>
 	void execSubCmdBufferHelper(RenderpassBeginHandle &handle, uint32_t frameIndex, T &job) {
-		if constexpr(std::experimental::is_detected_exact_v<vk::CommandBuffer, hasGraphis,T>)
+		if constexpr(std::experimental::is_detected_exact_v<vk::CommandBuffer, hasGraphis, T>)
 			handle.executeCommands(job.getGraphisCmdBuffer(frameIndex));
 	}
 
 	template<typename T>
-	auto getSubCmdBufferHelper(uint32_t frameIndex, T &job){
-		if constexpr(std::experimental::is_detected_exact_v<vk::CommandBuffer, hasGraphis,T>)
+	auto getSubCmdBufferHelper(uint32_t frameIndex, T &job) {
+		if constexpr(std::experimental::is_detected_exact_v<vk::CommandBuffer, hasGraphis, T>)
 			return job.getGraphisCmdBuffer(frameIndex);
 	}
 
@@ -559,7 +425,7 @@ namespace tt {
 
 	template<typename T>
 	void execSubCmdBufferHelper(CommandBufferBeginHandle &handle, T &job) {
-		if constexpr(std::experimental::is_detected_exact_v<vk::CommandBuffer, hasComputer ,T>){
+		if constexpr(std::experimental::is_detected_exact_v<vk::CommandBuffer, hasComputer, T>) {
 			handle.executeCommands(job.getComputerCmdBuffer());
 			//MY_LOG(INFO)<<"handle.executeCommands(job.getComputerCmdBuffer());";
 		}
@@ -567,41 +433,40 @@ namespace tt {
 
 	template<typename T, typename ... Ts>
 	void execSubCmdBufferHelper(CommandBufferBeginHandle &handle, T &job, Ts &... jobs) {
-		execSubCmdBufferHelper(handle,job);
+		execSubCmdBufferHelper(handle, job);
 		execSubCmdBufferHelper(handle, jobs...);
 	}
 
-
-	void Device::CmdBufferBegin(CommandBufferBeginHandle &handle,uint32_t frameIndex) {
+	void Device::CmdBufferBegin(CommandBufferBeginHandle &handle, uint32_t frameIndex) {
 		std::apply(
 				[&](auto &... jobs) {
 					execSubCmdBufferHelper(handle, jobs...);
 				},
-				Jobs
+				JobObjs.tuple
 		);
 	}
-
 
 	void Device::CmdBufferRenderpassBegin(RenderpassBeginHandle &handle,
 	                                      uint32_t frameIndex) {
 		std::apply(
 				[&](auto &... jobs) {
-					std::array graphsCmds{getSubCmdBufferHelper(frameIndex,jobs)...};//FIXME graphsCmd exclude job without graphs cmd buffer
+					std::array graphsCmds{getSubCmdBufferHelper(frameIndex,jobs)...};
+					//FIXME graphsCmd exclude job without graphs cmd buffer
 					handle.executeCommands(graphsCmds);
 				},
-				Jobs
+				JobObjs.tuple
 		);
 	}
 
 	template<typename T>
-	auto flushMVPHelper(tt::Device &devices, T &job){
-		if constexpr(std::experimental::is_detected_exact_v<vk::CommandBuffer, hasGraphis,T>)
+	auto flushMVPHelper(tt::Device &devices, T &job) {
+		if constexpr(std::experimental::is_detected_exact_v<vk::CommandBuffer, hasGraphis, T>)
 			return job.setMVP(devices);
 	}
 
 	template<typename T, typename ... Ts>
 	void flushMVPHelper(tt::Device &devices, T &job,
-	                            Ts &... jobs) {
+	                    Ts &... jobs) {
 		flushMVPHelper(devices, job);
 		flushMVPHelper(devices, jobs...);
 	}
@@ -609,9 +474,9 @@ namespace tt {
 	void Device::flushMVP() {
 		std::apply(
 				[&](auto &... jobs) {
-					flushMVPHelper(*this,jobs...);
+					flushMVPHelper(*this, jobs...);
 				},
-				Jobs
+				JobObjs.tuple
 		);
 	}
 
@@ -674,11 +539,24 @@ namespace tt {
 				},
 				vk::CommandBufferUsageFlagBits::eOneTimeSubmit
 		);
-
 		auto copyFence = submitCmdBuffer(copyCmd[0].get());
 		waitFence(copyFence.get());
-
 	}
 
 
+	Device::Device(vk::PhysicalDevice &phy, vk::SurfaceKHR &surface, android_app *app) :
+			vk::UniqueDevice{initHander(phy, surface)}, physicalDevice{phy},
+			//gQueueFamilyIndex{deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex},
+			renderPassFormat{physicalDevice.getSurfaceFormatsKHR(surface)[0].format},
+			renderPass{createRenderpass(renderPassFormat)},
+			commandPool{
+					get().createCommandPoolUnique(vk::CommandPoolCreateInfo{
+							vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+							gQueueFamilyIndex}
+					)
+			},
+			JobObjs{std::make_tuple(app, this)} {
+	}
 }
+
+

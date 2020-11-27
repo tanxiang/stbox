@@ -4,9 +4,9 @@
 #pragma once
 /*
 */
+#include <tuple>
 #include <experimental/type_traits>
 #include <unistd.h>
-#include <vulkan.hpp>
 #include <thread>
 #include <queue>
 #include <optional>
@@ -16,6 +16,7 @@
 #include <memory>
 #include <map>
 #include "main.hh"
+#include <vulkan.hpp>
 
 std::vector<uint32_t> GLSLtoSPV(const vk::ShaderStageFlagBits shader_type, const char *pshader);
 
@@ -138,17 +139,27 @@ namespace tt {
 	uint32_t findMemoryTypeIndex(vk::PhysicalDevice physicalDevice, uint32_t memoryTypeBits,
 	                             vk::MemoryPropertyFlags flags);
 
-
 	using ImageViewMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueDeviceMemory>;
 
 	//using ImageViewSamplerMemory = std::tuple<vk::UniqueImage, vk::UniqueImageView, vk::UniqueSampler, vk::UniqueDeviceMemory>;
 
 	using BufferMemory = std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, size_t, std::vector<vk::DescriptorBufferInfo> >;
 
+
+	template<typename BT,typename T, T... ints>
+	auto arrayDescsSequence(BT& BufferMemoryWithParts,std::integer_sequence<T, ints...> int_seq)
+	{
+		return std::array{createDescriptorBufferInfoTuple(BufferMemoryWithParts,ints)...};
+	}
+
 	template<uint N>
 	struct BufferMemoryWithParts
 			: public std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, std::array<uint32_t, N>> {
 		using std::tuple<vk::UniqueBuffer, vk::UniqueDeviceMemory, std::array<uint32_t, N>>::tuple;
+
+		auto arrayOfDescs(){
+			return arrayDescsSequence(*this,std::make_index_sequence<N>{});
+		}
 	};
 
 	struct BufferMemoryWithPartsd
@@ -372,5 +383,34 @@ namespace tt {
 				vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst
 		};
 	}
+
+
+	template<size_t tSize, typename  ... Args>
+	struct memoryArgs {
+		std::array<std::string_view, tSize> nameList;
+		std::tuple<Args...> memoryTupleList;
+
+		template<typename  ... Ts>
+		consteval memoryArgs(Ts ... objs)
+				: nameList{(objs.first)...}, memoryTupleList{(objs.second)...} {}
+
+		consteval std::size_t nameIdx(std::string_view findname) const {
+			std::size_t n = 0;
+			for (auto &name:nameList) {
+				if (name == findname)
+					return n;
+				++n;
+			}
+			assert("can not find str");
+		}
+
+		consteval std::size_t bindIdx(std::string_view findname) const {
+			return nameIdx(findname) + 1;
+		}
+	};
+
+	template<typename  ... Ts>
+	memoryArgs(Ts ... objs)
+	-> memoryArgs<sizeof...(objs), decltype(objs.second)...>;
 }
 

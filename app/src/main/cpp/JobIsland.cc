@@ -13,7 +13,7 @@ namespace tt {
 	vk::UniquePipeline JobIsland::createGraphsPipeline(tt::Device &device, android_app *app,
 	                                                   vk::PipelineLayout pipelineLayout) {
 
-		auto vertShaderModule = device.loadShaderFromAssets("shaders/copy.vert.spv", app);
+		auto vertShaderModule = device.loadShaderFromAssets("shaders/copy1.vert.spv", app);
 		auto fargShaderModule = device.loadShaderFromAssets("shaders/mesh.frag.spv", app);
 		auto tescShaderModule = device.loadShaderFromAssets("shaders/passthrough.tesc.spv", app);
 		auto teseShaderModule = device.loadShaderFromAssets("shaders/passthrough.tese.spv", app);
@@ -66,7 +66,7 @@ namespace tt {
 		};
 
 
-		vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{{},3};
+		vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo{{}, 3};
 		return device.createGraphsPipeline(pipelineShaderStageCreateInfos,
 		                                   pipelineVertexInputStateCreateInfo,
 		                                   pipelineLayout,
@@ -77,9 +77,9 @@ namespace tt {
 		                                   pipelineTessellationStateCreateInfo);
 	}
 
-	JobIsland::JobIsland(android_app *app, tt::Device &device) :
+	JobIsland::JobIsland(android_app *app, tt::Device *device) :
 			JobBase{
-					device.createJobBase(
+					device->createJobBase(
 							{
 									vk::DescriptorPoolSize{
 											vk::DescriptorType::eUniformBuffer, 1
@@ -89,13 +89,15 @@ namespace tt {
 					)
 			},
 			graphPipeline{
-					device.get(),
+					device->get(),
 					descriptorPool.get(),
-					[&](vk::PipelineLayout pipelineLayout) {
-						return createGraphsPipeline(
-								device,
-								app,
-								pipelineLayout);
+					std::array{
+							[&](vk::PipelineLayout pipelineLayout) {
+								return createGraphsPipeline(
+										*device,
+										app,
+										pipelineLayout);
+							}
 					},
 					std::array{
 							vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0,
@@ -108,7 +110,7 @@ namespace tt {
 							}
 					}
 			},
-			BAM{device.createBufferAndMemory(
+			BAM{device->createBufferAndMemory(
 					sizeof(glm::mat4) * 2,
 					vk::BufferUsageFlagBits::eTransferSrc,
 					vk::MemoryPropertyFlagBits::eHostVisible |
@@ -116,7 +118,7 @@ namespace tt {
 
 		///home/ttand/work/stbox/app/src/main/assets/models/torusknot.obj.ext
 		///home/ttand/work/stbox/app/src/main/assets/models/untitled.obj.ext
-		memoryWithPartsd = device.createBufferPartsdOnAssertDir(
+		memoryWithPartsd = device->createBufferPartsdOnAssertDir(
 				vk::BufferUsageFlagBits::eUniformBuffer |
 				vk::BufferUsageFlagBits::eVertexBuffer |
 				vk::BufferUsageFlagBits::eIndexBuffer |
@@ -138,7 +140,7 @@ namespace tt {
 						nullptr, &descriptors[0]
 				}
 		};
-		device->updateDescriptorSets(writeDes, nullptr);
+		device->get().updateDescriptorSets(writeDes, nullptr);
 		AAssetHander file{app->activity->assetManager, "models/untitled.obj.material.bin"};
 		materials.resize(file.getLength() / 2);
 		file.read(materials.data(), file.getLength());
@@ -199,7 +201,7 @@ namespace tt {
 
 			std::copy_n(std::array{0.5f, 0.5f, 0.5f,}.begin(), 3, pushdata.begin() + 12);
 
-			cmdHandleRenderpassBegin.pushConstants(graphPipeline.getLayout(),
+			cmdHandleRenderpassBegin.pushConstants(graphPipeline.layout(),
 			                                       vk::ShaderStageFlagBits::eFragment, 0,
 			                                       sizeof(float) * pushdata.size(),
 			                                       pushdata.data()

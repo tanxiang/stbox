@@ -22,7 +22,7 @@ namespace tt {
 
 		vk::UniquePipeline createPipeline(tt::Device &, android_app *app,vk::PipelineLayout pipelineLayout);
 
-		PipelineResource graphPipeline;
+		gpuProgram<> graphPipeline;
 		std::vector<vk::UniqueCommandBuffer> cmdBuffers;
 		std::vector<BufferMemory> BAMs;
 

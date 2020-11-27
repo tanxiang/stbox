@@ -1,0 +1,216 @@
+#version 450
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+struct RigidBodyData
+{
+    vec4 pos;//_m0;
+    vec4 quat;//_m1;
+    vec4 linVal;//_m2;
+    vec4 argVal;
+    ivec4 cilf;//collidableIdx_InvariantIdx_localAabbIdx_frictionCoeff;
+};
+
+struct Invariant
+{
+    vec4 invMass_restituitionCoeff_frictionCoeff;//collidableIdx_invMass_restituitionCoeff_frictionCoeff;
+    mat4 pos_quat_lin_arg;
+};
+
+struct aabb//_17
+{
+    vec4 min;
+    vec4 max;
+};
+
+struct MprSupport
+{
+    vec4 v;
+    vec4 v1;
+    vec4 v2;
+};
+
+struct MprSimplex{
+    MprSupport Support[4];
+};
+
+struct ioInfo
+{
+    vec4 point;
+};
+
+struct cmdInfo{
+    uint vetCont;
+    uint insCont;
+    uint vetOff;
+    uint insOff;
+};
+
+
+vec3 qtransform(vec4 q, vec3 v){
+    return v + 2.0*cross(q.xyz, cross(q.xyz, v) + q.w*v);
+}
+
+vec3 qrtransform(vec4 q, vec3 v){
+    return v + 2.0*cross(cross(v, q.xyz) + q.w*v, q.xyz);
+}
+
+
+layout(set = 0, binding = 0)readonly buffer RigidBodyDatas
+{
+    RigidBodyData BodyDatas[];
+};
+
+layout(set = 0, binding = 1)readonly buffer Collidables
+{
+    ivec4 Collidable[];
+};
+
+layout(set = 0, binding = 2)readonly buffer ShapeAabb
+{
+    aabb bb[];
+} localShapeAABB;//_39
+
+layout(set = 0, binding = 3)readonly buffer Aabb
+{
+    aabb bb[];
+} AABB;//_40
+
+layout(set = 0, binding = 4)readonly buffer pairs
+{
+    ivec4 pair[];
+};
+
+layout(set = 0, binding = 5)buffer outBdatas
+{
+    ivec4 outBdata[];
+};
+
+layout(set = 0, binding = 1)readonly buffer bodyInvariants
+{
+    Invariant bodyInvariant[];
+};
+
+
+//layout(set = 1,binding = 0) writeonly buffer outPos { ioInfo outinfo[]; };
+
+//layout(set = 1,binding = 1) writeonly buffer outCmd { cmdInfo cmdinfo[]; };
+
+//layout(set = 1,binding = 2) writeonly buffer outPosCube { ioInfo outCubeinfo[];};
+
+//layout(set = 1,binding = 3) writeonly buffer outCmdCube { cmdInfo cmdCubeinfo[];};
+
+layout(set = 1, binding = 4) writeonly buffer outPosCube { ioInfo outinfo[]; };
+
+layout(set = 1, binding = 5) writeonly buffer outCmdCube { cmdInfo cmdinfo[]; };
+
+void outpt(vec3 v0,vec3 v1, vec3 v2, vec3 v3){
+
+    uint vindex = gl_WorkGroupID.x * 4;
+    outinfo[vindex].point=vec4(v0,1.0);
+    outinfo[vindex+1].point=vec4(v1,1.0);
+    outinfo[vindex+2].point=vec4(v2,1.0);
+    outinfo[vindex+3].point=vec4(v3,1.0);
+    //outinfo[vindex+3].point=vec4(0.0,0.0,0.0,0.0);
+    if(gl_WorkGroupID.x == 0){
+        cmdinfo[0].vetCont=gl_NumWorkGroups.x*4;
+        cmdinfo[0].insCont=1;
+        cmdinfo[0].vetOff=0;
+        cmdinfo[0].insOff=0;
+    }
+}
+
+
+vec3 SupportPoint(uint bodyIndex, vec3 dir){
+    RigidBodyData bodyData = BodyDatas[bodyIndex];
+    vec3 dirq = qtransform(bodyData.quat, dir);
+    vec3 max, min;
+    vec3 supq = vec3(dirq.x>0?max.x:min.x, dirq.y>0?max.y:min.y, dirq.z>0?max.z:min.z);
+    //Max cross cube esp
+    return qrtransform(bodyData.quat, supq) + bodyData.pos.xyz;
+}
+
+int mprPenetration(uint pairIndex) {
+    int bodyIndex1 = pair[pairIndex].x;
+    int bodyIndex2 = pair[pairIndex].y;
+    /*
+        int IIndex1 = BodyDatas[bodyIndex1].InvariantArg.x;
+        int IIndex2 = BodyDatas[bodyIndex2].InvariantArg.x;
+
+        if (bodyInvariant[IIndex1].invMass_restituitionCoeff_frictionCoeff[0] == 0.0 &&
+        bodyInvariant[IIndex2].invMass_restituitionCoeff_frictionCoeff[0] == 0.0)
+        return 0;
+    MprSimplex Simplex;
+    Simplex.Support[0].v1 = BodyDatas[bodyIndex1].pos;
+    Simplex.Support[0].v2 = BodyDatas[bodyIndex2].pos;    */
+
+    vec3 v0 = (BodyDatas[bodyIndex1].pos - BodyDatas[bodyIndex2].pos).xyz;
+
+    vec3 dir = vec3(0.0);
+    if (v0 == dir){
+        return 0;
+    }
+    else
+    dir = v0;
+
+    vec3 v1 = SupportPoint(bodyIndex1, - dir) - SupportPoint(bodyIndex2, dir);
+
+
+    if (dot(v1, dir)>0)
+    return 0;
+
+    dir = cross(v1, dir);
+
+    if (dir==vec3(0.0))
+    {
+        if (v1==vec3(0.0))// origin lies on v1
+        return 2;
+        else // origin lies on v0-v1 segment
+        return 3;
+    }
+
+    vec3 v2 = SupportPoint(bodyIndex1, -dir) - SupportPoint(bodyIndex2, dir);
+    if (dot(v2, dir)>0)
+    return 0;
+
+    vec3 va;
+    vec3 vb;
+    do {
+        va = v1-v0;
+        vb = v2-v0;
+        dir = cross(va, vb);
+        if (dot(v0, dir)>0.0){
+            vec3 vt = v1;v1=v2;v2=vt;
+            dir = -dir;
+        }
+        vec3 v3 = SupportPoint(bodyIndex1, -dir) - SupportPoint(bodyIndex2, dir);
+        if (dot(v3, dir)>0)
+        return 0;
+
+        vec3 vc = cross(v1, v3);
+        if (dot(vc, v0)>0){
+            vc = cross(v3, v2);
+            if (dot(vc, v0)>0){
+                outpt(v0,v1,v2,v3);
+                return 1;
+            }
+            else {
+                v1 = v3;//
+            }
+        } else {
+            v2 = v3;//
+        }
+    } while (true);
+    return 0;
+}
+
+void main()
+{
+
+    cmdinfo[0].vetCont=0;
+    cmdinfo[0].insCont=0;
+    cmdinfo[0].vetOff=0;
+    cmdinfo[0].insOff=0;
+    uint vindex = gl_WorkGroupID.x;
+    uint ret = mprPenetration(vindex);
+}
